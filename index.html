@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yubo的博客</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fefdfb;
+    --text: #2c2c2c;
+    --text-muted: #8c8c8c;
+    --text-light: #b0b0b0;
+    --border: #e8e5e0;
+    --card-hover: #f8f6f3;
+    --tag-bg: #f0ede9;
+    --tag-text: #7a7a7a;
+    --tag-active-bg: #2c2c2c;
+    --tag-active-text: #f0ede9;
+    --progress: #2c2c2c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1e;
+      --text: #d4d4d4;
+      --text-muted: #909090;
+      --text-light: #666;
+      --border: #333;
+      --card-hover: #262626;
+      --tag-bg: #2a2a2a;
+      --tag-text: #999;
+      --tag-active-bg: #d4d4d4;
+      --tag-active-text: #1e1e1e;
+      --progress: #d4d4d4;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── Progress bar ── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--progress);
+    z-index: 100;
+    transition: width 0.1s linear;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 80px 24px 40px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-family: Georgia, "Noto Serif SC", serif;
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  header p {
+    margin-top: 8px;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Tag filter ── */
+  .tag-filter {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 680px;
+    margin: 0 auto 32px;
+    padding: 0 24px;
+  }
+
+  .tag-filter-btn {
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 4px 14px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    transition: all 0.2s;
+  }
+
+  .tag-filter-btn:hover {
+    background: var(--tag-active-bg);
+    color: var(--tag-active-text);
+  }
+
+  .tag-filter-btn.active {
+    background: var(--tag-active-bg);
+    color: var(--tag-active-text);
+  }
+
+  /* ── Main ── */
+  main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  .article {
+    position: relative;
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    cursor: pointer;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .article:first-child { border-top: none; }
+
+  .article.entering {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  .article.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .article:hover { background: var(--card-hover); margin: 0 -12px; padding-left: 12px; padding-right: 12px; border-radius: 6px; }
+
+  .article-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .article-title {
+    font-family: Georgia, "Noto Serif SC", serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text);
+    transition: color 0.15s;
+  }
+
+  .article:hover .article-title { color: var(--text-muted); }
+
+  /* ── Article actions ── */
+  .article-actions {
+    position: absolute;
+    top: 34px;
+    right: 0;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .article:hover .article-actions { opacity: 1; }
+
+  .article-action-btn {
+    font-family: inherit;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .article-action-btn:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+  }
+
+  .article-action-btn.danger:hover { color: #c44; border-color: #c44; }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    max-width: 680px;
+    margin: 0 auto 24px;
+    padding: 0 24px;
+  }
+
+  .toolbar-btn {
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 5px 16px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toolbar-btn:hover {
+    background: var(--tag-active-bg);
+    color: var(--tag-active-text);
+  }
+
+  /* ── Edit form ── */
+  .edit-form { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+
+  .edit-form input,
+  .edit-form textarea {
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  .edit-form input:focus,
+  .edit-form textarea:focus { border-color: var(--text-muted); }
+
+  .edit-form input.title-input { font-family: Georgia, "Noto Serif SC", serif; font-size: 1.3rem; font-weight: 400; }
+
+  .edit-form textarea.body-textarea { min-height: 160px; line-height: 1.8; }
+
+  .edit-form textarea.excerpt-textarea { min-height: 50px; }
+
+  .edit-form-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .edit-form-actions button {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 6px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .btn-save {
+    background: var(--tag-active-bg);
+    color: var(--tag-active-text);
+  }
+
+  .btn-cancel {
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel:hover { color: var(--text); }
+
+  .article-date {
+    font-size: 0.85rem;
+    color: var(--text-light);
+  }
+
+  .article-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .article-tag {
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    pointer-events: none;
+  }
+
+  .article-excerpt {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+
+  .article-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.45s ease;
+  }
+
+  .article-body-inner {
+    font-size: 0.95rem;
+    color: var(--text);
+    line-height: 1.9;
+    padding-top: 16px;
+  }
+
+  .article-body-inner p { margin-bottom: 12px; }
+
+  /* ── No results ── */
+  .no-results {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  /* ── Back to top ── */
+  .back-to-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s, background 0.2s, color 0.2s;
+    z-index: 99;
+  }
+
+  .back-to-top.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .back-to-top:hover {
+    background: var(--card-hover);
+    color: var(--text);
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 48px 20px 32px; }
+    header h1 { font-size: 1.6rem; }
+    main { padding: 0 20px 60px; }
+    .article { padding: 24px 0; }
+    .article-title { font-size: 1.15rem; }
+    .back-to-top { bottom: 20px; right: 20px; width: 36px; height: 36px; }
+    .tag-filter { padding: 0 20px; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress-bar"></div>
+
+<header>
+  <h1>Yubo的博客</h1>
+  <p>一些零散的记录与思考</p>
+</header>
+
+<div class="tag-filter" id="tag-filter"></div>
+
+<div class="toolbar">
+  <button class="toolbar-btn" id="btn-new-article">+ 新文章</button>
+</div>
+
+<main id="article-list"></main>
+
+<button class="back-to-top" id="back-to-top" aria-label="回到顶部">&uarr;</button>
+
+<script>
+const STORAGE_KEY = 'blog-articles';
+
+const DEFAULT_ARTICLES = [
+  {
+    id: 'a1',
+    title: "开始写作这件事",
+    date: "2026-05-10",
+    tags: ["随笔"],
+    excerpt: "为什么决定开始写博客，以及我打算在这里记录些什么。",
+    body: "<p>一直以来都想有一个自己的空间来记录想法。社交媒体太碎片化，而写作能帮助我整理思路，把零散的念头编织成更完整的理解。</p><p>这个博客不需要很多人看。它是一个安静的角落，用来存放那些值得被写下来的东西——技术笔记、读书心得、或者只是日常的一些观察。</p><p>以后回头看，应该会很有趣。</p>"
+  },
+  {
+    id: 'a2',
+    title: "用 CSS 变量管理设计系统",
+    date: "2026-04-28",
+    tags: ["前端", "CSS"],
+    excerpt: "CSS 自定义属性让主题管理变得简单。分享一些实际项目中的用法。",
+    body: "<p>CSS 变量（Custom Properties）在现代前端开发中已经不可或缺。它们在设计系统中最有价值的特性是动态作用域和运行时更新。</p><p>一个典型的用法是把颜色、间距、字体等设计令牌定义在 :root 上，组件内部通过 var() 引用。换主题时只需要改动几个变量值，整个界面就能自动适配。</p><p>结合 prefers-color-scheme 媒体查询，可以实现自动切换的暗色模式。对维护一致性非常有帮助。</p>"
+  },
+  {
+    id: 'a3',
+    title: "读《深入理解计算机系统》",
+    date: "2026-04-15",
+    tags: ["阅读", "计算机"],
+    excerpt: "重读 CSAPP 的一些笔记和感悟，每次读都有新的收获。",
+    body: "<p>这本书常读常新。第一次看的时候还在上学，当时重点关注的是习题和考试。工作几年后再翻，才对里面关于系统级优化的章节有了切身体会。</p><p>特别是关于内存层次结构和缓存优化的部分——理解 CPU 缓存行、TLB、分支预测这些概念，对写出高性能代码太重要了。</p><p>如果只推荐一本计算机基础书，我还是会选 CSAPP。</p>"
+  },
+  {
+    id: 'a4',
+    title: "搭建个人开发环境",
+    date: "2026-03-22",
+    tags: ["工具"],
+    excerpt: "记录我目前的开发工具链和配置，以及一些提高效率的小技巧。",
+    body: "<p>工具是思维的延伸。这些年尝试过不少编辑器、终端、插件，最后稳定下来的一套组合其实意外地简单。</p><p>核心就几样：一个好的代码编辑器、一个顺手的终端模拟器、加上 dotfiles 用 git 管理。花一点时间把环境调到趁手，每天都能省下很多精力。</p><p>其实最重要的不是用什么工具，而是对工具足够熟悉。把快捷键练到肌肉记忆，比频繁换新工具更有效率。</p>"
+  },
+  {
+    id: 'a5',
+    title: "关于这个博客的技术选型",
+    date: "2026-03-10",
+    tags: ["前端", "随笔"],
+    excerpt: "为什么选择用最简单的 HTML/CSS/JS 来搭建这个博客。",
+    body: "<p>考虑过用各种静态网站生成器，最终选了最原始的方式——一个 HTML 文件手写一切。</p><p>这种方式的优点是零依赖、零构建步骤、零维护成本。不需要装 Node.js，不需要跑构建脚本，不需要担心依赖的版本兼容问题。一个文件拖到浏览器就能跑。</p><p>对于个人博客来说，内容比技术栈重要得多。与其花时间折腾工具链，不如多写几篇文章。</p>"
+  }
+];
+
+// ── Persistence ──
+function loadArticles() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try { return JSON.parse(stored); } catch (e) { /* corrupted, fall through */ }
+  }
+  saveArticles(DEFAULT_ARTICLES);
+  return DEFAULT_ARTICLES.map(a => ({ ...a }));
+}
+
+function saveArticles(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ── State ──
+let articles = loadArticles();
+let activeTag = null;
+const editingIds = new Set();   // article ids currently in edit mode
+
+const container = document.getElementById('article-list');
+const tagFilter = document.getElementById('tag-filter');
+const progressBar = document.getElementById('progress-bar');
+const backToTop = document.getElementById('back-to-top');
+const btnNew = document.getElementById('btn-new-article');
+
+// ── Tag filter ──
+function renderTagFilter() {
+  const allTags = [...new Set(articles.flatMap(a => a.tags))].sort();
+  tagFilter.innerHTML = allTags.map(t =>
+    `<button class="tag-filter-btn" data-tag="${t}">${t}</button>`
+  ).join('');
+}
+
+tagFilter.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tag-filter-btn');
+  if (!btn) return;
+  const tag = btn.dataset.tag;
+  activeTag = activeTag === tag ? null : tag;
+  updateTagFilterUI();
+  renderArticles();
+});
+
+function updateTagFilterUI() {
+  tagFilter.querySelectorAll('.tag-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tag === activeTag);
+  });
+}
+
+// ── Render ──
+function renderArticleDisplay(a) {
+  return `
+    <div class="article-header">
+      <h2 class="article-title">${escHtml(a.title)}</h2>
+      <time class="article-date">${escHtml(a.date)}</time>
+      <div class="article-tags">${a.tags.map(t => `<span class="article-tag">${escHtml(t)}</span>`).join('')}</div>
+    </div>
+    <div class="article-actions">
+      <button class="article-action-btn" data-action="edit" data-id="${a.id}" title="编辑">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+      </button>
+      <button class="article-action-btn danger" data-action="delete" data-id="${a.id}" title="删除">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+    <p class="article-excerpt">${escHtml(a.excerpt)}</p>
+    <div class="article-body" id="body-${a.id}">
+      <div class="article-body-inner">${a.body}</div>
+    </div>`;
+}
+
+function renderArticleEdit(a) {
+  const isNew = a.id === '__new__';
+  return `
+    <div class="edit-form" data-form-id="${a.id}">
+      <input class="title-input" placeholder="文章标题" value="${escHtml(isNew ? '' : a.title)}" data-field="title">
+      <input type="date" value="${isNew ? '' : a.date}" data-field="date">
+      <input placeholder="标签（逗号分隔）" value="${isNew ? '' : a.tags.join('，')}" data-field="tags">
+      <textarea class="excerpt-textarea" placeholder="摘要" data-field="excerpt">${isNew ? '' : escHtml(a.excerpt)}</textarea>
+      <textarea class="body-textarea" placeholder="正文（支持 HTML）" data-field="body">${isNew ? '' : a.body}</textarea>
+      <div class="edit-form-actions">
+        <button class="btn-save" data-action="save" data-id="${a.id}">保存</button>
+        <button class="btn-cancel" data-action="cancel" data-id="${a.id}">取消</button>
+      </div>
+    </div>`;
+}
+
+function renderArticles() {
+  const filtered = activeTag
+    ? articles.filter(a => a.tags.includes(activeTag))
+    : articles;
+
+  if (filtered.length === 0 && articles.length === 0) {
+    container.innerHTML = '<div class="no-results">没有找到相关文章</div>';
+    return;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="no-results">没有找到相关文章</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(a => {
+    const inEdit = editingIds.has(a.id) || a.id === '__new__';
+    const inner = inEdit ? renderArticleEdit(a) : renderArticleDisplay(a);
+    return `<article class="article entering" data-id="${a.id}">${inner}</article>`;
+  }).join('');
+
+  // Entrance animation
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+
+  container.querySelectorAll('.article.entering').forEach(el => observer.observe(el));
+}
+
+// ── Event delegation ──
+container.addEventListener('click', (e) => {
+  // Action buttons (edit / delete)
+  const actionBtn = e.target.closest('[data-action]');
+  if (actionBtn) {
+    const action = actionBtn.dataset.action;
+    const id = actionBtn.dataset.id;
+
+    if (action === 'edit') {
+      editingIds.add(id);
+      renderArticles();
+    } else if (action === 'delete') {
+      if (confirm('确定要删除这篇文章吗？')) {
+        articles = articles.filter(a => a.id !== id);
+        editingIds.delete(id);
+        saveArticles(articles);
+        renderTagFilter();
+        updateTagFilterUI();
+        renderArticles();
+      }
+    } else if (action === 'save') {
+      handleSave(id);
+    } else if (action === 'cancel') {
+      handleCancel(id);
+    }
+    return;
+  }
+
+  // Article body expand/collapse (only in display mode, ignore clicks on form elements)
+  if (e.target.closest('input, textarea, button, .edit-form, .article-actions')) return;
+
+  const article = e.target.closest('.article');
+  if (!article) return;
+  const id = article.dataset.id;
+  if (editingIds.has(id)) return;
+
+  const body = document.getElementById('body-' + id);
+  if (!body) return;
+  const isOpen = body.classList.toggle('open');
+  body.style.maxHeight = isOpen ? body.scrollHeight + 'px' : '0';
+});
+
+// ── Save / Cancel ──
+function handleSave(id) {
+  const form = container.querySelector(`[data-form-id="${id}"]`);
+  if (!form) return;
+
+  const get = (field) => (form.querySelector(`[data-field="${field}"]`) || {}).value || '';
+
+  const title = get('title').trim();
+  const date = get('date');
+  const tagsStr = get('tags');
+  const excerpt = get('excerpt').trim();
+  const body = get('body').trim();
+
+  if (!title) { alert('请填写文章标题'); return; }
+
+  const tags = tagsStr
+    .split(/[,，]/)
+    .map(t => t.trim())
+    .filter(Boolean);
+
+  const data = {
+    title,
+    date: date || new Date().toISOString().slice(0, 10),
+    tags: tags.length ? tags : ['未分类'],
+    excerpt,
+    body
+  };
+
+  if (id === '__new__') {
+    data.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    articles.unshift(data);
+  } else {
+    const idx = articles.findIndex(a => a.id === id);
+    if (idx !== -1) articles[idx] = { ...articles[idx], ...data };
+  }
+
+  editingIds.delete(id);
+  saveArticles(articles);
+  renderTagFilter();
+  updateTagFilterUI();
+  renderArticles();
+}
+
+function handleCancel(id) {
+  editingIds.delete(id);
+  if (id === '__new__') {
+    articles = articles.filter(a => a.id !== '__new__');
+  }
+  renderArticles();
+}
+
+// ── New article ──
+btnNew.addEventListener('click', () => {
+  // Remove any existing new-article draft
+  articles = articles.filter(a => a.id !== '__new__');
+  editingIds.clear();
+  const draft = {
+    id: '__new__',
+    title: '', date: '', tags: [], excerpt: '', body: ''
+  };
+  articles.unshift(draft);
+  editingIds.add('__new__');
+  activeTag = null;
+  updateTagFilterUI();
+  renderArticles();
+  const firstInput = container.querySelector('[data-field="title"]');
+  if (firstInput) firstInput.focus();
+});
+
+// ── Utilities ──
+function escHtml(s) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(s));
+  return div.innerHTML;
+}
+
+// ── Progress bar ──
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0;
+  progressBar.style.width = pct + '%';
+}
+
+function updateBackToTop() {
+  backToTop.classList.toggle('visible', window.scrollY > 400);
+}
+
+backToTop.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+window.addEventListener('scroll', () => {
+  updateProgress();
+  updateBackToTop();
+}, { passive: true });
+
+// ── Init ──
+renderTagFilter();
+renderArticles();
+updateProgress();
+updateBackToTop();
+</script>
+
+</body>
+</html>
