@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video to Notes</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --border: #e8e4dd;
+    --text: #7a7165;
+    --text-dim: #b0a89a;
+    --heading: #5c5040;
+    --accent: #9b8870;
+    --accent-hover: #7a6a55;
+    --green: #5b8c5a;
+    --red: #c4665a;
+    --amber: #c49b4a;
+    --radius-sm: 6px;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --font: "Inter", "PingFang SC", "SF Pro Display", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .container {
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 80px 24px 120px;
+  }
+
+  /* Header — — — — — — — — — — — — — — — — — — — — — — */
+  header {
+    margin-bottom: 64px;
+    text-align: left;
+  }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--heading);
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+  header p {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    letter-spacing: -0.01em;
+  }
+
+  /* Input — — — — — — — — — — — — — — — — — — — — — — — */
+  .input-card {
+    margin-bottom: 40px;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .input-row input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    color: var(--heading);
+    font-size: 0.95rem;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: -0.01em;
+  }
+  .input-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(139,115,85,0.08);
+  }
+  .input-row input::placeholder { color: var(--text-dim); }
+  .input-row select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    color: var(--heading);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    cursor: pointer;
+    outline: none;
+    min-width: 116px;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6b6b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .input-row select:focus { border-color: var(--accent); }
+
+  /* Buttons — — — — — — — — — — — — — — — — — — — — — — */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .btn:hover { border-color: var(--border); color: var(--heading); background: #faf8f5; }
+  .btn-primary {
+    background: var(--heading);
+    color: #fff;
+    border-color: var(--heading);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #4a3d30; color: #fff; border-color: #4a3d30; }
+  .btn-primary:disabled { background: var(--border); color: var(--text-dim); border-color: var(--border); cursor: not-allowed; }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 6px 14px; font-size: 0.82rem; border-radius: var(--radius-sm); }
+  .btn-row { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+
+  /* Mode select — — — — — — — — — — — — — — — — — — — — — */
+  .mode-select {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+  }
+  .mode-select label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+  .mode-select label:has(input:checked) { color: var(--heading); }
+  .mode-select input[type="radio"] {
+    accent-color: var(--heading);
+    width: 14px; height: 14px;
+  }
+  #modeHint { color: var(--text-dim); font-size: 0.82rem; }
+
+  /* Progress — — — — — — — — — — — — — — — — — — — — — — */
+  .progress-card { margin-bottom: 40px; }
+  .step-list { display: flex; flex-direction: column; gap: 2px; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    padding: 8px 0;
+  }
+  .step .icon { font-size: 1rem; width: 20px; text-align: center; opacity: 0.5; }
+  .step .label { flex: 1; font-weight: 500; }
+  .step .detail { color: var(--text-dim); font-size: 0.82rem; }
+  .step.pending { opacity: 0.3; }
+  .step.running .icon { opacity: 1; animation: pulse 1s infinite; }
+  .step.done .icon { opacity: 1; }
+  .step.error .icon { opacity: 1; color: var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Search results — — — — — — — — — — — — — — — — — — — */
+  .search-results { margin-bottom: 40px; }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .result-card:hover { border-color: var(--accent); }
+  .result-card.selected { border-color: var(--accent); background: #f7f3ec; }
+  .result-info h4 { font-size: 0.9rem; color: var(--heading); font-weight: 500; margin-bottom: 3px; }
+  .result-info span { font-size: 0.82rem; color: var(--text-dim); }
+  .result-stats { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* 历史记录 — — — — — — — — — — — — — — — — — — — — — — — */
+  .section-card { margin-bottom: 40px; }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 0;
+    margin-bottom: 16px;
+  }
+  .section-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--heading);
+    letter-spacing: -0.02em;
+  }
+  .section-header span { font-size: 0.85rem; color: var(--text-dim); }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .history-item:hover .history-title { color: var(--heading); }
+  .history-item:last-child { border-bottom: none; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-title {
+    font-size: 0.9rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .history-meta {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .history-meta a { color: var(--text); text-decoration: none; }
+  .history-meta a:hover { color: var(--heading); }
+  .history-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .platform-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: #f5f1eb;
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+
+  /* Preview — — — — — — — — — — — — — — — — — — — — — — — */
+  .preview-card { margin-bottom: 40px; }
+  .preview-card > h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--heading);
+    margin-bottom: 28px;
+    letter-spacing: -0.02em;
+  }
+  .markdown-body {
+    line-height: 1.85;
+    font-size: 0.95rem;
+  }
+  .markdown-body h1 { font-size: 1.6rem; font-weight: 600; color: var(--heading); margin: 40px 0 16px; letter-spacing: -0.03em; }
+  .markdown-body h2 { font-size: 1.2rem; font-weight: 600; color: var(--heading); margin: 36px 0 12px; letter-spacing: -0.02em; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .markdown-body h3 { font-size: 1rem; font-weight: 600; color: var(--heading); margin: 28px 0 8px; letter-spacing: -0.01em; }
+  .markdown-body p { margin: 10px 0; }
+  .markdown-body blockquote {
+    border-left: 2px solid var(--accent);
+    padding: 6px 0 6px 16px;
+    margin: 16px 0;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .markdown-body ul, .markdown-body ol { padding-left: 20px; margin: 8px 0; }
+  .markdown-body li { margin: 3px 0; }
+  .markdown-body code {
+    background: #f5f1eb;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.85em;
+    border: 1px solid var(--border);
+  }
+  .markdown-body pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-size: 0.85rem;
+  }
+  .markdown-body pre code { background: none; border: none; padding: 0; }
+  .markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.88rem;
+  }
+  .markdown-body th {
+    text-align: left;
+    padding: 10px 14px;
+    color: var(--heading);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .markdown-body td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+  .markdown-body strong { color: var(--heading); font-weight: 600; }
+  .markdown-body a { color: var(--heading); text-decoration: underline; text-underline-offset: 3px; }
+  .markdown-body hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Footer — — — — — — — — — — — — — — — — — — — — — — — */
+  footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+
+  /* Toast — — — — — — — — — — — — — — — — — — — — — — — — */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--heading);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .container { padding: 32px 14px 80px; }
+    header { margin-bottom: 40px; }
+    header h1 { font-size: 1.5rem; }
+    header p { font-size: 0.85rem; }
+    .input-row { flex-direction: column; }
+    .input-row input { font-size: 0.9rem; padding: 10px 14px; }
+    .input-row select { font-size: 0.85rem; padding: 10px 12px; }
+    .mode-select { gap: 14px; font-size: 0.82rem; }
+    .btn { padding: 10px 16px; font-size: 0.85rem; }
+    .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+    .btn-row { gap: 6px; }
+    .step { font-size: 0.85rem; }
+    .markdown-body { font-size: 0.9rem; }
+    .markdown-body h1 { font-size: 1.3rem; }
+    .markdown-body h2 { font-size: 1.1rem; }
+    .markdown-body table { font-size: 0.8rem; }
+    .markdown-body th, .markdown-body td { padding: 6px 8px; }
+    .history-item { flex-wrap: wrap; }
+    .history-actions { margin-top: 4px; }
+    .result-card { padding: 10px 14px; }
+    footer { font-size: 0.72rem; margin-top: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Video to Notes</h1>
+    <p>粘贴视频链接，获取结构化笔记</p>
+  </header>
+
+  <!-- Input -->
+  <div class="input-card" id="inputCard">
+    <div class="input-row">
+      <input type="text" id="urlInput" placeholder="粘贴视频链接，或输入搜索关键词…">
+      <select id="platformSelect">
+        <option value="xhs">小红书</option>
+        <option value="bilibili">Bilibili</option>
+        <option value="youtube">YouTube</option>
+      </select>
+    </div>
+    <div class="mode-select">
+      <label><input type="radio" name="mode" value="standard" checked onchange="updateModeHint()"><span>标准笔记</span></label>
+      <label><input type="radio" name="mode" value="detailed" onchange="updateModeHint()"><span>详细笔记</span></label>
+      <span id="modeHint">快，适合短视频</span>
+    </div>
+    <button class="btn btn-primary btn-full" id="submitBtn" onclick="handleSubmit()">
+      开始处理
+    </button>
+  </div>
+
+  <!-- Search Results -->
+  <div class="search-results" id="searchResults" style="display:none"></div>
+
+  <!-- Progress -->
+  <div class="progress-card" id="progressCard" style="display:none">
+    <div class="step-list">
+      <div class="step" id="stepResolve"><span class="icon">1</span><span class="label">解析链接</span><span class="detail"></span></div>
+      <div class="step" id="stepDownload"><span class="icon">2</span><span class="label">下载音频</span><span class="detail"></span></div>
+      <div class="step" id="step语音转录"><span class="icon">3</span><span class="label">语音转录</span><span class="detail"></span></div>
+      <div class="step" id="stepGenerate"><span class="icon">4</span><span class="label">生成笔记</span><span class="detail"></span></div>
+    </div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div class="section-card" id="historyCard" style="display:none">
+    <div class="section-header" onclick="toggle历史记录()">
+      <h2>历史记录 <span id="historyCount"></span></h2>
+      <span id="historyToggle">展开</span>
+    </div>
+    <div id="historyList" style="display:none"></div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-card" id="previewCard" style="display:none">
+    <h2>笔记预览</h2>
+    <div class="markdown-body" id="previewContent"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="downloadNotes()">下载 Markdown</button>
+      <button class="btn btn-sm" onclick="downloadPDF()">下载 PDF</button>
+      <button class="btn btn-sm" onclick="copyNotes()">复制全文</button>
+      <button class="btn btn-sm" id="backToSearchBtn" onclick="backToSearch()" style="display:none">← 返回搜索结果</button>
+      <button class="btn btn-sm" onclick="resetAll()">重新开始</button>
+    </div>
+  </div>
+
+  <footer>
+    本地 Whisper · yt-dlp · xhs-cli · Apple Silicon
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let currentTaskId = null;
+let currentNotes = '';
+let currentMeta = {};
+let currentInputUrl = '';
+let searchMode = false;
+let _lastSearchQuery = '';
+let _lastSearchResults = null;
+
+// ── DOM refs ─────────────────────────────────────────────────
+const $url = document.getElementById('urlInput');
+const $platform = document.getElementById('platformSelect');
+const $submit = document.getElementById('submitBtn');
+const $searchResults = document.getElementById('searchResults');
+const $progress = document.getElementById('progressCard');
+const $preview = document.getElementById('previewCard');
+const $previewContent = document.getElementById('previewContent');
+const $inputCard = document.getElementById('inputCard');
+const steps = ['stepResolve', 'stepDownload', 'step语音转录', 'stepGenerate'];
+
+// ── 历史记录 ──────────────────────────────────────────────────
+const HISTORY_KEY = 'vtn-history';
+const MAX_HISTORY = 20;
+
+function load历史记录() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function save历史记录(entry) {
+  let hist = load历史记录();
+  hist = hist.filter(h => h.id !== entry.id);
+  hist.unshift(entry);
+  if (hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  render历史记录();
+}
+
+function render历史记录() {
+  const hist = load历史记录();
+  const card = document.getElementById('historyCard');
+  const list = document.getElementById('historyList');
+  const count = document.getElementById('historyCount');
+  if (hist.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  count.textContent = `· ${hist.length}`;
+  list.innerHTML = hist.map(h => `
+    <div class="history-item" onclick="load历史记录Item('${h.id}')">
+      <div class="history-info">
+        <div class="history-title">${h.title || '(无标题)'}</div>
+        <div class="history-meta">
+          <span>${h.date || ''}</span>
+          <span class="platform-badge">${h.platform || ''}</span>
+          ${h.url ? `<a href="${h.url}" target="_blank" onclick="event.stopPropagation()">🔗 原视频</a>` : ''}
+        </div>
+      </div>
+      <div class="history-actions">
+        <button class="btn btn-sm" onclick="event.stopPropagation();load历史记录Item('${h.id}')" title="View">↗</button>
+        <button class="btn btn-sm" onclick="event.stopPropagation();delete历史记录Item('${h.id}')" title="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function load历史记录Item(id) {
+  const hist = load历史记录();
+  const item = hist.find(h => h.id === id);
+  if (!item) return;
+  currentNotes = item.notes;
+  currentMeta = {title: item.title, platform: item.platform, url: item.url};
+  showPreview(item.notes);
+  document.getElementById('previewCard').scrollIntoView({behavior: 'smooth'});
+}
+
+function delete历史记录Item(id) {
+  let hist = load历史记录();
+  hist = hist.filter(h => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  render历史记录();
+}
+
+function toggle历史记录() {
+  const list = document.getElementById('historyList');
+  const toggle = document.getElementById('historyToggle');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'block';
+  toggle.textContent = isOpen ? '展开' : '收起';
+}
+
+render历史记录();
+
+// ── Submit ───────────────────────────────────────────────────
+function extractURL(text) {
+  const match = text.match(/https?:\/\/[^\s]+/);
+  return match ? match[0] : null;
+}
+
+async function handleSubmit() {
+  const input = $url.value.trim();
+  const platform = $platform.value;
+  if (!input) return;
+
+  const extractedURL = extractURL(input);
+
+  if (extractedURL) {
+    await processURL(extractedURL, platform);
+  } else if (/xhslink/.test(input)) {
+    await processURL(input, platform);
+  } else {
+    await searchVideos(input, platform);
+  }
+}
+
+function updateModeHint() {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  document.getElementById('modeHint').textContent =
+    mode === 'detailed' ? '慢但完整，适合长视频' : '快，适合短视频';
+}
+
+// ── Search ───────────────────────────────────────────────────
+async function searchVideos(query, platform) {
+  $submit.disabled = true;
+  $submit.textContent = '搜索中…';
+  $searchResults.style.display = 'block';
+  $searchResults.innerHTML = '<div style="padding:16px;color:var(--text-dim)">搜索中…</div>';
+
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query, platform})
+    });
+    const data = await resp.json();
+
+    if (!data.results || data.results.length === 0) {
+      $searchResults.innerHTML = '<p style="padding:16px;color:var(--text-dim)">无搜索结果</p>';
+    } else {
+      $searchResults.innerHTML = data.results.map((r, i) => `
+        <div class="result-card" onclick="selectResult(${i})" id="result${i}">
+          <div class="result-info">
+            <h4>${r.title || '(no title)'}</h4>
+            <span>${r.creator || ''} · ${formatDuration(r.duration)}</span>
+          </div>
+          <div class="result-stats">❤ ${r.likes || '0'}</div>
+        </div>
+      `).join('');
+      _lastSearchResults = data.results;
+      _lastSearchQuery = query;
+      window._searchResults = data.results;
+      window._searchTaskId = data.task_id;
+      searchMode = true;
+    }
+  } catch (e) {
+    $searchResults.innerHTML = `<p style="padding:16px;color:var(--red)">Error: ${e.message}</p>`;
+  }
+
+  $submit.disabled = false;
+  $submit.textContent = '开始处理';
+}
+
+function selectResult(idx) {
+  document.querySelectorAll('.result-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('result' + idx).classList.add('selected');
+  const r = window._searchResults[idx];
+  const url = r.url || r.id;
+  $url.value = url;
+  $searchResults.style.display = 'none';
+  processURL(url, r.platform || $platform.value, r.title, r.xsec);
+}
+
+function backToSearch() {
+  if (!_lastSearchResults) return;
+  $preview.style.display = 'none';
+  $progress.style.display = 'none';
+  $searchResults.style.display = 'block';
+  $searchResults.innerHTML = _lastSearchResults.map((r, i) => `
+    <div class="result-card" onclick="selectResult(${i})" id="result${i}">
+      <div class="result-info">
+        <h4>${r.title || '(no title)'}</h4>
+        <span>${r.creator || ''} · ${formatDuration(r.duration)}</span>
+      </div>
+      <div class="result-stats">❤ ${r.likes || '0'}</div>
+    </div>
+  `).join('');
+  $searchResults.scrollIntoView({behavior: 'smooth'});
+}
+
+// ── Process ──────────────────────────────────────────────────
+async function processURL(url, platform, titleOverride, xsecOverride) {
+  $submit.disabled = true;
+  $submit.textContent = '处理中…';
+  $searchResults.style.display = 'none';
+  $preview.style.display = 'none';
+  currentInputUrl = url;
+
+  steps.forEach(s => {
+    document.getElementById(s).className = 'step pending';
+    document.getElementById(s).querySelector('.detail').textContent = '';
+  });
+
+  $progress.style.display = 'block';
+  document.getElementById('stepResolve').className = 'step running';
+
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  try {
+    const resp = await fetch('/api/process', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url, platform, title: titleOverride, xsec: xsecOverride, mode})
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try { handleSSEEvent(JSON.parse(line.slice(6))); } catch(e) {}
+        }
+      }
+    }
+  } catch (e) {
+    markStep('stepResolve', 'error', e.message);
+  }
+
+  $submit.disabled = false;
+  $submit.textContent = '开始处理';
+}
+
+function handleSSEEvent(event) {
+  if (event.event === 'progress') {
+    const d = event.data;
+    const ids = {resolve:'stepResolve',download:'stepDownload',transcribe:'step语音转录',generate:'stepGenerate'};
+    const stepId = ids[d.step];
+    if (stepId) {
+      if (d.status === 'running') markStep(stepId, 'running', d.message || '');
+      else if (d.status === 'done') markStep(stepId, 'done', d.message || '');
+      else if (d.status === 'error') markStep(stepId, 'error', d.message || '');
+    }
+  } else if (event.event === 'complete') {
+    const d = event.data;
+    currentTaskId = d.task_id;
+    currentNotes = d.notes;
+    currentMeta = d.meta || {};
+    currentMeta.url = currentInputUrl;
+    showPreview(currentNotes);
+    const now = new Date();
+    save历史记录({
+      id: d.task_id,
+      title: currentMeta.title || 'Untitled',
+      platform: currentMeta.platform || '',
+      url: currentInputUrl,
+      date: `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
+      notes: currentNotes
+    });
+  } else if (event.event === 'error') {
+    markStep('stepResolve', 'error', event.data);
+  }
+}
+
+function markStep(stepId, cls, detail) {
+  const el = document.getElementById(stepId);
+  if (!el) return;
+  el.className = 'step ' + cls;
+  if (detail) el.querySelector('.detail').textContent = detail;
+}
+
+function showPreview(md) {
+  $preview.style.display = 'block';
+  $progress.style.display = 'none';
+  $previewContent.innerHTML = marked.parse(md);
+  // Show back-to-search button if we came from search
+  document.getElementById('backToSearchBtn').style.display = _lastSearchResults ? '' : 'none';
+  $preview.scrollIntoView({behavior: 'smooth'});
+}
+
+// ── Actions ─────────────────────────────────────────────────
+function downloadNotes() {
+  const blob = new Blob([currentNotes], {type: 'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentMeta.title || 'notes') + '.md';
+  a.click();
+}
+
+async function downloadPDF() {
+  if (!currentNotes) return;
+  const resp = await fetch('/api/export-pdf', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({notes: currentNotes, title: currentMeta.title || '笔记预览'})
+  });
+  if (resp.ok) {
+    const blob = await resp.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (currentMeta.title || 'notes') + '.pdf';
+    a.click();
+  }
+}
+
+function copyNotes() {
+  navigator.clipboard.writeText(currentNotes).then(() => showToast('已复制'));
+}
+
+function resetAll() {
+  $url.value = '';
+  currentTaskId = null; currentNotes = ''; currentMeta = {}; currentInputUrl = '';
+  $preview.style.display = 'none'; $progress.style.display = 'none';
+  $searchResults.style.display = 'none';
+  $previewContent.innerHTML = '';
+  steps.forEach(s => document.getElementById(s).className = 'step pending');
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+function formatDuration(sec) {
+  if (!sec) return '';
+  return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+$url.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); });
+</script>
+</body>
+</html>

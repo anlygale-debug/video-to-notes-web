@@ -1,0 +1,6 @@
+wechat_config.json
+.DS_Store
+__pycache__/
+*.pyc
+*.app/
+index-backup.html

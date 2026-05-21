@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video to Notes</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #141820;
+    --border: #242830;
+    --text: #b4b8c0;
+    --text-muted: #6b7080;
+    --heading: #e8ecf2;
+    --accent: #5b8def;
+    --accent-dim: #3b5faf;
+    --green: #3ecf8e;
+    --amber: #f0b848;
+    --red: #f06060;
+    --radius: 10px;
+    --font: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 780px;
+    width: 100%;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    color: var(--heading);
+    font-weight: 700;
+  }
+  header p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+  }
+
+  /* Input area */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .input-row {
+    display: flex;
+    gap: 0.6rem;
+  }
+  .input-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    color: var(--heading);
+    font-size: 0.95rem;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input:focus { border-color: var(--accent); }
+  .input-row input::placeholder { color: var(--text-muted); }
+
+  .input-row select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 0.8rem;
+    color: var(--heading);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    cursor: pointer;
+    outline: none;
+    min-width: 110px;
+  }
+  .input-row select:focus { border-color: var(--accent); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1.4rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: var(--font);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    margin-top: 0.75rem;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-primary:hover { background: #6ea5ff; }
+  .btn-primary:disabled {
+    background: var(--accent-dim);
+    cursor: not-allowed;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.82rem; }
+
+  .btn-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  /* Progress */
+  .progress-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
+  }
+  .step .icon { font-size: 1.1rem; width: 1.5rem; text-align: center; }
+  .step .label { flex: 1; }
+  .step .detail { color: var(--text-muted); font-size: 0.82rem; }
+  .step.pending { opacity: 0.4; }
+  .step.running .icon { animation: pulse 1s infinite; }
+  .step.done .icon { color: var(--green); }
+  .step.error .icon { color: var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Search results */
+  .search-results {
+    margin-bottom: 1.5rem;
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .result-card:hover { border-color: var(--accent); }
+  .result-card.selected { border-color: var(--accent); background: #1a2030; }
+  .result-info h4 { font-size: 0.92rem; color: var(--heading); margin-bottom: 0.2rem; }
+  .result-info span { font-size: 0.8rem; color: var(--text-muted); }
+  .result-stats { font-size: 0.85rem; color: var(--text-muted); text-align: right; }
+
+  /* Preview area */
+  .preview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .preview-card h2 { font-size: 1.1rem; color: var(--heading); margin-bottom: 1rem; }
+
+  .markdown-body {
+    line-height: 1.8;
+  }
+  .markdown-body h1 { font-size: 1.5rem; color: var(--heading); margin: 1.5rem 0 0.8rem; }
+  .markdown-body h2 { font-size: 1.2rem; color: var(--heading); margin: 1.3rem 0 0.6rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+  .markdown-body h3 { font-size: 1.05rem; color: var(--accent); margin: 1rem 0 0.5rem; }
+  .markdown-body p { margin: 0.6rem 0; }
+  .markdown-body blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 0.5rem 1rem;
+    margin: 0.8rem 0;
+    background: rgba(91,141,239,0.06);
+    border-radius: 0 6px 6px 0;
+    color: #a0a8b8;
+    font-style: italic;
+  }
+  .markdown-body ul, .markdown-body ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+  .markdown-body li { margin: 0.2rem 0; }
+  .markdown-body code {
+    background: rgba(255,255,255,0.06);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.85em;
+  }
+  .markdown-body pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0.8rem 0;
+  }
+  .markdown-body pre code { background: none; padding: 0; }
+  .markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    font-size: 0.9rem;
+  }
+  .markdown-body th {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    background: var(--bg);
+    color: var(--heading);
+    border-bottom: 2px solid var(--border);
+  }
+  .markdown-body td {
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .markdown-body strong { color: var(--heading); }
+  .markdown-body a { color: var(--accent); }
+  .markdown-body hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--green);
+    color: #000;
+    padding: 0.6rem 1.4rem;
+    border-radius: 99px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  /* History */
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .history-item:hover { background: rgba(255,255,255,0.02); }
+  .history-item:last-child { border-bottom: none; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-title { font-size: 0.9rem; color: var(--heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; display: flex; gap: 0.8rem; align-items: center; }
+  .history-meta a { color: var(--accent); text-decoration: none; }
+  .history-meta a:hover { text-decoration: underline; }
+  .history-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
+  .platform-badge {
+    display: inline-block;
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .platform-xhs { background: #2e1a1a; color: #f87171; }
+  .platform-bilibili { background: #1a2a3e; color: #60a5fa; }
+  .platform-youtube { background: #2e1a1a; color: #f87171; }
+
+  @media (max-width: 600px) {
+    .input-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🎬 Video to Notes</h1>
+    <p>把任何视频变成结构化笔记</p>
+  </header>
+
+  <!-- Input Card -->
+  <div class="input-card" id="inputCard">
+    <div class="input-row">
+      <input type="text" id="urlInput" placeholder="粘贴视频链接，或输入搜索关键词…">
+      <select id="platformSelect">
+        <option value="xhs">📕 小红书</option>
+        <option value="bilibili">📺 B站</option>
+        <option value="youtube">▶️ YouTube</option>
+      </select>
+    </div>
+    <div class="mode-select" style="display:flex;gap:1.5rem;margin:0.75rem 0;font-size:0.88rem;">
+      <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;color:var(--text);">
+        <input type="radio" name="mode" value="standard" checked onchange="updateModeHint()">
+        <span>📝 标准笔记</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;color:var(--text);">
+        <input type="radio" name="mode" value="detailed" onchange="updateModeHint()">
+        <span>📚 详细笔记</span>
+      </label>
+      <span id="modeHint" style="color:var(--text-muted);font-size:0.8rem;">快，适合短视频</span>
+    </div>
+    <button class="btn btn-primary" id="submitBtn" onclick="handleSubmit()">
+      ⚡ 开始处理
+    </button>
+  </div>
+
+  <!-- Search Results -->
+  <div class="search-results" id="searchResults" style="display:none"></div>
+
+  <!-- Progress -->
+  <div class="progress-card" id="progressCard" style="display:none">
+    <div class="step-list">
+      <div class="step" id="stepResolve"><span class="icon">🔗</span><span class="label">解析链接</span><span class="detail"></span></div>
+      <div class="step" id="stepDownload"><span class="icon">📥</span><span class="label">下载音频</span><span class="detail"></span></div>
+      <div class="step" id="stepTranscribe"><span class="icon">🎙️</span><span class="label">语音转录</span><span class="detail"></span></div>
+      <div class="step" id="stepGenerate"><span class="icon">✍️</span><span class="label">生成笔记</span><span class="detail"></span></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="preview-card" id="historyCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleHistory()">
+      <h2 style="margin:0">📋 历史记录 <span id="historyCount" style="font-size:0.8rem;color:var(--text-muted)"></span></h2>
+      <span style="font-size:0.85rem;color:var(--text-muted)" id="historyToggle">展开 ▾</span>
+    </div>
+    <div id="historyList" style="display:none;margin-top:1rem"></div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-card" id="previewCard" style="display:none">
+    <h2>📄 笔记预览</h2>
+    <div class="markdown-body" id="previewContent"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="downloadNotes()" style="width:auto">📥 下载 Markdown</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadPDF()" style="width:auto;background:#e74c3c">📄 下载 PDF</button>
+      <button class="btn btn-ghost btn-sm" onclick="copyNotes()">📋 复制全文</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">🔄 重新开始</button>
+    </div>
+  </div>
+
+  <footer>
+    Powered by Local Whisper (small) · yt-dlp · xhs-cli · Apple Silicon
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let currentTaskId = null;
+let currentNotes = '';
+let currentMeta = {};
+let currentInputUrl = '';
+let searchMode = false;
+
+// ── DOM refs ─────────────────────────────────────────────────
+const $url = document.getElementById('urlInput');
+const $platform = document.getElementById('platformSelect');
+const $submit = document.getElementById('submitBtn');
+const $searchResults = document.getElementById('searchResults');
+const $progress = document.getElementById('progressCard');
+const $preview = document.getElementById('previewCard');
+const $previewContent = document.getElementById('previewContent');
+const $inputCard = document.getElementById('inputCard');
+const steps = ['stepResolve', 'stepDownload', 'stepTranscribe', 'stepGenerate'];
+
+// ── History ──────────────────────────────────────────────────
+const HISTORY_KEY = 'vtn-history';
+const MAX_HISTORY = 20;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveHistory(entry) {
+  let hist = loadHistory();
+  // Remove duplicate by ID
+  hist = hist.filter(h => h.id !== entry.id);
+  hist.unshift(entry);
+  if (hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  renderHistory();
+}
+
+function renderHistory() {
+  const hist = loadHistory();
+  const card = document.getElementById('historyCard');
+  const list = document.getElementById('historyList');
+  const count = document.getElementById('historyCount');
+  if (hist.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  count.textContent = `(${hist.length})`;
+  list.innerHTML = hist.map(h => `
+    <div class="history-item" onclick="loadHistoryItem('${h.id}')">
+      <div class="history-info">
+        <div class="history-title">${h.title || '(无标题)'}</div>
+        <div class="history-meta">
+          <span>${h.date || ''}</span>
+          <span class="platform-badge platform-${h.platform || 'xhs'}">${h.platform || ''}</span>
+          ${h.url ? `<a href="${h.url}" target="_blank" onclick="event.stopPropagation()" title="${h.url}">🔗 原视频</a>` : ''}
+        </div>
+      </div>
+      <div class="history-actions">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();loadHistoryItem('${h.id}')" title="查看">👁</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteHistoryItem('${h.id}')" title="删除">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadHistoryItem(id) {
+  const hist = loadHistory();
+  const item = hist.find(h => h.id === id);
+  if (!item) return;
+  currentNotes = item.notes;
+  currentMeta = {title: item.title, platform: item.platform, url: item.url};
+  showPreview(item.notes);
+  document.getElementById('previewCard').scrollIntoView({behavior: 'smooth'});
+}
+
+function deleteHistoryItem(id) {
+  let hist = loadHistory();
+  hist = hist.filter(h => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  renderHistory();
+}
+
+function toggleHistory() {
+  const list = document.getElementById('historyList');
+  const toggle = document.getElementById('historyToggle');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'block';
+  toggle.textContent = isOpen ? '展开 ▾' : '收起 ▴';
+}
+
+// Load history on page start
+renderHistory();
+
+// ── Submit handler ────────────────────────────────────────────
+function extractURL(text) {
+  // Extract URL from mixed text like "【标题】https://bilibili.com/video/BV..."
+  const match = text.match(/https?:\/\/[^\s]+/);
+  return match ? match[0] : null;
+}
+
+async function handleSubmit() {
+  const input = $url.value.trim();
+  const platform = $platform.value;
+  if (!input) return;
+
+  // Auto-detect: extract URL from mixed content
+  const extractedURL = extractURL(input);
+
+  if (extractedURL) {
+    await processURL(extractedURL, platform);
+  } else if (/xhslink/.test(input)) {
+    await processURL(input, platform);
+  } else {
+    await searchVideos(input, platform);
+  }
+}
+
+// ── Search ────────────────────────────────────────────────────
+async function searchVideos(query, platform) {
+  $submit.disabled = true;
+  $submit.textContent = '🔍 搜索中…';
+  $searchResults.style.display = 'block';
+  $searchResults.innerHTML = '<div class="step running" style="padding:1rem"><span class="icon">🔍</span> Searching...</div>';
+
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query, platform})
+    });
+    const data = await resp.json();
+
+    if (!data.results || data.results.length === 0) {
+      $searchResults.innerHTML = '<p style="padding:1rem;color:var(--text-muted)">No results found.</p>';
+    } else {
+      $searchResults.innerHTML = data.results.map((r, i) => `
+        <div class="result-card" onclick="selectResult(${i})" id="result${i}">
+          <div class="result-info">
+            <h4>${r.title || '(no title)'}</h4>
+            <span>${r.creator || ''} · ${formatDuration(r.duration)}</span>
+          </div>
+          <div class="result-stats">❤️ ${r.likes || '0'}</div>
+        </div>
+      `).join('');
+      // Store results globally
+      window._searchResults = data.results;
+      window._searchTaskId = data.task_id;
+      searchMode = true;
+    }
+  } catch (e) {
+    $searchResults.innerHTML = `<p style="padding:1rem;color:var(--red)">Search error: ${e.message}</p>`;
+  }
+
+  $submit.disabled = false;
+  $submit.textContent = '⚡ 开始处理';
+}
+
+function selectResult(idx) {
+  document.querySelectorAll('.result-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('result' + idx).classList.add('selected');
+
+  const r = window._searchResults[idx];
+  // Trigger processing
+  const url = r.url || r.id;
+  $url.value = url;
+  searchMode = false;
+  $searchResults.style.display = 'none';
+  processURL(url, r.platform || $platform.value, r.title, r.xsec);
+}
+
+// ── Process URL ───────────────────────────────────────────────
+async function processURL(url, platform, titleOverride, xsecOverride) {
+  $submit.disabled = true;
+  $submit.textContent = '⏳ 处理中…';
+  $searchResults.style.display = 'none';
+  $preview.style.display = 'none';
+
+  // Reset steps
+  steps.forEach(s => {
+    document.getElementById(s).className = 'step pending';
+    document.getElementById(s).querySelector('.detail').textContent = '';
+  });
+
+  $progress.style.display = 'block';
+  // Mark first step as running
+  document.getElementById('stepResolve').className = 'step running';
+
+  try {
+    currentInputUrl = url;
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+    const resp = await fetch('/api/process', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url, platform, title: titleOverride, xsec: xsecOverride, mode})
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+
+      // Parse SSE events
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line in buffer
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const event = JSON.parse(line.slice(6));
+            handleSSEEvent(event);
+          } catch(e) {}
+        }
+      }
+    }
+  } catch (e) {
+    markStep('stepResolve', 'error', e.message);
+  }
+
+  $submit.disabled = false;
+  $submit.textContent = '⚡ 开始处理';
+}
+
+function handleSSEEvent(event) {
+  if (event.event === 'progress') {
+    const data = event.data;
+    const step = data.step;
+    const status = data.status;
+    const msg = data.message || '';
+
+    const stepMap = {
+      'resolve': 'stepResolve',
+      'download': 'stepDownload',
+      'transcribe': 'stepTranscribe',
+      'generate': 'stepGenerate'
+    };
+
+    const stepId = stepMap[step];
+    if (stepId) {
+      if (status === 'running') {
+        markStep(stepId, 'running', msg);
+      } else if (status === 'done') {
+        markStep(stepId, 'done', msg);
+      } else if (status === 'error') {
+        markStep(stepId, 'error', msg);
+      }
+    }
+  } else if (event.event === 'complete') {
+    const data = event.data;
+    currentTaskId = data.task_id;
+    currentNotes = data.notes;
+    currentMeta = data.meta || {};
+    currentMeta.url = currentInputUrl;
+    showPreview(currentNotes);
+    // Save to history
+    const now = new Date();
+    saveHistory({
+      id: data.task_id,
+      title: currentMeta.title || 'Untitled',
+      platform: currentMeta.platform || '',
+      url: currentInputUrl,
+      date: `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
+      notes: currentNotes
+    });
+  } else if (event.event === 'error') {
+    markStep('stepResolve', 'error', event.data);
+  }
+}
+
+function markStep(stepId, className, detail) {
+  const el = document.getElementById(stepId);
+  if (!el) return;
+  el.className = 'step ' + className;
+  if (detail) el.querySelector('.detail').textContent = detail;
+}
+
+function showPreview(markdown) {
+  $preview.style.display = 'block';
+  $progress.style.display = 'none';
+  $previewContent.innerHTML = marked.parse(markdown);
+  $preview.scrollIntoView({behavior: 'smooth'});
+}
+
+// ── Download / Copy ───────────────────────────────────────────
+function downloadNotes() {
+  if (currentTaskId) {
+    window.open(`/api/download/${currentTaskId}`, '_blank');
+  }
+}
+
+async function downloadPDF() {
+  if (!currentNotes) return;
+  const resp = await fetch('/api/export-pdf', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({notes: currentNotes, title: currentMeta.title || '笔记'})
+  });
+  if (resp.ok) {
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (currentMeta.title || '笔记') + '-课后笔记.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+function copyNotes() {
+  navigator.clipboard.writeText(currentNotes).then(() => {
+    showToast('✅ 已复制到剪贴板');
+  });
+}
+
+function resetAll() {
+  $url.value = '';
+  currentTaskId = null;
+  currentNotes = '';
+  currentMeta = {};
+  currentInputUrl = '';
+  $preview.style.display = 'none';
+  $progress.style.display = 'none';
+  $searchResults.style.display = 'none';
+  $inputCard.style.display = 'block';
+  $previewContent.innerHTML = '';
+  steps.forEach(s => document.getElementById(s).className = 'step pending');
+}
+
+function updateModeHint() {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  document.getElementById('modeHint').textContent =
+    mode === 'detailed' ? '慢但完整，适合长视频' : '快，适合短视频';
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function formatDuration(sec) {
+  if (!sec) return '';
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// Enter key submit
+$url.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSubmit();
+});
+</script>
+</body>
+</html>
