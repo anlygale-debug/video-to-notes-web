@@ -1,0 +1,13 @@
+# 这是 .gitignore 文件，告诉 Git 哪些文件不要管
+
+# 忽略所有 .log 文件（日志）
+*.log
+
+# 忽略 node_modules 目录
+node_modules/
+
+# 忽略敏感配置文件（密码、密钥等）
+.env
+
+# 忽略 macOS 生成的系统文件
+.DS_Store
