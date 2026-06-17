@@ -13,10 +13,11 @@ After the Feishu doc is published, **delete EVERY intermediate file**. Only the 
 
 ## Supported Platforms
 
-| Platform | Search/Discovery | Audio Download |
-|----------|-----------------|----------------|
-| 小红书 (XHS) | `xhs search` → xsec_token → `xhs read --xsec-token` → CDN直链 | curl CDN → ffmpeg extract audio |
-| B站 (Bilibili) | Web search or direct URL | `yt-dlp -x --audio-format mp3` |
+| Platform | Search/Discovery | Audio Download | Auth Required |
+|----------|-----------------|----------------|----------------|
+| 小红书 | `xhs search` → xsec_token → CDN直链 | curl CDN → ffmpeg extract | `xhs login` |
+| B站 | [官方公开 API](https://api.bilibili.com/x/web-interface/search/type) | `yt-dlp --cookies-from-browser chrome` | Chrome 登录 |
+| YouTube | yt-dlp search | `yt-dlp -x --audio-format mp3` | 无 |
 | YouTube | `yt-dlp` or direct URL | `yt-dlp -x --audio-format mp3` (try `--write-auto-subs` first) |
 
 ## Prerequisites
@@ -82,7 +83,7 @@ Parse the JSON to extract:
 - `note_card.desc` → description
 - `note_card.video.media.stream` → video CDN URLs (see Step 3)
 
-**B站/YouTube** — use `yt-dlp --dump-json` for metadata.
+**B站** — `yt-dlp --cookies-from-browser chrome --dump-json URL`（需要 Cookie）
 
 ### Step 3: Download Audio
 
@@ -110,10 +111,9 @@ Parse the JSON to extract:
 **B站:**
 
 ```bash
-yt-dlp -x --audio-format mp3 -o "/tmp/video_audio.%(ext)s" "https://www.bilibili.com/video/BVxxxxxx"
+# 必须带 Chrome Cookie！2026 年起 B站 HTTP 412 拦截所有未认证请求
+yt-dlp --cookies-from-browser chrome -x --audio-format mp3 -o "/tmp/video_audio.%(ext)s" "https://www.bilibili.com/video/BVxxxxxx"
 ```
-
-For premium formats, add `--cookies-from-browser chrome`.
 
 **YouTube:**
 
@@ -127,30 +127,38 @@ yt-dlp -x --audio-format mp3 -o "/tmp/video_audio.%(ext)s" "URL"
 
 ### Step 4: Transcribe Audio
 
-1. Get Groq API key:
-   ```bash
-   GROQ_KEY=$(python3 -c "import yaml; d=yaml.safe_load(open('$HOME/.agent-reach/config.yaml')); print(d['groq_api_key'])")
-   ```
+**首选：本地 Whisper（免费，离线）**
 
-2. Transcribe via Groq Whisper:
-   ```bash
-   curl -s --proxy http://127.0.0.1:7890 \
-     https://api.groq.com/openai/v1/audio/transcriptions \
-     -H "Authorization: bearer $GROQ_KEY" \
-     -F "file=@/tmp/video_audio.mp3" \
-     -F "model=whisper-large-v3" \
-     -F "response_format=json" \
-     -F "language=zh" \
-     -o /tmp/transcript.json
-   ```
+```python
+import whisper
+model = whisper.load_model('tiny')  # tiny=70MB快, base=150MB, small=500MB高质量
+result = model.transcribe(audio_path, task='transcribe', verbose=False, fp16=False)
+text = result['text'].strip()
+```
 
-3. Extract text:
-   ```bash
-   python3 -c "import json; d=json.load(open('/tmp/transcript.json')); print(d['text'])"
-   ```
+**繁体转简体（可选）：**
 
-- `whisper-large-v3` for best quality; `whisper-large-v3-turbo` for faster/lower cost
-- `language=zh` for Chinese; omit for auto-detect
+```python
+from zhconv import convert
+text = convert(text, 'zh-cn')
+```
+
+**备选：Groq API（云端快，需代理）**
+
+```bash
+GROQ_KEY=$(python3 -c "import yaml; d=yaml.safe_load(open('$HOME/.agent-reach/config.yaml')); print(d['groq_api_key'])")
+curl -s --proxy http://127.0.0.1:7890 \
+  https://api.groq.com/openai/v1/audio/transcriptions \
+  -H "Authorization: bearer $GROQ_KEY" \
+  -F "file=@/tmp/video_audio.mp3" \
+  -F "model=whisper-large-v3" \
+  -F "response_format=json" \
+  -F "language=zh" \
+  -o /tmp/transcript.json
+python3 -c "import json; d=json.load(open('/tmp/transcript.json')); print(d['text'])"
+```
+
+- `tiny` 模型最快（~70MB），`small` 最准确；lang 参数 `None`=自动检测
 - File size limit: ~25MB. For videos >20 min, transcribe in segments
 - **Always use `--proxy`** for Groq API calls — Groq is blocked in mainland China
 
@@ -170,6 +178,10 @@ Read the full transcript, then produce a markdown document. Template:
 ```
 
 Principles: preserve exact phrasing as blockquotes, use tables for comparisons, write so notes are useful without watching the video. Save as `[Title]-课后笔记.md`.
+
+**双模式：**
+- **标准模式**：全文 → 单次 LLM 调用（max_tokens=16000），快，适合<15min
+- **详细模式**：分段并行处理（~6000字/段，最多3段同时），适合>20min 长视频
 
 ### Step 6: Publish to Feishu
 
@@ -203,7 +215,18 @@ rm -f /tmp/xhs_search.json \
 - [ ] Transcript JSON (`/tmp/transcript.json`)
 - [ ] Any raw transcript `.txt` saved during processing
 
-**Only keep:** `[Title]-课后笔记.md` in the workspace.
+**保留：** `[Title]-课后笔记.md` 在工作目录。音频和转录文本可单独下载。
+
+### Step 8: 输出选项
+
+| 文件 | 说明 |
+|------|------|
+| `[Title]-课后笔记.md` | Markdown 笔记 |
+| `[Title]-课后笔记.pdf` | PDF（weasyprint 渲染） |
+| 下载音频 | 原始 mp3 音频文件 |
+| 下载转录文本 | 纯文本转录全文 |
+| 下载完整包 | 笔记 + 转录 + 音频 打包 |
+| 笔记 + 转录 | 合并 Markdown 文件 |
 
 ## Platform-Specific Details
 
@@ -238,10 +261,11 @@ Key points:
 
 ### B站 (Bilibili)
 
-- BV号 format: `BV1U1RTBTEVa`
-- yt-dlp works reliably for audio extraction
-- High-res video requires login cookies: `--cookies-from-browser chrome`
-- Auto-generated subtitles sometimes available — check first with `yt-dlp --list-subs`
+- BV号 format: `BV1U1RTBTEVa`，完整链接: `https://www.bilibili.com/video/BVxxxxxx`
+- **2026 年起必须带 Chrome Cookie**，否则 HTTP 412（`--cookies-from-browser chrome`）
+- 搜索用官方公开 API: `api.bilibili.com/x/web-interface/search/type`
+- `yt-dlp --cookies-from-browser chrome --dump-json` 取元数据（title/uploader/duration）
+- `yt-dlp --cookies-from-browser chrome -x --audio-format mp3` 下载音频
 
 ### YouTube
 
@@ -269,7 +293,9 @@ agent-reach configure groq-key gsk_xxxxx
 | Short link won't resolve | Try both `curl -sL` and `curl -sI`; also try with proxy |
 | Groq returns "Forbidden" | Add `--proxy http://127.0.0.1:7890` to curl |
 | Audio >25MB | Split with ffmpeg: `ffmpeg -i input.mp3 -f segment -segment_time 600 -c copy /tmp/part_%03d.mp3` |
-| B站 premium format blocked | Add `--cookies-from-browser chrome` to yt-dlp |
+| B站 HTTP 412 (无 Cookie) | 加 `--cookies-from-browser chrome`，确保 Chrome 已登录 B站 |
+| B站 搜索无结果 | 用官方 API 而非 yt-dlp search：`api.bilibili.com/x/web-interface/search/type` |
+| 繁体字输出 | `pip install zhconv`，转录后 `convert(text, 'zh-cn')` |
 | No Groq key configured | Ask user to get free key at https://console.groq.com |
 | Transcript quality poor | Try `whisper-large-v3` (not turbo), or check if audio has clear speech |
 | XHS CDN download slow | Use the lower-quality stream (h265 720p) for smaller file size |
