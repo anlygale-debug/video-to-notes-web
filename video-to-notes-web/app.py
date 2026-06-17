@@ -188,14 +188,20 @@ def step_resolve(task_id, url, platform, xsec=""):
             return meta
 
     elif platform == "bilibili":
-        r = _venv(f"yt-dlp --dump-json '{url}'")
+        # Try with cookies first (B站 requires auth since 2026)
+        r = _venv(f"yt-dlp --cookies-from-browser chrome --dump-json '{url}'")
         try:
             d = json.loads(r.stdout)
-            meta["title"] = d.get("title", "")
-            meta["creator"] = d.get("uploader", "")
-            meta["download_url"] = url
         except Exception:
-            meta["download_url"] = url
+            # Fallback without cookies
+            r = _venv(f"yt-dlp --dump-json '{url}'")
+            try:
+                d = json.loads(r.stdout)
+            except Exception:
+                d = {}
+        meta["title"] = d.get("title", "")
+        meta["creator"] = d.get("uploader", "")
+        meta["download_url"] = url
 
     elif platform == "youtube":
         meta["download_url"] = url
@@ -227,8 +233,11 @@ def step_download(task_id, meta):
                  "-q:a", "2", audio_path],
                 timeout=120, capture_output=True)
             os.remove(video_path)
+    elif platform == "bilibili":
+        _venv(f"yt-dlp --cookies-from-browser chrome -x --audio-format mp3 -o '{audio_path}' '{meta['download_url']}'")
+        if not (os.path.exists(audio_path) and os.path.getsize(audio_path) > 1000):
+            _venv(f"yt-dlp -x --audio-format mp3 -o '{audio_path}' '{meta['download_url']}'")
     else:
-        # yt-dlp for B站/YouTube
         _venv(f"yt-dlp -x --audio-format mp3 -o '{audio_path}' '{meta['download_url']}'")
 
     if os.path.exists(audio_path) and os.path.getsize(audio_path) > 1000:
@@ -267,6 +276,11 @@ def step_transcribe(task_id, audio_path):
             fp16=False
         )
         text = result.get("text", "").strip()
+        try:
+            from zhconv import convert
+            text = convert(text, 'zh-cn')
+        except Exception:
+            pass
         if text:
             tasks[task_id]["transcript"] = text
             tasks[task_id]["progress"] = {"step": "transcribe", "status": "done",
@@ -546,11 +560,17 @@ async def process(request: Request):
 
             # Done
             tasks[task_id]["done"] = True
-            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': platform, 'likes': meta.get('likes','0')}}})}\n\n"
+            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': platform, 'likes': meta.get('likes','0')}}})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'data': str(e)})}\n\n"
         finally:
+            # Save audio for download
+            ap = tasks[task_id].get("audio_path", "")
+            if ap and os.path.exists(ap):
+                persistent = f"/tmp/vtn-audio-{task_id}.mp3"
+                shutil.copy(ap, persistent)
+                tasks[task_id]["audio_download"] = persistent
             # Clean up temp files
             if os.path.exists(tempdir):
                 shutil.rmtree(tempdir, ignore_errors=True)
@@ -603,6 +623,64 @@ hr{border:none;border-top:1px solid #e0e0e0;margin:1.5rem 0}
 
     return FileResponse(pdf_path, filename=f"{safe_title}-课后笔记.pdf",
                         media_type="application/pdf")
+
+
+@app.get("/api/download/{task_id}/audio")
+async def download_audio(task_id: str):
+    task = tasks.get(task_id, {})
+    ap = task.get("audio_download", "")
+    if not ap or not os.path.exists(ap):
+        raise HTTPException(404, "Audio not found")
+    title = task.get("meta", {}).get("title", "audio")
+    safe = re.sub(r'[^\w\s-]', '', title)[:30]
+    return FileResponse(ap, filename=f"{safe}.mp3", media_type="audio/mpeg")
+
+
+@app.get("/api/download/{task_id}/transcript")
+async def download_transcript(task_id: str):
+    task = tasks.get(task_id, {})
+    transcript = task.get("transcript", "")
+    if not transcript:
+        raise HTTPException(404, "Transcript not found")
+    title = task.get("meta", {}).get("title", "transcript")
+    safe = re.sub(r'[^\w\s-]', '', title)[:30]
+    path = f"/tmp/vtn-transcript-{task_id}.txt"
+    with open(path, "w") as f:
+        f.write(transcript)
+    return FileResponse(path, filename=f"{safe}-转录.txt", media_type="text/plain")
+
+
+@app.get("/api/download/{task_id}/merged")
+async def download_merged(task_id: str):
+    task = tasks.get(task_id, {})
+    if not task.get("done"):
+        raise HTTPException(404, "Task not found")
+    notes = task.get("notes", "")
+    transcript = task.get("transcript", "")
+    title = task.get("meta", {}).get("title", "notes")
+    safe = re.sub(r'[^\w\s-]', '', title)[:30]
+    merged = notes + "\n\n---\n\n## 转录全文\n\n" + transcript
+    path = f"/tmp/vtn-merged-{task_id}.md"
+    with open(path, "w") as f:
+        f.write(merged)
+    return FileResponse(path, filename=f"{safe}-完整笔记.md", media_type="text/markdown")
+
+
+@app.get("/api/download/{task_id}/full")
+async def download_full(task_id: str):
+    task = tasks.get(task_id, {})
+    if not task.get("done"):
+        raise HTTPException(404, "Task not found")
+    notes = task.get("notes", "")
+    transcript = task.get("transcript", "")
+    title = task.get("meta", {}).get("title", "notes")
+    safe = re.sub(r'[^\w\s-]', '', title)[:30]
+    import zipfile
+    zip_path = f"/tmp/vtn-full-{task_id}.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr(f"{safe}-笔记.md", notes)
+        zf.writestr(f"{safe}-转录.txt", transcript)
+    return FileResponse(zip_path, filename=f"{safe}-完整包.zip", media_type="application/zip")
 
 
 @app.get("/api/download/{task_id}")
