@@ -49,3 +49,11 @@ Added all JavaScript logic to support the dual-mode (URL + Text) input UI built 
 - All download/copy action functions — untouched
 - All history functions — untouched
 - All HTML markup and CSS — untouched
+
+## Bug Fix (2026-06-27)
+
+### 1. Fixed Incorrect API Endpoint in `processText()`
+- **File:** `static/index.html` (line 903)
+- **Bug:** `processText()` sent POST to `/api/process-text`, which does not exist on the backend. Requests would return 404.
+- **Fix:** Changed the fetch URL from `'/api/process-text'` to `'/api/process'`, matching the actual backend route (`@app.post("/api/process")` in `app.py`).
+- **Root cause:** A typo in the endpoint name during initial implementation — presumably `process-text` was chosen to match the function name rather than the actual backend route.

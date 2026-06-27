@@ -900,7 +900,7 @@ async function processText() {
   const mode = document.querySelector('input[name="mode"]:checked').value;
 
   try {
-    const resp = await fetch('/api/process-text', {
+    const resp = await fetch('/api/process', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({text, title, mode})
