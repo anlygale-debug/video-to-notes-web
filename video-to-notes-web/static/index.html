@@ -585,6 +585,7 @@ let currentMeta = {};
 let currentInputUrl = '';
 let currentTranscript = '';
 let searchMode = false;
+let currentInputMode = 'url';
 let _lastSearchQuery = '';
 let _lastSearchResults = null;
 
@@ -677,6 +678,11 @@ function extractURL(text) {
 }
 
 async function handleSubmit() {
+  if (currentInputMode === 'text') {
+    await processText();
+    return;
+  }
+
   const input = $url.value.trim();
   const platform = $platform.value;
   if (!input) return;
@@ -694,8 +700,31 @@ async function handleSubmit() {
 
 function updateModeHint() {
   const mode = document.querySelector('input[name="mode"]:checked').value;
-  document.getElementById('modeHint').textContent =
-    mode === 'detailed' ? '慢但完整，适合长视频' : '快，适合短视频';
+  const hints = { standard: '快，适合短视频', detailed: '慢但完整，适合长视频', scholar: '深度详解，适合学习研究' };
+  document.getElementById('modeHint').textContent = hints[mode] || hints.standard;
+}
+
+// ── Switch Mode ──────────────────────────────────────────────────
+function switchMode(mode) {
+  currentInputMode = mode;
+  const tabUrl = document.getElementById('tabUrl');
+  const tabText = document.getElementById('tabText');
+  const urlGroup = document.getElementById('urlInputGroup');
+  const textGroup = document.getElementById('textInputGroup');
+
+  if (mode === 'url') {
+    tabUrl.classList.add('active');
+    tabText.classList.remove('active');
+    urlGroup.style.display = '';
+    textGroup.style.display = 'none';
+    $submit.textContent = '开始处理';
+  } else {
+    tabText.classList.add('active');
+    tabUrl.classList.remove('active');
+    urlGroup.style.display = 'none';
+    textGroup.style.display = '';
+    $submit.textContent = '生成笔记';
+  }
 }
 
 // ── Search ───────────────────────────────────────────────────
@@ -846,6 +875,61 @@ function handleSSEEvent(event) {
   }
 }
 
+// ── Process Text ──────────────────────────────────────────────────
+async function processText() {
+  const title = document.getElementById('titleInput').value.trim();
+  const text = document.getElementById('textInput').value.trim();
+  if (!title || !text) {
+    showToast('请输入标题和文本内容');
+    return;
+  }
+
+  $submit.disabled = true;
+  $submit.textContent = '处理中…';
+  $searchResults.style.display = 'none';
+  $preview.style.display = 'none';
+
+  steps.forEach(s => {
+    document.getElementById(s).className = 'step pending';
+    document.getElementById(s).querySelector('.detail').textContent = '';
+  });
+
+  $progress.style.display = 'block';
+  document.getElementById('stepGenerate').className = 'step running';
+
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+
+  try {
+    const resp = await fetch('/api/process-text', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text, title, mode})
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try { handleSSEEvent(JSON.parse(line.slice(6))); } catch(e) {}
+        }
+      }
+    }
+  } catch (e) {
+    markStep('stepGenerate', 'error', e.message);
+  }
+
+  $submit.disabled = false;
+  $submit.textContent = '生成笔记';
+}
+
 function markStep(stepId, cls, detail) {
   const el = document.getElementById(stepId);
   if (!el) return;
@@ -858,11 +942,20 @@ function showPreview(md) {
   $progress.style.display = 'none';
   $previewContent.innerHTML = marked.parse(md);
   document.getElementById('backToSearchBtn').style.display = _lastSearchResults ? '' : 'none';
-  // Show transcript preview if available
-  if (currentTranscript) {
-    document.getElementById('transcriptPreview').style.display = 'block';
-    document.getElementById('transcriptContent').textContent = currentTranscript;
-    document.getElementById('transcriptLen').textContent = `(${currentTranscript.length} 字)`;
+
+  // In text mode, hide download buttons that don't apply and transcript preview
+  const dlBtns = document.querySelectorAll('.dl-audio, .dl-transcript, .dl-merged, .dl-full');
+  if (currentInputMode === 'text') {
+    dlBtns.forEach(b => b.style.display = 'none');
+    document.getElementById('transcriptPreview').style.display = 'none';
+  } else {
+    dlBtns.forEach(b => b.style.display = '');
+    // Show transcript preview if available
+    if (currentTranscript) {
+      document.getElementById('transcriptPreview').style.display = 'block';
+      document.getElementById('transcriptContent').textContent = currentTranscript;
+      document.getElementById('transcriptLen').textContent = `(${currentTranscript.length} 字)`;
+    }
   }
   $preview.scrollIntoView({behavior: 'smooth'});
 }
@@ -922,10 +1015,15 @@ function copyNotes() {
 
 function resetAll() {
   $url.value = '';
+  document.getElementById('titleInput').value = '';
+  document.getElementById('textInput').value = '';
   currentTaskId = null; currentNotes = ''; currentTranscript = ''; currentMeta = {}; currentInputUrl = '';
   $preview.style.display = 'none'; $progress.style.display = 'none';
   $searchResults.style.display = 'none';
   $previewContent.innerHTML = '';
+  document.getElementById('transcriptPreview').style.display = 'none';
+  document.getElementById('transcriptContent').textContent = '';
+  document.querySelectorAll('.dl-audio, .dl-transcript, .dl-merged, .dl-full').forEach(b => b.style.display = '');
   steps.forEach(s => document.getElementById(s).className = 'step pending');
 }
 
