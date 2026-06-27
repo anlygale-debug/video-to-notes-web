@@ -396,11 +396,10 @@ Rules:
 - **Cover every section — do not skip or gloss over any content**
 - For each section, write at least one detailed paragraph explaining what was said
 - Write so notes are useful without watching the video
-- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks). Use max 3-4 diagrams in the body
-- 笔记开头必须有一个 ## 内容框架图 章节，用 mindmap 展示全文知识结构。这是强制要求，不可省略
+- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks). Use max 2-3 diagrams in the body
 - Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
 - Only use diagrams when they genuinely add clarity — never force one
-- Mermaid 代码块内必须使用英文标点符号（分号用 ; 不是 ；，冒号用 : 不是 ：）
+- The opening 内容框架图 diagram does NOT count toward the 2-3 limit
 - Output ONLY the markdown, no extra text
 
 Transcript:
@@ -530,11 +529,10 @@ Rules:
 - Do NOT skip or gloss over any section of the content
 - Write so the notes are a complete substitute for watching the video
 - Suitable for reading and highlighting in Obsidian
-- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks) in the body. Use max 3-4 diagrams
-- 笔记开头必须有一个 ## 内容框架图 章节，用 mindmap 展示全文知识结构。这是强制要求，不可省略
+- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks) in the body. Use max 2-3 diagrams
 - Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
 - Only use diagrams when they genuinely add clarity — never force one
-- Mermaid 代码块内必须使用英文标点符号（分号用 ; 不是 ；，冒号用 : 不是 ：）
+- The opening 内容框架图 diagram does NOT count toward the 2-3 limit
 - Output ONLY the markdown, no extra text
 
 Transcript:
