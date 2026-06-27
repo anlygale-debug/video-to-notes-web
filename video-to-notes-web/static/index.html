@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Video to Notes</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
   :root {
     --bg: #faf8f5;
@@ -938,7 +939,7 @@ function markStep(stepId, cls, detail) {
   if (detail) el.querySelector('.detail').textContent = detail;
 }
 
-function showPreview(md) {
+async function showPreview(md) {
   $preview.style.display = 'block';
   $progress.style.display = 'none';
   $previewContent.innerHTML = marked.parse(md);
@@ -959,6 +960,15 @@ function showPreview(md) {
     }
   }
   $preview.scrollIntoView({behavior: 'smooth'});
+
+  // Render Mermaid diagrams (async, non-blocking)
+  try {
+    await mermaid.run({
+      nodes: $previewContent.querySelectorAll('code.language-mermaid'),
+    });
+  } catch (e) {
+    // Mermaid rendering failure must not block note display
+  }
 }
 
 function toggleTranscript() {
@@ -1041,6 +1051,8 @@ function showToast(msg) {
 }
 
 $url.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); });
+
+mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
 </script>
 </body>
 </html>

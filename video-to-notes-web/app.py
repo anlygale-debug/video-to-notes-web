@@ -372,6 +372,11 @@ Output format:
 
 ---
 
+## 内容框架图
+用 Mermaid 图表展示本文的知识结构，放在笔记最前面。选择合适的图表类型（mindmap 或 graph TD），让读者一眼看清内容脉络和要点关系。
+
+---
+
 ## 核心论点
 [The main thesis — what is the key takeaway?]
 
@@ -391,6 +396,10 @@ Rules:
 - **Cover every section — do not skip or gloss over any content**
 - For each section, write at least one detailed paragraph explaining what was said
 - Write so notes are useful without watching the video
+- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks). Use max 2-3 diagrams in the body
+- Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
+- Only use diagrams when they genuinely add clarity — never force one
+- The opening 内容框架图 diagram does NOT count toward the 2-3 limit
 - Output ONLY the markdown, no extra text
 
 Transcript:
@@ -430,7 +439,7 @@ def _generate_detailed(task_id, transcript, meta):
 
     def process_chunk(idx_chunk):
         idx, chunk = idx_chunk
-        prompt = f"""Part {idx+1}/{total} of a video transcript. Generate detailed Chinese study notes for this section. Include key points, concepts, and important quotes (> blockquotes). Use ## headings. Output ONLY the markdown.
+        prompt = f"""Part {idx+1}/{total} of a video transcript. Generate detailed Chinese study notes for this section. Include key points, concepts, and important quotes (> blockquotes). Use ## headings. When content benefits from visualization, insert a Mermaid diagram (```mermaid code block) — but only if it genuinely adds clarity. Output ONLY the markdown.
 
 Section {idx+1}/{total}:
 {chunk}"""
@@ -473,7 +482,7 @@ Section {idx+1}/{total}:
 def _scholar_prompt(transcript, title, creator, platform, likes, is_chunk=False, idx=0, total=0):
     """Build the scholar-mode prompt. is_chunk=True for per-chunk processing."""
     if is_chunk:
-        return f"""Part {idx+1}/{total} of a transcript. Generate detailed Chinese study notes for this section in narrative paragraph style — NOT bullet points. Cover every concept mentioned. Preserve the speaker's key phrases in > blockquotes. Explain each concept thoroughly. Use ### for section headings. Output ONLY markdown.
+        return f"""Part {idx+1}/{total} of a transcript. Generate detailed Chinese study notes for this section in narrative paragraph style — NOT bullet points. Cover every concept mentioned. Preserve the speaker's key phrases in > blockquotes. Explain each concept thoroughly. Use ### for section headings. When content benefits from visualization, insert a Mermaid diagram (```mermaid code block) — but only if it genuinely adds clarity. Output ONLY markdown.
 
 Section {idx+1}/{total}:
 {transcript}"""
@@ -486,6 +495,11 @@ Output format:
 
 > 视频作者：{creator} | 平台：{platform} | ❤️ {likes}
 > 转录：本地 Whisper
+
+---
+
+## 内容框架图
+用 Mermaid 图表展示本文的知识结构，放在笔记最前面。选择合适的图表类型（mindmap 或 graph TD），让读者一眼看清内容脉络和要点关系。
 
 ---
 
@@ -515,6 +529,10 @@ Rules:
 - Do NOT skip or gloss over any section of the content
 - Write so the notes are a complete substitute for watching the video
 - Suitable for reading and highlighting in Obsidian
+- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks) in the body. Use max 2-3 diagrams
+- Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
+- Only use diagrams when they genuinely add clarity — never force one
+- The opening 内容框架图 diagram does NOT count toward the 2-3 limit
 - Output ONLY the markdown, no extra text
 
 Transcript:
