@@ -390,6 +390,7 @@ def _generate_standard(task_id, transcript, meta):
 [3-5 actionable takeaways]
 
 Rules:
+- Mermaid 代码块内必须使用英文标点符号（; 不是 ；，: 不是 ：）
 - 按以上顺序输出，不可调换章节顺序
 - Output notes in Chinese, regardless of the transcript's original language
 - Preserve the creator's exact key phrases in > blockquotes
@@ -400,7 +401,6 @@ Rules:
 - When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks). Use max 3-4 diagrams in the body
 - Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
 - Only use diagrams when they genuinely add clarity — never force one
-- Mermaid 代码块内必须使用英文标点符号（; 不是 ；）
 - Output ONLY the markdown, no extra text
 
 Transcript:
@@ -523,6 +523,7 @@ Section {idx+1}/{total}:
 [One sentence takeaway]
 
 Rules:
+- Mermaid 代码块内必须使用英文标点符号（; 不是 ；，: 不是 ：）
 - 按以上顺序输出，不可调换章节顺序
 - Output in Chinese, regardless of transcript language
 - Narrative paragraphs, NOT bullet points — preserve context and logical flow
@@ -534,7 +535,6 @@ Rules:
 - When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks) in the body. Use max 3-4 diagrams
 - Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
 - Only use diagrams when they genuinely add clarity — never force one
-- Mermaid 代码块内必须使用英文标点符号（; 不是 ；）
 - Output ONLY the markdown, no extra text
 
 Transcript:
