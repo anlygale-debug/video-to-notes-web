@@ -748,7 +748,7 @@ async def process(request: Request):
 
             # Done
             tasks[task_id]["done"] = True
-            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': platform, 'likes': meta.get('likes','0')}}})}\n\n"
+            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', platform), 'likes': meta.get('likes','0')}}})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'data': str(e)})}\n\n"

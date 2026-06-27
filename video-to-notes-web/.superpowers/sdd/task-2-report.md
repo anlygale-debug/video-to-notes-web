@@ -57,3 +57,9 @@ In the text-mode branch of `/api/process`, the 3 skipped pipeline steps (resolve
 - No changes to `step_search`, `step_resolve`, `step_download`, `step_transcribe`, `step_generate`, or any pipeline functions.
 - The `finally` block's audio cleanup gracefully handles the text input case (no `audio_path` key → no-op).
 - The existing `override_title` param does double duty for both URL and text modes naturally.
+
+### Bug Fix (2026-06-27) — Platform field in complete event
+
+**Problem:** In `/api/process` event_stream, the complete event payload used `'platform': platform` (the request body parameter, defaulting to `"xhs"`) instead of `meta.get('platform', platform)`. In text mode, `meta["platform"]` is correctly set to `"text"`, but the variable `platform` overrode it, causing the frontend to receive `"platform": "xhs"` for text-only submissions.
+
+**Fix:** Changed `'platform': platform` to `'platform': meta.get('platform', platform)` on the complete event payload line, ensuring text mode sends `"text"` and link mode still sends the correct platform.
