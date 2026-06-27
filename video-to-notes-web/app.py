@@ -297,11 +297,14 @@ def step_generate(task_id, transcript, meta, mode="standard"):
 
     mode: "standard" = optimized prompt, single pass (fast, good for <15min)
           "detailed"  = chunked processing + merge (slower, good for >20min)
+          "scholar"   = detailed narrative for reading-based learning
     """
     tasks[task_id]["progress"] = {"step": "generate", "status": "running",
                                    "message": "Structuring notes..."}
 
-    if mode == "detailed" and len(transcript) > 4000:
+    if mode == "scholar":
+        return _generate_scholar(task_id, transcript, meta)
+    elif mode == "detailed" and len(transcript) > 4000:
         return _generate_detailed(task_id, transcript, meta)
     else:
         return _generate_standard(task_id, transcript, meta)
@@ -465,6 +468,161 @@ Section {idx+1}/{total}:
     tasks[task_id]["progress"] = {"step": "generate", "status": "done",
                                    "message": f"Detailed notes ready ({total} sections)"}
     return notes
+
+
+def _scholar_prompt(transcript, title, creator, platform, likes, is_chunk=False, idx=0, total=0):
+    """Build the scholar-mode prompt. is_chunk=True for per-chunk processing."""
+    if is_chunk:
+        return f"""Part {idx+1}/{total} of a transcript. Generate detailed Chinese study notes for this section in narrative paragraph style — NOT bullet points. Cover every concept mentioned. Preserve the speaker's key phrases in > blockquotes. Explain each concept thoroughly. Use ### for section headings. Output ONLY markdown.
+
+Section {idx+1}/{total}:
+{transcript}"""
+
+    return f"""You are a study note generator for a knowledge/theory course. Generate comprehensive narrative notes that allow someone to learn the material by reading alone — without watching the original video. The goal is completeness: no concept, example, or reasoning chain should be omitted.
+
+Output format:
+
+# {title} — 详解笔记
+
+> 视频作者：{creator} | 平台：{platform} | ❤️ {likes}
+> 转录：本地 Whisper
+
+---
+
+## 本节概览
+[2-3 sentences: what this lecture covers, what problem it solves, who it's for]
+
+## 逐节详解
+(Organize by the video's logical structure. Every topic/concept gets its own ### subsection. Walk through in chronological order — do NOT skip any section.)
+### 一、{{first topic/concept}}
+[Narrative paragraph(s) covering: how the teacher introduced it, the core definition, why it matters, examples given, key details and caveats. Use > blockquotes to preserve the teacher's exact key phrases.]
+### 二、{{second topic/concept}}
+[Continue for every topic — do not skip any]
+
+## 关键术语表
+| 术语 | 解释 | 关键表述 |
+|------|------|----------|
+| ... | ... | ... |
+
+## 一句话总结
+[One sentence takeaway]
+
+Rules:
+- Output in Chinese, regardless of transcript language
+- Narrative paragraphs, NOT bullet points — preserve context and logical flow
+- Use > blockquotes for the speaker's exact key phrases
+- Each topic subsection must have at least one detailed paragraph
+- Do NOT skip or gloss over any section of the content
+- Write so the notes are a complete substitute for watching the video
+- Suitable for reading and highlighting in Obsidian
+- Output ONLY the markdown, no extra text
+
+Transcript:
+{transcript}"""
+
+
+def _generate_scholar(task_id, transcript, meta):
+    """Option C: scholar mode — detailed narrative notes for reading-based learning.
+
+    Short text (≤8000 chars): single LLM pass.
+    Long text (>8000 chars): chunk → parallel process → summary pass.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    title = meta.get("title", "Untitled")
+    creator = meta.get("creator", "Unknown")
+    platform = meta.get("platform", "text")
+    likes = meta.get("likes", "0")
+
+    # ── Short text: single pass ──
+    if len(transcript) <= 8000:
+        tasks[task_id]["progress"] = {"step": "generate", "status": "running",
+                                       "message": "Generating scholar notes..."}
+        prompt = _scholar_prompt(transcript, title, creator, platform, likes)
+        notes = _call_llm(prompt, max_tokens=32000)
+        if not notes:
+            notes = _basic_notes(meta, transcript)
+        tasks[task_id]["notes"] = notes
+        tasks[task_id]["progress"] = {"step": "generate", "status": "done",
+                                       "message": "Scholar notes ready"}
+        return notes
+
+    # ── Long text: chunk + summarize ──
+    chunk_size = 6000
+    overlap = 300
+    chunks = []
+    start = 0
+    while start < len(transcript):
+        end = min(start + chunk_size, len(transcript))
+        chunks.append(transcript[start:end])
+        start = end - overlap if end < len(transcript) else end
+
+    total = len(chunks)
+    tasks[task_id]["progress"] = {"step": "generate", "status": "running",
+                                   "message": f"Scholar: processing {total} sections..."}
+
+    def process_chunk(idx_chunk):
+        idx, chunk = idx_chunk
+        prompt = _scholar_prompt(chunk, title, creator, platform, likes,
+                                 is_chunk=True, idx=idx, total=total)
+        return idx, _call_llm(prompt, max_tokens=8000)
+
+    chunk_notes = [""] * total
+    with ThreadPoolExecutor(max_workers=min(total, 3)) as pool:
+        futures = {pool.submit(process_chunk, (i, c)): i for i, c in enumerate(chunks)}
+        for fut in as_completed(futures):
+            idx, notes = fut.result()
+            if notes:
+                chunk_notes[idx] = notes
+            done = sum(1 for n in chunk_notes if n)
+            tasks[task_id]["progress"] = {"step": "generate", "status": "running",
+                                           "message": f"Scholar: section {done}/{total} done"}
+
+    chunk_notes = [n for n in chunk_notes if n]
+    if not chunk_notes:
+        notes = _basic_notes(meta, transcript)
+        tasks[task_id]["notes"] = notes
+        return notes
+
+    body = "\n\n".join(chunk_notes)
+
+    # Summary pass
+    tasks[task_id]["progress"] = {"step": "generate", "status": "running",
+                                   "message": "Scholar: generating overview..."}
+    summary_prompt = f"""Based on these detailed notes from a transcript, generate a header section:
+
+1. Line: "# {title} — 详解笔记"
+2. Line: "> 视频作者：{creator} | 平台：{platform} | ❤️ {likes}"
+3. "## 本节概览" — 2-3 Chinese sentences summarizing ALL the content
+4. "## 关键术语表" — markdown table: 术语 | 解释 | 关键表述
+5. "## 一句话总结" — one sentence takeaway in Chinese
+
+Output this header. Then output the exact marker "<!--BODY-->" on its own line.
+
+Detailed notes:
+{body}"""
+
+    header = _call_llm(summary_prompt, max_tokens=4000)
+
+    if header and "<!--BODY-->" in header:
+        header_part = header.split("<!--BODY-->")[0].strip()
+        final = f"{header_part}\n\n---\n\n## 逐节详解\n\n{body}"
+    else:
+        final = f"""# {title} — 详解笔记
+
+> 视频作者：{creator} | 平台：{platform} | ❤️ {likes}
+> 转录：本地 Whisper（详解模式 · {total} 段并行处理）
+
+---
+
+## 逐节详解
+
+{body}"""
+
+    tasks[task_id]["notes"] = final
+    tasks[task_id]["progress"] = {"step": "generate", "status": "done",
+                                   "message": f"Scholar notes ready ({total} sections)"}
+    return final
 
 
 def _basic_notes(meta, transcript):
