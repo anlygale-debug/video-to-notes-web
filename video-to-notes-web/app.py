@@ -671,17 +671,19 @@ async def search(request: Request):
 
 @app.post("/api/process")
 async def process(request: Request):
-    """Process a video URL: download → transcribe → notes. SSE for progress."""
+    """Process a video URL or text input: → transcribe → notes. SSE for progress."""
     body = await request.json()
     url = body.get("url", "").strip()
     platform = body.get("platform", "xhs")
-    mode = body.get("mode", "standard")  # "standard" or "detailed"
+    mode = body.get("mode", "standard")  # "standard", "detailed", or "scholar"
     # Allow overriding title from search selection
     override_title = body.get("title", "")
     override_xsec = body.get("xsec", "")
+    # Text input support
+    text = body.get("text", "").strip()
 
-    if not url:
-        return JSONResponse({"error": "empty url"}, status_code=400)
+    if not url and not text:
+        return JSONResponse({"error": "empty url or text"}, status_code=400)
 
     task_id = str(uuid.uuid4())[:8]
     tempdir = tempfile.mkdtemp(prefix="vtn-")
@@ -689,30 +691,58 @@ async def process(request: Request):
 
     def event_stream():
         try:
-            # Step 1: Resolve
-            meta = step_resolve(task_id, url, platform, xsec=override_xsec)
-            if override_title:
-                meta["title"] = override_title
-            yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
-            if tasks[task_id].get("error"):
-                yield f"data: {json.dumps({'event': 'error', 'data': tasks[task_id]['error']})}\n\n"
-                return
+            if text:
+                # ── Text input mode: skip resolve/download/transcribe ──
+                # Step 1: Resolve (skipped)
+                tasks[task_id]["progress"] = {"step": "resolve", "status": "skipped",
+                                               "message": "Text input mode"}
+                yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
-            # Step 2: Download
-            audio = step_download(task_id, meta)
-            yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
-            if not audio:
-                yield f"data: {json.dumps({'event': 'error', 'data': 'Download failed'})}\n\n"
-                return
+                # Step 2: Download (skipped)
+                tasks[task_id]["progress"] = {"step": "download", "status": "skipped",
+                                               "message": "Text input mode"}
+                yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
-            # Step 3: Transcribe
-            transcript = step_transcribe(task_id, audio)
-            yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
-            if not transcript:
-                yield f"data: {json.dumps({'event': 'error', 'data': 'Transcription failed'})}\n\n"
-                return
+                # Step 3: Transcribe (skipped)
+                tasks[task_id]["progress"] = {"step": "transcribe", "status": "skipped",
+                                               "message": "Text input mode"}
+                yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
-            # Step 4: Generate notes
+                transcript = text
+                meta = {
+                    "title": override_title or "Text Input",
+                    "creator": "User",
+                    "platform": "text",
+                    "likes": "0",
+                }
+                tasks[task_id]["meta"] = meta
+                tasks[task_id]["transcript"] = transcript
+            else:
+                # ── Standard URL processing (unchanged) ──
+                # Step 1: Resolve
+                meta = step_resolve(task_id, url, platform, xsec=override_xsec)
+                if override_title:
+                    meta["title"] = override_title
+                yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
+                if tasks[task_id].get("error"):
+                    yield f"data: {json.dumps({'event': 'error', 'data': tasks[task_id]['error']})}\n\n"
+                    return
+
+                # Step 2: Download
+                audio = step_download(task_id, meta)
+                yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
+                if not audio:
+                    yield f"data: {json.dumps({'event': 'error', 'data': 'Download failed'})}\n\n"
+                    return
+
+                # Step 3: Transcribe
+                transcript = step_transcribe(task_id, audio)
+                yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
+                if not transcript:
+                    yield f"data: {json.dumps({'event': 'error', 'data': 'Transcription failed'})}\n\n"
+                    return
+
+            # Step 4: Generate notes (common to both paths)
             notes = step_generate(task_id, transcript, meta, mode=mode)
             yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
@@ -723,7 +753,7 @@ async def process(request: Request):
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'data': str(e)})}\n\n"
         finally:
-            # Save audio for download
+            # Save audio for download (only relevant for URL processing path)
             ap = tasks[task_id].get("audio_path", "")
             if ap and os.path.exists(ap):
                 persistent = f"/tmp/vtn-audio-{task_id}.mp3"
