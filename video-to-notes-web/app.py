@@ -694,24 +694,24 @@ async def process(request: Request):
             if text:
                 # ── Text input mode: skip resolve/download/transcribe ──
                 # Step 1: Resolve (skipped)
-                tasks[task_id]["progress"] = {"step": "resolve", "status": "skipped",
+                tasks[task_id]["progress"] = {"step": "resolve", "status": "done",
                                                "message": "Text input mode"}
                 yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
                 # Step 2: Download (skipped)
-                tasks[task_id]["progress"] = {"step": "download", "status": "skipped",
+                tasks[task_id]["progress"] = {"step": "download", "status": "done",
                                                "message": "Text input mode"}
                 yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
                 # Step 3: Transcribe (skipped)
-                tasks[task_id]["progress"] = {"step": "transcribe", "status": "skipped",
+                tasks[task_id]["progress"] = {"step": "transcribe", "status": "done",
                                                "message": "Text input mode"}
                 yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
                 transcript = text
                 meta = {
-                    "title": override_title or "Text Input",
-                    "creator": "User",
+                    "title": override_title or "Untitled",
+                    "creator": "",
                     "platform": "text",
                     "likes": "0",
                 }
