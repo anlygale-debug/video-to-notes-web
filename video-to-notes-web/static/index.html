@@ -108,6 +108,102 @@
   }
   .input-row select:focus { border-color: var(--accent); }
 
+  /* Input tabs — — — — — — — — — — — — — — — — — — — — — — */
+  .input-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .input-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    letter-spacing: -0.01em;
+  }
+  .input-tab:hover { color: var(--heading); }
+  .input-tab.active {
+    color: var(--heading);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Textarea — — — — — — — — — — — — — — — — — — — — — — — — */
+  .input-textarea {
+    width: 100%;
+    min-height: 120px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    color: var(--heading);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(139,115,85,0.08);
+  }
+  .input-textarea::placeholder { color: var(--text-dim); }
+
+  /* Title input — — — — — — — — — — — — — — — — — — — — — — — */
+  .title-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    color: var(--heading);
+    font-size: 0.95rem;
+    font-family: var(--font);
+    font-weight: 500;
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .title-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(139,115,85,0.08);
+  }
+  .title-input::placeholder { color: var(--text-dim); font-weight: 400; }
+
+  /* Mode buttons — — — — — — — — — — — — — — — — — — — — — — */
+  .mode-btn-group {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+  .mode-btn:hover { border-color: var(--accent); color: var(--heading); }
+  .mode-btn.active {
+    background: var(--heading);
+    color: #fff;
+    border-color: var(--heading);
+    font-weight: 500;
+  }
+
   /* Buttons — — — — — — — — — — — — — — — — — — — — — — */
   .btn {
     display: inline-flex;
@@ -361,6 +457,10 @@
     .input-row input { font-size: 0.9rem; padding: 10px 14px; }
     .input-row select { font-size: 0.85rem; padding: 10px 12px; }
     .mode-select { gap: 14px; font-size: 0.82rem; }
+    .input-tab { font-size: 0.82rem; padding: 8px 14px; }
+    .input-textarea { font-size: 0.85rem; min-height: 100px; padding: 10px 14px; }
+    .title-input { font-size: 0.9rem; }
+    .mode-btn { font-size: 0.78rem; padding: 6px 10px; }
     .btn { padding: 10px 16px; font-size: 0.85rem; }
     .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
     .btn-row { gap: 6px; }
