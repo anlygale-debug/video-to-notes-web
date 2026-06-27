@@ -487,17 +487,33 @@
 
   <!-- Input -->
   <div class="input-card" id="inputCard">
-    <div class="input-row">
-      <input type="text" id="urlInput" placeholder="粘贴视频链接，或输入搜索关键词…">
-      <select id="platformSelect">
-        <option value="xhs">小红书</option>
-        <option value="bilibili">Bilibili</option>
-        <option value="youtube">YouTube</option>
-      </select>
+    <div class="input-tabs">
+      <button class="input-tab active" onclick="switchMode('url')" id="tabUrl">链接</button>
+      <button class="input-tab" onclick="switchMode('text')" id="tabText">文本</button>
     </div>
+
+    <!-- URL input group -->
+    <div id="urlInputGroup">
+      <div class="input-row">
+        <input type="text" id="urlInput" placeholder="粘贴视频链接，或输入搜索关键词…">
+        <select id="platformSelect">
+          <option value="xhs">小红书</option>
+          <option value="bilibili">Bilibili</option>
+          <option value="youtube">YouTube</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Text input group (hidden by default) -->
+    <div id="textInputGroup" style="display:none">
+      <input type="text" id="titleInput" class="title-input" placeholder="输入标题（必填）…">
+      <textarea id="textInput" class="input-textarea" placeholder="粘贴转录文本内容…"></textarea>
+    </div>
+
     <div class="mode-select">
       <label><input type="radio" name="mode" value="standard" checked onchange="updateModeHint()"><span>标准笔记</span></label>
       <label><input type="radio" name="mode" value="detailed" onchange="updateModeHint()"><span>详细笔记</span></label>
+      <label><input type="radio" name="mode" value="scholar" onchange="updateModeHint()"><span>详解笔记</span></label>
       <span id="modeHint">快，适合短视频</span>
     </div>
     <button class="btn btn-primary btn-full" id="submitBtn" onclick="handleSubmit()">
@@ -544,10 +560,10 @@
     <div class="btn-row">
       <button class="btn btn-primary btn-sm" onclick="downloadNotes()">下载 Markdown</button>
       <button class="btn btn-sm" onclick="downloadPDF()">下载 PDF</button>
-      <button class="btn btn-sm" onclick="downloadAudio()">🎵 下载音频</button>
-      <button class="btn btn-sm" onclick="downloadTranscript()">📝 下载转录文本</button>
-      <button class="btn btn-sm" onclick="downloadMerged()">📋 笔记+转录</button>
-      <button class="btn btn-sm" onclick="downloadFull()">📦 下载完整包</button>
+      <button class="btn btn-sm dl-audio" onclick="downloadAudio()">🎵 下载音频</button>
+      <button class="btn btn-sm dl-transcript" onclick="downloadTranscript()">📝 下载转录文本</button>
+      <button class="btn btn-sm dl-merged" onclick="downloadMerged()">📋 笔记+转录</button>
+      <button class="btn btn-sm dl-full" onclick="downloadFull()">📦 下载完整包</button>
       <button class="btn btn-sm" onclick="copyNotes()">复制全文</button>
       <button class="btn btn-sm" id="backToSearchBtn" onclick="backToSearch()" style="display:none">← 返回搜索结果</button>
       <button class="btn btn-sm" onclick="resetAll()">重新开始</button>
