@@ -888,6 +888,7 @@ async function processText() {
   $submit.textContent = '处理中…';
   $searchResults.style.display = 'none';
   $preview.style.display = 'none';
+  currentInputUrl = '';
 
   steps.forEach(s => {
     document.getElementById(s).className = 'step pending';

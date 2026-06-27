@@ -57,3 +57,8 @@ Added all JavaScript logic to support the dual-mode (URL + Text) input UI built 
 - **Bug:** `processText()` sent POST to `/api/process-text`, which does not exist on the backend. Requests would return 404.
 - **Fix:** Changed the fetch URL from `'/api/process-text'` to `'/api/process'`, matching the actual backend route (`@app.post("/api/process")` in `app.py`).
 - **Root cause:** A typo in the endpoint name during initial implementation — presumably `process-text` was chosen to match the function name rather than the actual backend route.
+
+### 2. Fixed Missing `currentInputUrl` Reset in `processText()`
+- **File:** `static/index.html` (line 891)
+- **Bug:** `processText()` did not reset `currentInputUrl = ''`. When a user processes a URL first and then switches to text mode, the old URL leaks into the text-mode history entry via `handleSSEEvent()` which writes `currentMeta.url = currentInputUrl` on the `complete` event.
+- **Fix:** Added `currentInputUrl = '';` in `processText()` alongside the other state resets (`$searchResults.style.display = 'none'` and `$preview.style.display = 'none'`).
