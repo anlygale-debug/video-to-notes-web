@@ -667,8 +667,13 @@ Requirements:
    - quadrantChart (对比/四象限/矩阵)
    - sequenceDiagram (交互/消息传递/时序)
    - mindmap (概念层级/知识树)
-   - ganttChart (时间线/阶段/路线图)
-3. CRITICAL: Use ONLY English punctuation inside Mermaid code blocks (; , . : not ； ， 。 ：)
+   - gantt (时间线/阶段/路线图)
+3. Mermaid syntax rules — MUST follow exactly:
+   - Diagram type is gantt, NOT ganttChart
+   - quadrantChart point labels: use "Label" NOT [Label]; format is PointName: [x, y]
+   - gantt dates: use "after taskId" syntax, not raw numbers; each task needs a date or "after" reference
+   - graph node labels: use A[text] format, avoid colons inside brackets like A[text: more]
+   - ALL punctuation inside ```mermaid blocks must be English ASCII
 4. Do NOT modify any existing text, headings, tables, or structure. Only add diagram blocks.
 5. Wrap diagrams in ```mermaid code blocks.
 6. Output the COMPLETE notes with diagrams inserted. Do not omit any original content.
@@ -677,7 +682,21 @@ Notes:
 {note_text}"""
 
     result = _call_llm(prompt, max_tokens=32000)
-    return result if result else note_text
+    if not result:
+        return note_text
+    return _fix_mermaid(result)
+
+
+def _fix_mermaid(text):
+    """Post-process Mermaid code blocks to fix common LLM syntax errors."""
+    def fix_block(m):
+        block = m.group(0)
+        block = block.replace("ganttChart", "gantt")
+        block = block.replace('；', ';').replace('：', ':').replace('，', ',')
+        # quadrantChart: "A [Label]:" → "A \"Label\" :"
+        block = re.sub(r'(\n\s+[A-Z])\s+\[([^\]]+)\]\s*:', r'\1 "\2" :', block)
+        return block
+    return re.sub(r'```mermaid\n.*?```', fix_block, text, flags=re.DOTALL)
 
 
 def _basic_notes(meta, transcript):
