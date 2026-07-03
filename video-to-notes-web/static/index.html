@@ -505,6 +505,7 @@
     position: fixed; inset: 0; z-index: 300;
     background: var(--bg);
     display: flex; flex-direction: column;
+    align-items: center;
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .settings-page.open { opacity: 1; pointer-events: auto; }
@@ -513,6 +514,7 @@
     padding: 20px 28px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
+    align-self: stretch;
   }
   .settings-page-head h1 {
     font-size: 1.1rem; font-weight: 600; color: var(--heading);
@@ -525,7 +527,7 @@
   .settings-back:hover { color: var(--heading); }
   .settings-body {
     flex: 1; overflow-y: auto; padding: 24px 28px;
-    max-width: 720px; margin: 0 auto; width: 100%;
+    max-width: 720px; width: 100%;
   }
   .settings-group {
     margin-bottom: 28px;
@@ -575,6 +577,7 @@
     border-top: 1px solid var(--border);
     background: var(--surface);
     justify-content: flex-end;
+    align-self: stretch;
   }
   .input-with-eye { position: relative; }
   .input-with-eye input { width: 100%; padding-right: 36px; }
