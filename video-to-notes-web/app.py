@@ -324,7 +324,7 @@ SETTINGS_PATH = os.path.join(BASE, "data", "settings.json")
 
 def _load_settings():
     """Load settings from data/settings.json. Returns dict with defaults."""
-    defaults = {"api_base": "https://api.deepseek.com/anthropic", "api_key": "", "model": "deepseek-chat",
+    defaults = {"api_base": "https://api.deepseek.com/v1", "api_key": "", "model": "deepseek-chat",
                 "default_mode": "standard", "default_mermaid": False}
     try:
         with open(SETTINGS_PATH) as f:
@@ -352,27 +352,24 @@ def _read_api_config():
 
 
 def _call_llm(prompt, max_tokens=8000):
-    """Single LLM call. Returns text or None."""
+    """Single LLM call via OpenAI-compatible API. Returns text or None."""
     api_key, api_base, model = _read_api_config()
     if not api_key or not api_base:
         return None
 
     body = {"model": model, "max_tokens": max_tokens,
             "messages": [{"role": "user", "content": prompt}]}
-    api_url = f"{api_base}/messages"
+    api_url = f"{api_base}/chat/completions"
     r = subprocess.run([
         "curl", "-s", "-X", "POST", api_url,
-        "-H", f"x-api-key: {api_key}",
-        "-H", "anthropic-version: 2023-06-01",
+        "-H", f"Authorization: Bearer {api_key}",
         "-H", "content-type: application/json",
         "-d", json.dumps(body)
     ], capture_output=True, text=True, timeout=180)
 
     try:
         resp = json.loads(r.stdout)
-        for block in resp.get("content", []):
-            if block.get("type") == "text":
-                return block["text"]
+        return resp["choices"][0]["message"]["content"]
     except Exception:
         pass
     return None
@@ -976,16 +973,15 @@ async def test_connection(request: Request):
     start = _time.time()
     try:
         r = subprocess.run([
-            "curl", "-s", "-X", "POST", f"{api_base}/messages",
-            "-H", f"x-api-key: {api_key}",
-            "-H", "anthropic-version: 2023-06-01",
+            "curl", "-s", "-X", "POST", f"{api_base}/chat/completions",
+            "-H", f"Authorization: Bearer {api_key}",
             "-H", "content-type: application/json",
             "-d", json.dumps({"model": model, "max_tokens": 10,
                               "messages": [{"role": "user", "content": "hi"}]})
         ], capture_output=True, text=True, timeout=30)
         elapsed = int((_time.time() - start) * 1000)
         resp = json.loads(r.stdout)
-        if "content" in resp:
+        if "choices" in resp:
             return JSONResponse({"ok": True, "latency_ms": elapsed, "model": model})
         err = resp.get("error", {}).get("message", r.stdout[:200])
         return JSONResponse({"ok": False, "error": err})
