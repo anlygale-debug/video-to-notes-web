@@ -538,6 +538,12 @@
   }
   .settings-field input:focus { border-color: var(--accent); }
   .settings-field input::placeholder { color: var(--text-dim); }
+  .settings-help {
+    font-size: 0.76rem; color: var(--text-dim); line-height: 1.5;
+  }
+  .settings-sub {
+    font-size: 0.82rem; color: var(--text-dim); line-height: 1.6;
+  }
   .input-with-eye { position: relative; }
   .input-with-eye input { width: 100%; padding-right: 36px; }
   .input-with-eye .eye-btn {
@@ -687,13 +693,17 @@
   <h2>设置</h2>
   <button class="settings-close" onclick="closeSettings()">✕</button>
 
+  <p class="settings-sub">配置 API 连接和默认偏好。修改后立即生效，密钥只显示末 4 位。</p>
+
   <div class="settings-field">
     <label>API 地址</label>
+    <span class="settings-help">LLM 接口地址，兼容 Anthropic Messages API。如 DeepSeek 填 <code>https://api.deepseek.com</code></span>
     <input type="text" id="setApiBase" placeholder="https://api.deepseek.com">
   </div>
 
   <div class="settings-field">
     <label>API 密钥</label>
+    <span class="settings-help">服务商提供的 API Key，通常以 sk- 开头。保存后只显示末 4 位</span>
     <div class="input-with-eye">
       <input type="password" id="setApiKey" placeholder="sk-xxx">
       <button class="eye-btn" onclick="toggleKeyVisibility()">👁</button>
@@ -702,11 +712,13 @@
 
   <div class="settings-field">
     <label>模型名称</label>
+    <span class="settings-help">模型标识符，如 <code>deepseek-chat</code>、<code>claude-sonnet-4-6</code>。具体名称以服务商文档为准</span>
     <input type="text" id="setModel" placeholder="deepseek-chat">
   </div>
 
   <div class="settings-field">
     <label>默认笔记模式</label>
+    <span class="settings-help">新生成笔记的默认模式，可随时在主页切换</span>
     <div class="settings-radios">
       <label><input type="radio" name="setMode" value="standard"> 标准</label>
       <label><input type="radio" name="setMode" value="detailed"> 详细</label>
@@ -715,7 +727,10 @@
   </div>
 
   <div class="settings-toggle">
-    <span>默认开启 Mermaid 图解</span>
+    <div>
+      <span>默认开启 Mermaid 图解</span>
+      <p class="settings-help" style="margin:0">开启后笔记会自动插入框架图和内容图解，可随时关闭</p>
+    </div>
     <input type="checkbox" id="setMermaid">
   </div>
 
