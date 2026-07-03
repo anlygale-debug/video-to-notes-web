@@ -181,17 +181,15 @@ def step_resolve(task_id, url, platform, xsec=""):
 
             streams = video.get("media", {}).get("stream", {})
             # Pick smallest h265 stream
+            # Pick first available stream (support both old snake_case and new camelCase field names)
             for codec, formats in streams.items():
                 for f in formats:
-                    if "114" in f.get("stream_desc", ""):
-                        meta["download_url"] = f["master_url"]
+                    url = f.get("masterUrl") or f.get("master_url", "")
+                    if url:
+                        meta["download_url"] = url
                         break
-            if not meta.get("download_url"):
-                # Fallback: any h264
-                for codec, formats in streams.items():
-                    for f in formats:
-                        meta["download_url"] = f["master_url"]
-                        break
+                if meta.get("download_url"):
+                    break
         except Exception as e:
             tasks[task_id]["progress"] = {"step": "resolve", "status": "error",
                                            "message": str(e)}
