@@ -319,35 +319,35 @@ def step_generate(task_id, transcript, meta, mode="standard", mermaid=False):
     return result
 
 
-def _read_api_config():
-    """Read API key, base URL, and model. Priority: config.json > env vars > ~/.claude/settings.json."""
-    # 1. Project config.json (highest priority)
-    config_path = os.path.join(BASE, "config.json")
-    if os.path.exists(config_path):
-        try:
-            with open(config_path) as f:
-                cfg = json.load(f)
-            api_key = cfg.get("api_key", "")
-            api_base = cfg.get("api_base_url", "")
-            model = cfg.get("model", "")
-            if api_key and api_base:
-                return api_key, api_base, model or "claude-sonnet-4-6"
-        except Exception:
-            pass
+SETTINGS_PATH = os.path.join(BASE, "data", "settings.json")
 
-    # 2. Environment variables + ~/.claude/settings.json
-    settings_path = os.path.expanduser("~/.claude/settings.json")
-    api_key = api_base = ""
-    model = "claude-sonnet-4-6"
+
+def _load_settings():
+    """Load settings from data/settings.json. Returns dict with defaults."""
+    defaults = {"api_base": "", "api_key": "", "model": "deepseek-chat",
+                "default_mode": "standard", "default_mermaid": False}
     try:
-        with open(settings_path) as f:
-            s = json.load(f)
-        env_cfg = s.get("env", {})
-        api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN", env_cfg.get("ANTHROPIC_AUTH_TOKEN", ""))
-        api_base = os.environ.get("ANTHROPIC_BASE_URL", env_cfg.get("ANTHROPIC_BASE_URL", ""))
-        model = os.environ.get("ANTHROPIC_MODEL", env_cfg.get("ANTHROPIC_MODEL", model))
+        with open(SETTINGS_PATH) as f:
+            saved = json.load(f)
+        defaults.update(saved)
     except Exception:
         pass
+    return defaults
+
+
+def _save_settings(data):
+    """Save settings to data/settings.json."""
+    os.makedirs(os.path.dirname(SETTINGS_PATH), exist_ok=True)
+    with open(SETTINGS_PATH, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def _read_api_config():
+    """Read API key, base URL, and model. Priority: env var > settings.json > default."""
+    s = _load_settings()
+    api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN") or s.get("api_key", "")
+    api_base = os.environ.get("ANTHROPIC_BASE_URL") or s.get("api_base", "")
+    model = os.environ.get("ANTHROPIC_MODEL") or s.get("model", "deepseek-chat")
     return api_key, api_base, model
 
 
@@ -705,44 +705,6 @@ async def index_v2():
     return HTMLResponse(open(os.path.join(STATIC, "index-v2.html")).read())
 
 
-# ── Settings ──────────────────────────────────────────────────
-
-@app.get("/settings")
-async def settings_page():
-    return HTMLResponse(open(os.path.join(STATIC, "settings.html")).read())
-
-
-@app.get("/api/settings")
-async def get_settings():
-    config_path = os.path.join(BASE, "config.json")
-    if os.path.exists(config_path):
-        try:
-            with open(config_path) as f:
-                cfg = json.load(f)
-            # Mask API key: show first 4 + last 4 chars
-            key = cfg.get("api_key", "")
-            if len(key) > 8:
-                cfg["api_key"] = key[:4] + "*" * (len(key) - 8) + key[-4:]
-            return JSONResponse(cfg)
-        except Exception:
-            pass
-    return JSONResponse({"api_base_url": "", "api_key": "", "model": ""})
-
-
-@app.post("/api/settings")
-async def save_settings(request: Request):
-    body = await request.json()
-    cfg = {
-        "api_base_url": body.get("api_base_url", "").strip(),
-        "api_key": body.get("api_key", "").strip(),
-        "model": body.get("model", "").strip(),
-    }
-    config_path = os.path.join(BASE, "config.json")
-    with open(config_path, "w") as f:
-        json.dump(cfg, f, indent=2)
-    return JSONResponse({"ok": True})
-
-
 @app.post("/api/search")
 async def search(request: Request):
     body = await request.json()
@@ -773,6 +735,10 @@ async def process(request: Request):
 
     if not url and not text:
         return JSONResponse({"error": "empty url or text"}, status_code=400)
+
+    api_key, api_base, model = _read_api_config()
+    if not api_key or not api_base:
+        return JSONResponse({"error": "no_api_config"}, status_code=400)
 
     task_id = str(uuid.uuid4())[:8]
     tempdir = tempfile.mkdtemp(prefix="vtn-")
@@ -830,12 +796,6 @@ async def process(request: Request):
                 if not transcript:
                     yield f"data: {json.dumps({'event': 'error', 'data': 'Transcription failed'})}\n\n"
                     return
-
-            # Check API config before generating
-            api_key, api_base, _model = _read_api_config()
-            if not api_key or not api_base:
-                yield f"data: {json.dumps({'event': 'error', 'data': '请先配置 API：点击右上角「设置」填写 API Key 和地址'})}\n\n"
-                return
 
             # Step 4: Generate notes (common to both paths)
             notes = step_generate(task_id, transcript, meta, mode=mode, mermaid=mermaid)
@@ -982,6 +942,61 @@ async def download(task_id: str):
 
     return FileResponse(path, filename=f"{safe_title}-课后笔记.md",
                         media_type="text/markdown")
+
+
+# ─── Settings ──────────────────────────────────────────────────
+
+@app.get("/api/settings")
+async def get_settings():
+    s = _load_settings()
+    # Mask API key for security — only reveal last 4 chars
+    key = s.get("api_key", "")
+    if len(key) > 4:
+        s["api_key"] = "*" * (len(key) - 4) + key[-4:]
+    return JSONResponse(s)
+
+
+@app.post("/api/settings")
+async def save_settings(request: Request):
+    body = await request.json()
+    s = _load_settings()
+    # Only update provided fields; don't overwrite API key with masked value
+    if "api_key" in body and not body["api_key"].startswith("*"):
+        s["api_key"] = body["api_key"]
+    for field in ["api_base", "model", "default_mode", "default_mermaid"]:
+        if field in body:
+            s[field] = body[field]
+    _save_settings(s)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/test-connection")
+async def test_connection(request: Request):
+    body = await request.json()
+    api_key = body.get("api_key", "")
+    api_base = body.get("api_base", "")
+    model = body.get("model", "deepseek-chat")
+    if not api_key or not api_base:
+        return JSONResponse({"ok": False, "error": "Missing API key or base URL"})
+    import time as _time
+    start = _time.time()
+    try:
+        r = subprocess.run([
+            "curl", "-s", "-X", "POST", f"{api_base}/messages",
+            "-H", f"x-api-key: {api_key}",
+            "-H", "anthropic-version: 2023-06-01",
+            "-H", "content-type: application/json",
+            "-d", json.dumps({"model": model, "max_tokens": 10,
+                              "messages": [{"role": "user", "content": "hi"}]})
+        ], capture_output=True, text=True, timeout=30)
+        elapsed = int((_time.time() - start) * 1000)
+        resp = json.loads(r.stdout)
+        if "content" in resp:
+            return JSONResponse({"ok": True, "latency_ms": elapsed, "model": model})
+        err = resp.get("error", {}).get("message", r.stdout[:200])
+        return JSONResponse({"ok": False, "error": err})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
 
 
 # ─── Startup ────────────────────────────────────────────────────

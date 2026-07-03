@@ -47,9 +47,7 @@
   /* Header — — — — — — — — — — — — — — — — — — — — — — */
   header {
     margin-bottom: 64px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    text-align: left;
   }
   header h1 {
     font-size: 2rem;
@@ -63,15 +61,6 @@
     color: var(--text-dim);
     letter-spacing: -0.01em;
   }
-  .header-settings {
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    text-decoration: none;
-    padding: 4px 0;
-    letter-spacing: -0.01em;
-    transition: color 0.15s;
-  }
-  .header-settings:hover { color: var(--heading); }
 
   /* Input — — — — — — — — — — — — — — — — — — — — — — — */
   .input-card {
@@ -500,6 +489,86 @@
     .history-actions { margin-top: 4px; }
     .result-card { padding: 10px 14px; }
     footer { font-size: 0.72rem; margin-top: 40px; }
+    .settings-sidebar { width: 100%; }
+  }
+
+  /* Settings sidebar — — — — — — — — — — — — — — — — — — — — */
+  .gear-btn {
+    background: none; border: none; font-size: 1.3rem; cursor: pointer;
+    padding: 6px; color: var(--text-dim); transition: color 0.15s;
+    line-height: 1;
+  }
+  .gear-btn:hover { color: var(--heading); }
+  .header-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .settings-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .settings-overlay.open { opacity: 1; pointer-events: auto; }
+  .settings-sidebar {
+    position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+    background: var(--surface); z-index: 201;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+    padding: 32px 28px; overflow-y: auto;
+    transition: right 0.25s ease;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .settings-sidebar.open { right: 0; }
+  .settings-sidebar h2 {
+    font-size: 1.1rem; font-weight: 600; color: var(--heading);
+    letter-spacing: -0.02em; margin: 0;
+  }
+  .settings-close {
+    position: absolute; top: 20px; right: 20px;
+    background: none; border: none; font-size: 1.3rem; cursor: pointer;
+    color: var(--text-dim); padding: 4px; line-height: 1;
+  }
+  .settings-close:hover { color: var(--heading); }
+  .settings-field { display: flex; flex-direction: column; gap: 4px; }
+  .settings-field label {
+    font-size: 0.82rem; font-weight: 500; color: var(--text-dim);
+  }
+  .settings-field input {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 9px 12px;
+    color: var(--heading); font-size: 0.88rem; font-family: var(--font);
+    outline: none; transition: border-color 0.15s;
+  }
+  .settings-field input:focus { border-color: var(--accent); }
+  .settings-field input::placeholder { color: var(--text-dim); }
+  .input-with-eye { position: relative; }
+  .input-with-eye input { width: 100%; padding-right: 36px; }
+  .input-with-eye .eye-btn {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--text-dim);
+    font-size: 0.9rem; padding: 2px 4px;
+  }
+  .settings-radios {
+    display: flex; gap: 14px; font-size: 0.85rem;
+  }
+  .settings-radios label {
+    cursor: pointer; color: var(--text-dim); transition: color 0.15s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .settings-radios label:has(input:checked) { color: var(--heading); }
+  .settings-radios input[type="radio"] { accent-color: var(--heading); }
+  .settings-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.82rem; color: var(--text-dim);
+  }
+  .settings-toggle input[type="checkbox"] {
+    accent-color: var(--accent); width: 16px; height: 16px;
+  }
+  .settings-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .settings-error {
+    color: var(--red); font-size: 0.82rem; padding: 8px 12px;
+    background: #fef2f2; border-radius: var(--radius-sm); display: none;
+  }
+  .settings-success {
+    color: var(--green); font-size: 0.82rem; padding: 8px 12px;
+    background: #f0faf0; border-radius: var(--radius-sm); display: none;
   }
 </style>
 </head>
@@ -507,11 +576,13 @@
 
 <div class="container">
   <header>
-    <div>
-      <h1>Video to Notes</h1>
-      <p>粘贴视频链接，获取结构化笔记</p>
+    <div class="header-row">
+      <div>
+        <h1>Video to Notes</h1>
+        <p>粘贴视频链接，获取结构化笔记</p>
+      </div>
+      <button class="gear-btn" onclick="openSettings()" title="设置">⚙</button>
     </div>
-    <a href="/settings" class="header-settings" target="_blank">设置</a>
   </header>
 
   <!-- Input -->
@@ -606,6 +677,55 @@
   <footer>
     本地 Whisper · yt-dlp · xhs-cli · Apple Silicon
   </footer>
+</div>
+
+<!-- Settings Overlay -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+
+<!-- Settings Sidebar -->
+<div class="settings-sidebar" id="settingsSidebar">
+  <h2>设置</h2>
+  <button class="settings-close" onclick="closeSettings()">✕</button>
+
+  <div class="settings-field">
+    <label>API 地址</label>
+    <input type="text" id="setApiBase" placeholder="https://api.deepseek.com">
+  </div>
+
+  <div class="settings-field">
+    <label>API 密钥</label>
+    <div class="input-with-eye">
+      <input type="password" id="setApiKey" placeholder="sk-xxx">
+      <button class="eye-btn" onclick="toggleKeyVisibility()">👁</button>
+    </div>
+  </div>
+
+  <div class="settings-field">
+    <label>模型名称</label>
+    <input type="text" id="setModel" placeholder="deepseek-chat">
+  </div>
+
+  <div class="settings-field">
+    <label>默认笔记模式</label>
+    <div class="settings-radios">
+      <label><input type="radio" name="setMode" value="standard"> 标准</label>
+      <label><input type="radio" name="setMode" value="detailed"> 详细</label>
+      <label><input type="radio" name="setMode" value="scholar"> 详解</label>
+    </div>
+  </div>
+
+  <div class="settings-toggle">
+    <span>默认开启 Mermaid 图解</span>
+    <input type="checkbox" id="setMermaid">
+  </div>
+
+  <div class="settings-error" id="settingsError"></div>
+  <div class="settings-success" id="settingsSuccess"></div>
+
+  <div class="settings-actions">
+    <button class="btn btn-sm" onclick="testConnection()">测试连接</button>
+    <button class="btn btn-primary btn-sm" onclick="saveSettings()">保存设置</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -711,6 +831,8 @@ function extractURL(text) {
 }
 
 async function handleSubmit() {
+  if (!(await ensureApiConfig())) return;
+
   if (currentInputMode === 'text') {
     await processText();
     return;
@@ -852,6 +974,13 @@ async function processURL(url, platform, titleOverride, xsecOverride) {
       body: JSON.stringify({url, platform, title: titleOverride, xsec: xsecOverride, mode, mermaid: document.getElementById('mermaidToggle').checked})
     });
 
+    if (!resp.ok) {
+      const err = await resp.json();
+      if (err.error === 'no_api_config') { showToast('请先配置 API'); openSettings(); }
+      else { showToast(err.error || '请求失败'); }
+      $submit.disabled = false; $submit.textContent = '开始处理'; return;
+    }
+
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -905,7 +1034,6 @@ function handleSSEEvent(event) {
     });
   } else if (event.event === 'error') {
     markStep('stepResolve', 'error', event.data);
-    showToast(event.data);
   }
 }
 
@@ -940,6 +1068,13 @@ async function processText() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({text, title, mode, mermaid: document.getElementById('mermaidToggle').checked})
     });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      if (err.error === 'no_api_config') { showToast('请先配置 API'); openSettings(); }
+      else { showToast(err.error || '请求失败'); }
+      $submit.disabled = false; $submit.textContent = '生成笔记'; return;
+    }
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
@@ -1084,6 +1219,129 @@ function showToast(msg) {
 }
 
 $url.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); });
+
+// ── Settings ─────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('settingsSidebar').classList.add('open');
+  loadSettings();
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+  document.getElementById('settingsSidebar').classList.remove('open');
+  document.getElementById('settingsError').style.display = 'none';
+  document.getElementById('settingsSuccess').style.display = 'none';
+}
+
+async function loadSettings() {
+  try {
+    const resp = await fetch('/api/settings');
+    const s = await resp.json();
+    document.getElementById('setApiBase').value = s.api_base || '';
+    document.getElementById('setApiKey').value = s.api_key || '';
+    document.getElementById('setModel').value = s.model || 'deepseek-chat';
+    document.getElementById('setMermaid').checked = s.default_mermaid || false;
+    const modeRadio = document.querySelector(`input[name="setMode"][value="${s.default_mode || 'standard'}"]`);
+    if (modeRadio) modeRadio.checked = true;
+  } catch (e) {}
+}
+
+async function saveSettings() {
+  const apiKey = document.getElementById('setApiKey').value;
+  const body = {
+    api_base: document.getElementById('setApiBase').value.trim(),
+    api_key: apiKey,
+    model: document.getElementById('setModel').value.trim(),
+    default_mode: document.querySelector('input[name="setMode"]:checked')?.value || 'standard',
+    default_mermaid: document.getElementById('setMermaid').checked,
+  };
+  try {
+    const resp = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (resp.ok) {
+      document.getElementById('settingsSuccess').style.display = 'block';
+      document.getElementById('settingsSuccess').textContent = '已保存';
+      document.getElementById('settingsError').style.display = 'none';
+      setTimeout(() => closeSettings(), 800);
+    } else {
+      showToast('保存失败');
+    }
+  } catch (e) {
+    showToast('保存失败');
+  }
+}
+
+async function testConnection() {
+  const apiKey = document.getElementById('setApiKey').value.trim();
+  const apiBase = document.getElementById('setApiBase').value.trim();
+  const model = document.getElementById('setModel').value.trim() || 'deepseek-chat';
+  if (!apiKey || !apiBase) {
+    document.getElementById('settingsError').style.display = 'block';
+    document.getElementById('settingsError').textContent = '请填写 API 地址和密钥';
+    document.getElementById('settingsSuccess').style.display = 'none';
+    return;
+  }
+  document.getElementById('settingsError').style.display = 'none';
+  document.getElementById('settingsSuccess').style.display = 'block';
+  document.getElementById('settingsSuccess').textContent = '测试中…';
+  try {
+    const resp = await fetch('/api/test-connection', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({api_key: apiKey, api_base: apiBase, model}),
+    });
+    const r = await resp.json();
+    if (r.ok) {
+      document.getElementById('settingsSuccess').textContent = `连接成功 · ${r.latency_ms}ms · ${r.model}`;
+    } else {
+      document.getElementById('settingsError').style.display = 'block';
+      document.getElementById('settingsError').textContent = '连接失败: ' + (r.error || '未知错误');
+      document.getElementById('settingsSuccess').style.display = 'none';
+    }
+  } catch (e) {
+    document.getElementById('settingsError').style.display = 'block';
+    document.getElementById('settingsError').textContent = '连接失败: ' + e.message;
+    document.getElementById('settingsSuccess').style.display = 'none';
+  }
+}
+
+function toggleKeyVisibility() {
+  const input = document.getElementById('setApiKey');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// Check API config before generating
+async function ensureApiConfig() {
+  try {
+    const resp = await fetch('/api/settings');
+    const s = await resp.json();
+    if (!s.api_base) {
+      showToast('请先配置 API');
+      openSettings();
+      return false;
+    }
+    return true;
+  } catch (e) { return true; }
+}
+
+// Load default mode and mermaid on page load
+(async function initDefaults() {
+  try {
+    const resp = await fetch('/api/settings');
+    const s = await resp.json();
+    if (s.default_mode) {
+      const radio = document.querySelector(`input[name="mode"][value="${s.default_mode}"]`);
+      if (radio) { radio.checked = true; updateModeHint(); }
+    }
+    if (s.default_mermaid) {
+      document.getElementById('mermaidToggle').checked = true;
+    }
+  } catch (e) {}
+})();
 
 mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
 </script>
