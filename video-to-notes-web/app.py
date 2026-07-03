@@ -321,7 +321,7 @@ def step_generate(task_id, transcript, meta, mode="standard", mermaid=False):
     if mermaid and result:
         tasks[task_id]["progress"] = {"step": "generate", "status": "running",
                                        "message": "Inserting diagrams..."}
-        result = _insert_mermaid(result, meta)
+        result = _insert_mermaid(result, meta, task_id)
         tasks[task_id]["notes"] = result
 
     return result
@@ -654,7 +654,7 @@ Detailed notes:
     return final
 
 
-def _insert_mermaid(note_text, meta):
+def _insert_mermaid(note_text, meta, task_id=None):
     """Second pass: scan completed notes and insert Mermaid diagrams."""
     title = meta.get("title", "Untitled")
 
@@ -667,13 +667,8 @@ Requirements:
    - quadrantChart (对比/四象限/矩阵)
    - sequenceDiagram (交互/消息传递/时序)
    - mindmap (概念层级/知识树)
-   - gantt (时间线/阶段/路线图)
-3. Mermaid syntax rules — MUST follow exactly:
-   - Diagram type is gantt, NOT ganttChart
-   - quadrantChart point labels: use "Label" NOT [Label]; format is PointName: [x, y]
-   - gantt dates: use "after taskId" syntax, not raw numbers; each task needs a date or "after" reference
-   - graph node labels: use A[text] format, avoid colons inside brackets like A[text: more]
-   - ALL punctuation inside ```mermaid blocks must be English ASCII
+   - ganttChart (时间线/阶段/路线图)
+3. CRITICAL: Use ONLY English punctuation inside Mermaid code blocks (; , . : not ； ， 。 ：)
 4. Do NOT modify any existing text, headings, tables, or structure. Only add diagram blocks.
 5. Wrap diagrams in ```mermaid code blocks.
 6. Output the COMPLETE notes with diagrams inserted. Do not omit any original content.
@@ -684,19 +679,30 @@ Notes:
     result = _call_llm(prompt, max_tokens=32000)
     if not result:
         return note_text
-    return _fix_mermaid(result)
+
+    tasks[task_id]["progress"] = {"step": "generate", "status": "running",
+                                   "message": "Validating diagrams..."}
+    return _validate_mermaid(result)
 
 
-def _fix_mermaid(text):
-    """Post-process Mermaid code blocks to fix common LLM syntax errors."""
-    def fix_block(m):
-        block = m.group(0)
-        block = block.replace("ganttChart", "gantt")
-        block = block.replace('；', ';').replace('：', ':').replace('，', ',')
-        # quadrantChart: "A [Label]:" → "A \"Label\" :"
-        block = re.sub(r'(\n\s+[A-Z])\s+\[([^\]]+)\]\s*:', r'\1 "\2" :', block)
-        return block
-    return re.sub(r'```mermaid\n.*?```', fix_block, text, flags=re.DOTALL)
+def _validate_mermaid(text):
+    """Third pass: fix Mermaid syntax errors without changing anything else."""
+    prompt = f"""You are a Mermaid syntax checker. Below is a markdown document containing ```mermaid code blocks. Your ONLY job: scan each mermaid block and fix syntax errors. Do NOT add, remove, or modify anything outside the code blocks. Do NOT change the structure or content of the diagrams — only fix syntax.
+
+Common fixes:
+- Diagram type: "ganttChart" → "gantt"
+- quadrantChart point labels: use "Label Name" : [x, y] format, NOT [Label Name] : [x, y]
+- gantt dates: use YYYY-MM-DD format or "after xxx" relative syntax
+- Replace Chinese punctuation inside code blocks with English: ；→; ，→, ：→: （→( ）→)
+- Close all brackets, parentheses, and quotes
+
+Output the COMPLETE document. The only changes allowed are inside ```mermaid code blocks.
+
+Document:
+{text}"""
+
+    result = _call_llm(prompt, max_tokens=32000)
+    return result if result else text
 
 
 def _basic_notes(meta, transcript):
