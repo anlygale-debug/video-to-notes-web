@@ -292,22 +292,31 @@ def step_transcribe(task_id, audio_path):
         return None
 
 
-def step_generate(task_id, transcript, meta, mode="standard"):
+def step_generate(task_id, transcript, meta, mode="standard", mermaid=False):
     """Generate structured markdown notes from transcript.
 
     mode: "standard" = optimized prompt, single pass (fast, good for <15min)
           "detailed"  = chunked processing + merge (slower, good for >20min)
           "scholar"   = detailed narrative for reading-based learning
+    mermaid: True = run second pass to insert Mermaid diagrams
     """
     tasks[task_id]["progress"] = {"step": "generate", "status": "running",
                                    "message": "Structuring notes..."}
 
     if mode == "scholar":
-        return _generate_scholar(task_id, transcript, meta)
+        result = _generate_scholar(task_id, transcript, meta)
     elif mode == "detailed" and len(transcript) > 4000:
-        return _generate_detailed(task_id, transcript, meta)
+        result = _generate_detailed(task_id, transcript, meta)
     else:
-        return _generate_standard(task_id, transcript, meta)
+        result = _generate_standard(task_id, transcript, meta)
+
+    if mermaid and result:
+        tasks[task_id]["progress"] = {"step": "generate", "status": "running",
+                                       "message": "Inserting diagrams..."}
+        result = _insert_mermaid(result, meta)
+        tasks[task_id]["notes"] = result
+
+    return result
 
 
 def _read_api_config():
@@ -363,17 +372,12 @@ def _generate_standard(task_id, transcript, meta):
 
     prompt = f"""You are a study note generator. Take the transcript of a video and produce structured markdown notes.
 
-按以下顺序输出，不可调换：
+Output format:
 
 # {title} — 课后笔记
 
 > 视频作者：{creator} | 平台：{platform} | ❤️ {likes}
 > 转录：本地 Whisper
-
----
-
-## 内容框架图
-用 Mermaid 图表展示本文的知识结构，放在笔记最前面。选择合适的图表类型（mindmap 或 graph TD），让读者一眼看清内容脉络和要点关系。
 
 ---
 
@@ -390,17 +394,12 @@ def _generate_standard(task_id, transcript, meta):
 [3-5 actionable takeaways]
 
 Rules:
-- Mermaid 代码块内必须使用英文标点符号（; 不是 ；，: 不是 ：）
-- 按以上顺序输出，不可调换章节顺序
 - Output notes in Chinese, regardless of the transcript's original language
 - Preserve the creator's exact key phrases in > blockquotes
 - Use tables when comparing things
 - **Cover every section — do not skip or gloss over any content**
 - For each section, write at least one detailed paragraph explaining what was said
 - Write so notes are useful without watching the video
-- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks). Use max 3-4 diagrams in the body
-- Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
-- Only use diagrams when they genuinely add clarity — never force one
 - Output ONLY the markdown, no extra text
 
 Transcript:
@@ -440,7 +439,7 @@ def _generate_detailed(task_id, transcript, meta):
 
     def process_chunk(idx_chunk):
         idx, chunk = idx_chunk
-        prompt = f"""Part {idx+1}/{total} of a video transcript. Generate detailed Chinese study notes for this section. Include key points, concepts, and important quotes (> blockquotes). Use ## headings. When content benefits from visualization, insert a Mermaid diagram (```mermaid code block) — but only if it genuinely adds clarity. Output ONLY the markdown.
+        prompt = f"""Part {idx+1}/{total} of a video transcript. Generate detailed Chinese study notes for this section. Include key points, concepts, and important quotes (> blockquotes). Use ## headings. Output ONLY the markdown.
 
 Section {idx+1}/{total}:
 {chunk}"""
@@ -483,24 +482,19 @@ Section {idx+1}/{total}:
 def _scholar_prompt(transcript, title, creator, platform, likes, is_chunk=False, idx=0, total=0):
     """Build the scholar-mode prompt. is_chunk=True for per-chunk processing."""
     if is_chunk:
-        return f"""Part {idx+1}/{total} of a transcript. Generate detailed Chinese study notes for this section in narrative paragraph style — NOT bullet points. Cover every concept mentioned. Preserve the speaker's key phrases in > blockquotes. Explain each concept thoroughly. Use ### for section headings. When content benefits from visualization, insert a Mermaid diagram (```mermaid code block) — but only if it genuinely adds clarity. Output ONLY markdown.
+        return f"""Part {idx+1}/{total} of a transcript. Generate detailed Chinese study notes for this section in narrative paragraph style — NOT bullet points. Cover every concept mentioned. Preserve the speaker's key phrases in > blockquotes. Explain each concept thoroughly. Use ### for section headings. Output ONLY markdown.
 
 Section {idx+1}/{total}:
 {transcript}"""
 
     return f"""You are a study note generator for a knowledge/theory course. Generate comprehensive narrative notes that allow someone to learn the material by reading alone — without watching the original video. The goal is completeness: no concept, example, or reasoning chain should be omitted.
 
-按以下顺序输出，不可调换：
+Output format:
 
 # {title} — 详解笔记
 
 > 视频作者：{creator} | 平台：{platform} | ❤️ {likes}
 > 转录：本地 Whisper
-
----
-
-## 内容框架图
-用 Mermaid 图表展示本文的知识结构，放在笔记最前面。选择合适的图表类型（mindmap 或 graph TD），让读者一眼看清内容脉络和要点关系。
 
 ---
 
@@ -523,8 +517,6 @@ Section {idx+1}/{total}:
 [One sentence takeaway]
 
 Rules:
-- Mermaid 代码块内必须使用英文标点符号（; 不是 ；，: 不是 ：）
-- 按以上顺序输出，不可调换章节顺序
 - Output in Chinese, regardless of transcript language
 - Narrative paragraphs, NOT bullet points — preserve context and logical flow
 - Use > blockquotes for the speaker's exact key phrases
@@ -532,9 +524,6 @@ Rules:
 - Do NOT skip or gloss over any section of the content
 - Write so the notes are a complete substitute for watching the video
 - Suitable for reading and highlighting in Obsidian
-- When content benefits from visualization, insert Mermaid diagrams (```mermaid code blocks) in the body. Use max 3-4 diagrams
-- Choose chart types wisely: flowchart (流程/步骤), quadrantChart (对比/四象限), sequenceDiagram (交互/消息传递), mindmap (层级关系), ganttChart (时间线/阶段)
-- Only use diagrams when they genuinely add clarity — never force one
 - Output ONLY the markdown, no extra text
 
 Transcript:
@@ -645,6 +634,32 @@ Detailed notes:
     return final
 
 
+def _insert_mermaid(note_text, meta):
+    """Second pass: scan completed notes and insert Mermaid diagrams."""
+    title = meta.get("title", "Untitled")
+
+    prompt = f"""You are a diagram specialist. Below is a completed set of Chinese study notes. Your ONLY job: insert Mermaid diagrams where they add visual clarity.
+
+Requirements:
+1. Insert exactly ONE framework diagram at the very beginning (before the first section), using mindmap or graph TD. This diagram must summarize the overall knowledge structure of the notes.
+2. In the body of the notes, insert 3-4 diagrams where content benefits from visualization. Choose the best chart type:
+   - flowchart (流程/步骤/决策)
+   - quadrantChart (对比/四象限/矩阵)
+   - sequenceDiagram (交互/消息传递/时序)
+   - mindmap (概念层级/知识树)
+   - ganttChart (时间线/阶段/路线图)
+3. CRITICAL: Use ONLY English punctuation inside Mermaid code blocks (; , . : not ； ， 。 ：)
+4. Do NOT modify any existing text, headings, tables, or structure. Only add diagram blocks.
+5. Wrap diagrams in ```mermaid code blocks.
+6. Output the COMPLETE notes with diagrams inserted. Do not omit any original content.
+
+Notes:
+{note_text}"""
+
+    result = _call_llm(prompt, max_tokens=32000)
+    return result if result else note_text
+
+
 def _basic_notes(meta, transcript):
     """Fallback: simple notes without LLM structuring."""
     title = meta.get("title", "Untitled")
@@ -696,6 +711,7 @@ async def process(request: Request):
     url = body.get("url", "").strip()
     platform = body.get("platform", "xhs")
     mode = body.get("mode", "standard")  # "standard", "detailed", or "scholar"
+    mermaid = body.get("mermaid", False)  # whether to insert Mermaid diagrams
     # Allow overriding title from search selection
     override_title = body.get("title", "")
     override_xsec = body.get("xsec", "")
@@ -763,7 +779,7 @@ async def process(request: Request):
                     return
 
             # Step 4: Generate notes (common to both paths)
-            notes = step_generate(task_id, transcript, meta, mode=mode)
+            notes = step_generate(task_id, transcript, meta, mode=mode, mermaid=mermaid)
             yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
             # Done

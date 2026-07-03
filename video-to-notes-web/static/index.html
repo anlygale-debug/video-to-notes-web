@@ -257,6 +257,20 @@
     width: 14px; height: 14px;
   }
   #modeHint { color: var(--text-dim); font-size: 0.82rem; }
+  .mermaid-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    font-size: 0.84rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    letter-spacing: -0.01em;
+  }
+  .mermaid-check input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px; height: 14px;
+  }
 
   /* Progress — — — — — — — — — — — — — — — — — — — — — — */
   .progress-card { margin-bottom: 40px; }
@@ -517,6 +531,10 @@
       <label><input type="radio" name="mode" value="scholar" onchange="updateModeHint()"><span>详解笔记</span></label>
       <span id="modeHint">快，适合短视频</span>
     </div>
+    <label class="mermaid-check">
+      <input type="checkbox" id="mermaidToggle" />
+      <span>包含 Mermaid 图解</span>
+    </label>
     <button class="btn btn-primary btn-full" id="submitBtn" onclick="handleSubmit()">
       开始处理
     </button>
@@ -817,7 +835,7 @@ async function processURL(url, platform, titleOverride, xsecOverride) {
     const resp = await fetch('/api/process', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({url, platform, title: titleOverride, xsec: xsecOverride, mode})
+      body: JSON.stringify({url, platform, title: titleOverride, xsec: xsecOverride, mode, mermaid: document.getElementById('mermaidToggle').checked})
     });
 
     const reader = resp.body.getReader();
@@ -905,7 +923,7 @@ async function processText() {
     const resp = await fetch('/api/process', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({text, title, mode})
+      body: JSON.stringify({text, title, mode, mermaid: document.getElementById('mermaidToggle').checked})
     });
 
     const reader = resp.body.getReader();
