@@ -1,0 +1,50 @@
+{
+  "openGraph": {
+    "title": "Linear – The system for product development",
+    "description": "Purpose-built for planning and building products with AI agents.",
+    "image": "https://linear.app/static/og/homepage.jpg"
+  },
+  "twitter": {
+    "card": "summary_large_image",
+    "site": "@linear",
+    "title": "Linear – The system for product development",
+    "description": "Purpose-built for planning and building products with AI agents.",
+    "creator": "@linear",
+    "image": "https://linear.app/static/og/homepage.jpg"
+  },
+  "description": "Purpose-built for planning and building products with AI agents.",
+  "canonical": null,
+  "themeColor": "#08090a",
+  "viewport": "width=device-width, height=device-height, initial-scale=1",
+  "favicons": [
+    {
+      "rel": "icon",
+      "href": "https://linear.app/favicon.ico",
+      "sizes": "any",
+      "type": ""
+    },
+    {
+      "rel": "icon",
+      "href": "https://linear.app/static/favicon.svg",
+      "sizes": "",
+      "type": "image/svg+xml"
+    },
+    {
+      "rel": "apple-touch-icon",
+      "href": "https://linear.app/static/apple-touch-icon.png?v=2",
+      "sizes": "180x180",
+      "type": ""
+    }
+  ],
+  "manifest": "https://linear.app/static/pwa.webmanifest?v=4",
+  "structuredData": [],
+  "score": {
+    "hasOg": true,
+    "hasTwitter": true,
+    "hasDescription": true,
+    "hasCanonical": false,
+    "hasStructuredData": false,
+    "hasFavicon": true,
+    "hasThemeColor": true
+  }
+}

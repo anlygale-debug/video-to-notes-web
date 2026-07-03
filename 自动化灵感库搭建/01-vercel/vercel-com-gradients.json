@@ -1,0 +1,120 @@
+{
+  "$schema": "https://designlang.app/schemas/gradients.json",
+  "source": "https://vercel.com",
+  "generated": "2026-07-02T04:43:51.970Z",
+  "count": 7,
+  "gradients": [
+    {
+      "raw": "linear-gradient(to top in oklab, rgb(250, 250, 250) 0%, rgba(0, 0, 0, 0) 100%)",
+      "type": "linear",
+      "direction": "to top in oklab",
+      "stops": [
+        {
+          "color": "rgb(250, 250, 250)",
+          "position": "0%"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "position": "100%"
+        }
+      ],
+      "classification": "brand"
+    },
+    {
+      "raw": "radial-gradient(circle at 0% 0%, rgb(250, 250, 250) 0%, rgba(0, 0, 0, 0) 30%)",
+      "type": "radial",
+      "direction": "circle at 0% 0%",
+      "stops": [
+        {
+          "color": "rgb(250, 250, 250)",
+          "position": "0%"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "position": "30%"
+        }
+      ],
+      "classification": "brand"
+    },
+    {
+      "raw": "radial-gradient(circle at 100% 0%, rgb(250, 250, 250) 0%, rgba(0, 0, 0, 0) 30%)",
+      "type": "radial",
+      "direction": "circle at 100% 0%",
+      "stops": [
+        {
+          "color": "rgb(250, 250, 250)",
+          "position": "0%"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "position": "30%"
+        }
+      ],
+      "classification": "brand"
+    },
+    {
+      "raw": "radial-gradient(circle at 100% 100%, rgb(250, 250, 250) 0%, rgba(0, 0, 0, 0) 30%)",
+      "type": "radial",
+      "direction": "circle at 100% 100%",
+      "stops": [
+        {
+          "color": "rgb(250, 250, 250)",
+          "position": "0%"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "position": "30%"
+        }
+      ],
+      "classification": "brand"
+    },
+    {
+      "raw": "linear-gradient(to top, rgb(250, 250, 250) 0%, oklab(0 0 0 / 0) 100%)",
+      "type": "linear",
+      "direction": "to top",
+      "stops": [
+        {
+          "color": "rgb(250, 250, 250)",
+          "position": "0%"
+        },
+        {
+          "color": "oklab(0 0 0 / 0)",
+          "position": "100%"
+        }
+      ],
+      "classification": "brand"
+    },
+    {
+      "raw": "linear-gradient(to right, rgb(250, 250, 250) 0%, oklab(0 0 0 / 0) 100%)",
+      "type": "linear",
+      "direction": "to right",
+      "stops": [
+        {
+          "color": "rgb(250, 250, 250)",
+          "position": "0%"
+        },
+        {
+          "color": "oklab(0 0 0 / 0)",
+          "position": "100%"
+        }
+      ],
+      "classification": "brand"
+    },
+    {
+      "raw": "linear-gradient(to right in oklab, rgba(0, 0, 0, 0) 0%, rgb(255, 255, 255) 100%)",
+      "type": "linear",
+      "direction": "to right in oklab",
+      "stops": [
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "position": "0%"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "position": "100%"
+        }
+      ],
+      "classification": "brand"
+    }
+  ]
+}

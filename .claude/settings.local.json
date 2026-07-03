@@ -1,7 +1,34 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}, time: %{time_total}s\\\\n\" https://github.com)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}, time: %{time_total}s\\\\n\" https://api.github.com)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}, time: %{time_total}s\\\\n\" https://raw.githubusercontent.com)",
+      "Bash(curl -s \"https://api.github.com/repos/Manavarya09/design-extract\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'Stars: {d.get\\(\\\\\"stargazers_count\\\\\",\\\\\"?\\\\\"\\)}'\\); print\\(f'Updated: {d.get\\(\\\\\"updated_at\\\\\",\\\\\"?\\\\\"\\)}'\\); print\\(f'Desc: {d.get\\(\\\\\"description\\\\\",\\\\\"?\\\\\"\\)}'\\)\")",
+      "Bash(curl -s \"https://api.github.com/repos/yuvrajangadsingh/brandmd\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=liftit+design+extraction&sort=stars&order=desc&per_page=3\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(f'{r[\\\\\"full_name\\\\\"]}: ⭐{r[\\\\\"stargazers_count\\\\\"]} - {r.get\\(\\\\\"description\\\\\",\\\\\"?\\\\\"\\)[:100]}'\\) for r in d.get\\('items',[]\\)]\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=skillui+design+system&sort=stars&order=desc&per_page=3\")",
+      "Bash(curl -s \"https://api.github.com/rate_limit\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); r=d['resources']['core']; print\\(f'GitHub API: {r[\\\\\"used\\\\\"]}/{r[\\\\\"limit\\\\\"]} used, resets at {r[\\\\\"reset\\\\\"]}'\\)\")",
+      "Bash(curl -s -H \"Accept: application/vnd.github.v3+json\" \"https://api.github.com/repos/Manavarya09/design-extract\")",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=skillui&per_page=3\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=liftit+website+design&per_page=3\")",
+      "Bash(gh search *)",
+      "Bash(python3 -c \"import openpyxl; print\\('openpyxl', openpyxl.__version__\\)\")",
+      "Bash(python3 \"/Users/yubo/Claude code test/gen_tool_analysis.py\")",
+      "Bash(npx playwright *)",
+      "Bash(npx designlang *)",
+      "Bash(npx @ahmedessyad/liftit https://vercel.com)",
+      "Bash(rm -rf /Users/yubo/.npm/_npx/867941c320f26b60)",
+      "Bash(npx @ahmedessyad/liftit https://vercel.com --help)",
+      "Bash(npm create *)",
+      "Bash(python3 analyze_files.py)",
+      "Bash(python3 generate_report.py)"
     ]
   }
 }

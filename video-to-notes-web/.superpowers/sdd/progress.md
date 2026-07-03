@@ -1,0 +1,6 @@
+Task 1: complete (commits a4b0f9d..f37a835, review clean — 1 Important plan-mandated, 3 Minor accepted)
+Task 2: complete (commits f37a835..b076ddd, review clean after 2 fixes)
+Task 3: complete (commits b076ddd..f2601d3, review clean — 2 Minor accepted)
+Task 4: complete (commits f2601d3..445d084, review clean)
+Task 5: complete (commits 445d084..be69e35, review clean after 1 fix)
+Task 6: complete (manual verification passed — text mode, scholar, download filtering, link mode all OK)

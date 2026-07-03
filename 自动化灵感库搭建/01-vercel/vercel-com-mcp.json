@@ -1,0 +1,680 @@
+{
+  "colors": {
+    "all": [
+      {
+        "hex": "#ebebeb",
+        "rgb": {
+          "r": 235,
+          "g": 235,
+          "b": 235,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 92
+        },
+        "count": 1174,
+        "contexts": [
+          "border",
+          "background"
+        ]
+      },
+      {
+        "hex": "#171717",
+        "rgb": {
+          "r": 23,
+          "g": 23,
+          "b": 23,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 9
+        },
+        "count": 866,
+        "contexts": [
+          "text",
+          "background",
+          "border"
+        ]
+      },
+      {
+        "hex": "#4d4d4d",
+        "rgb": {
+          "r": 77,
+          "g": 77,
+          "b": 77,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 30
+        },
+        "count": 210,
+        "contexts": [
+          "text"
+        ]
+      },
+      {
+        "hex": "#666666",
+        "rgb": {
+          "r": 102,
+          "g": 102,
+          "b": 102,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 40
+        },
+        "count": 79,
+        "contexts": [
+          "text"
+        ]
+      },
+      {
+        "hex": "#ffffff",
+        "rgb": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 100
+        },
+        "count": 40,
+        "contexts": [
+          "background",
+          "text"
+        ]
+      },
+      {
+        "hex": "#8f8f8f",
+        "rgb": {
+          "r": 143,
+          "g": 143,
+          "b": 143,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 56
+        },
+        "count": 22,
+        "contexts": [
+          "text"
+        ]
+      },
+      {
+        "hex": "#a8a8a8",
+        "rgb": {
+          "r": 168,
+          "g": 168,
+          "b": 168,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 66
+        },
+        "count": 7,
+        "contexts": [
+          "text"
+        ]
+      },
+      {
+        "hex": "#000000",
+        "rgb": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 0
+        },
+        "count": 4,
+        "contexts": [
+          "text",
+          "border"
+        ]
+      },
+      {
+        "hex": "#0070f3",
+        "rgb": {
+          "r": 0,
+          "g": 112,
+          "b": 243,
+          "a": 1
+        },
+        "hsl": {
+          "h": 212,
+          "s": 100,
+          "l": 48
+        },
+        "count": 3,
+        "contexts": [
+          "text",
+          "background"
+        ]
+      },
+      {
+        "hex": "#7d7d7d",
+        "rgb": {
+          "r": 125,
+          "g": 125,
+          "b": 125,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 49
+        },
+        "count": 3,
+        "contexts": [
+          "text"
+        ]
+      },
+      {
+        "hex": "#383838",
+        "rgb": {
+          "r": 56,
+          "g": 56,
+          "b": 56,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 22
+        },
+        "count": 1,
+        "contexts": [
+          "background"
+        ]
+      }
+    ]
+  },
+  "regions": [
+    {
+      "role": "nav",
+      "tag": "header",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "w": 1280,
+        "h": 64
+      },
+      "heading": "Agent Stack",
+      "buttonCount": 7,
+      "cardCount": 155,
+      "className": "peer sticky top-0 z-(--header-zindex) h-(--header-height) w-full bg-transparent data-[scrolled]:bg-background-200 data-[scrolled]:shadow-[0_1px_0_0_var(--ds-gray-alpha-400)] data-[nav-open]:!shadow-none data-[nav-open]:bg-background-200 data-[mobile-open]:!bg-background-100 data-[mobile-open]:!shadow-none"
+    },
+    {
+      "role": "nav",
+      "tag": "nav",
+      "bounds": {
+        "x": 65,
+        "y": 0,
+        "w": 356.125,
+        "h": 64
+      },
+      "heading": null,
+      "buttonCount": 2,
+      "cardCount": 70,
+      "className": "flex h-full items-center max-[960px]:hidden @max-[960px]:hidden [[data-mobile-open]_&]:!hidden"
+    },
+    {
+      "role": "testimonials",
+      "tag": "main",
+      "bounds": {
+        "x": 0,
+        "y": -3680,
+        "w": 1280,
+        "h": 4759.984375
+      },
+      "heading": "Agentic Infrastructure",
+      "buttonCount": 6,
+      "cardCount": 81,
+      "className": "overflow-x-clip"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -3680,
+        "w": 1232,
+        "h": 736
+      },
+      "heading": "Agentic Infrastructure",
+      "buttonCount": 0,
+      "cardCount": 32,
+      "className": "relative flex min-h-[min(calc(100svh-var(--header-height)),1100px)] flex-col select-none"
+    },
+    {
+      "role": "nav",
+      "tag": "header",
+      "bounds": {
+        "x": 24,
+        "y": -3466,
+        "w": 444,
+        "h": 200
+      },
+      "heading": "Agentic Infrastructure",
+      "buttonCount": 0,
+      "cardCount": 3,
+      "className": "relative z-10 mx-auto flex w-full max-w-[444px] flex-col items-center gap-4 text-center @lg:gap-8 @lg:mx-0 @lg:items-start @lg:text-left select-text"
+    },
+    {
+      "role": "nav",
+      "tag": "nav",
+      "bounds": {
+        "x": 892,
+        "y": -3438,
+        "w": 364,
+        "h": 144
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 3,
+      "className": "flex flex-col w-full gap-4 px-2 py-8"
+    },
+    {
+      "role": "testimonials",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -2736,
+        "w": 1232,
+        "h": 2201.984375
+      },
+      "heading": "Build agents on infrastructure that thinks like them",
+      "buttonCount": 0,
+      "cardCount": 21,
+      "className": "mt-40 @md:mt-52"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -2736,
+        "w": 1232,
+        "h": 112
+      },
+      "heading": "Build agents on infrastructure that thinks like them",
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "flex flex-col @lg:grid w-full @lg:grid-cols-12 gap-x-5 gap-y-1 items-baseline"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -1916.671875,
+        "w": 1232,
+        "h": 112
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "flex flex-col @lg:grid w-full @lg:grid-cols-12 gap-x-5 gap-y-1 items-baseline"
+    },
+    {
+      "role": "testimonials",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -1097.34375,
+        "w": 1232,
+        "h": 112
+      },
+      "heading": "Host platforms that serve every customer",
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "flex flex-col @lg:grid w-full @lg:grid-cols-12 gap-x-5 gap-y-1 items-baseline"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -326.015625,
+        "w": 1232,
+        "h": 718
+      },
+      "heading": "Recently shipped",
+      "buttonCount": 0,
+      "cardCount": 6,
+      "className": "mt-40 @md:mt-52"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -326.015625,
+        "w": 1232,
+        "h": 56
+      },
+      "heading": "Recently shipped",
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "flex flex-col @lg:grid w-full @lg:grid-cols-12 gap-x-5 gap-y-1 items-baseline"
+    },
+    {
+      "role": "features",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": -190.015625,
+        "w": 1232,
+        "h": 582
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 5,
+      "className": "@container mt-20 grid grid-cols-1 gap-5 @smd:grid-cols-12 p-px"
+    },
+    {
+      "role": "nav",
+      "tag": "header",
+      "bounds": {
+        "x": 45,
+        "y": 314.984375,
+        "w": 605,
+        "h": 56
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 2,
+      "className": "absolute z-10 flex w-full flex-col gap-1.5 p-0 m-0 bottom-5 left-5"
+    },
+    {
+      "role": "nav",
+      "tag": "header",
+      "bounds": {
+        "x": 670,
+        "y": -8.015625,
+        "w": 605,
+        "h": 79
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "absolute z-10 flex w-full flex-col gap-1.5 p-0 m-0 bottom-5 left-5"
+    },
+    {
+      "role": "nav",
+      "tag": "header",
+      "bounds": {
+        "x": 670,
+        "y": 311.984375,
+        "w": 605,
+        "h": 59
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "absolute z-10 flex w-full flex-col gap-1.5 p-0 m-0 bottom-5 left-5"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": 667.984375,
+        "w": 1232,
+        "h": 136
+      },
+      "heading": "Built by you, or your agents",
+      "buttonCount": 6,
+      "cardCount": 22,
+      "className": "mt-53 mb-53 @md:mt-69 @md:mb-69"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 24,
+        "y": 667.984375,
+        "w": 1232,
+        "h": 56
+      },
+      "heading": "Built by you, or your agents",
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "flex w-full flex-col items-center gap-y-3 text-center @lg:gap-y-4"
+    },
+    {
+      "role": "footer",
+      "tag": "footer",
+      "bounds": {
+        "x": 0,
+        "y": 1079.984375,
+        "w": 1280,
+        "h": 846
+      },
+      "heading": "Agent Stack",
+      "buttonCount": 1,
+      "cardCount": 176,
+      "className": "max-w-[var(--ds-page-width-with-margin)] mx-auto px-[var(--geist-page-margin)] py-10 text-[14px]"
+    },
+    {
+      "role": "nav",
+      "tag": "nav",
+      "bounds": {
+        "x": 24,
+        "y": 1119.984375,
+        "w": 1232,
+        "h": 700
+      },
+      "heading": "Agent Stack",
+      "buttonCount": 1,
+      "cardCount": 171,
+      "className": null
+    },
+    {
+      "role": "sidebar",
+      "tag": "aside",
+      "bounds": {
+        "x": 1280,
+        "y": 0,
+        "w": 0,
+        "h": 800
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "shrink-0 z-[100] sticky h-screen top-0 right-0 transition-transformation ease-in-out transition-[width] duration-250 w-0 overflow-hidden"
+    }
+  ],
+  "componentClusters": [
+    {
+      "kind": "button",
+      "structuralHash": "button>span",
+      "instanceCount": 3,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(77, 77, 77)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(235, 235, 235)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 2
+        },
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(77, 77, 77)",
+            "padding": "6px 4px 6px 6px",
+            "borderRadius": "3.35544e+07px",
+            "border": "0px solid rgb(235, 235, 235)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "span>svg",
+      "instanceCount": 6,
+      "variants": [
+        {
+          "css": {
+            "background": "rgb(255, 255, 255)",
+            "color": "rgb(77, 77, 77)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "3.35544e+07px",
+            "border": "0px solid rgb(235, 235, 235)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 6
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "button>span>span",
+      "instanceCount": 1,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(168, 168, 168)",
+            "padding": "14px 14px 14px 14px",
+            "borderRadius": "3.35544e+07px",
+            "border": "0px none rgb(235, 235, 235)",
+            "fontSize": "16px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "button",
+      "instanceCount": 1,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(77, 77, 77)",
+            "padding": "2px 2px 2px 2px",
+            "borderRadius": "0px",
+            "border": "0px solid rgb(235, 235, 235)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 1
+        }
+      ]
+    }
+  ],
+  "accessibility": {
+    "remediation": [
+      {
+        "fg": "#0072f5",
+        "bg": "#ffffff",
+        "ratio": 4.44,
+        "rule": "AA-normal",
+        "suggestion": {
+          "replace": "fg",
+          "color": "#000000",
+          "newRatio": 21
+        }
+      }
+    ]
+  },
+  "cssHealth": {
+    "sheets": [
+      {
+        "url": "https://vercel.com/",
+        "totalBytes": 173,
+        "usedBytes": 171,
+        "unusedBytes": 2,
+        "unusedPercent": 1
+      },
+      {
+        "url": "https://vercel.com/vc-ap-vercel-marketing/_next/static/immutable/chunks/3fw3w5yfsc6m1.css",
+        "totalBytes": 665011,
+        "usedBytes": 603012,
+        "unusedBytes": 61999,
+        "unusedPercent": 9
+      },
+      {
+        "url": "https://vercel.com/vc-ap-vercel-marketing/_next/static/immutable/chunks/1db-45202kw81.css",
+        "totalBytes": 117249,
+        "usedBytes": 669,
+        "unusedBytes": 116580,
+        "unusedPercent": 99
+      },
+      {
+        "url": "https://vercel.com/vc-ap-vercel-marketing/_next/static/immutable/chunks/1la4s5dqby2ah.css",
+        "totalBytes": 119192,
+        "usedBytes": 0,
+        "unusedBytes": 119192,
+        "unusedPercent": 100
+      },
+      {
+        "url": "https://vercel.com/vc-ap-vercel-marketing/_next/static/immutable/chunks/3u82rwmj_1n8p.css",
+        "totalBytes": 7373,
+        "usedBytes": 74,
+        "unusedBytes": 7299,
+        "unusedPercent": 99
+      }
+    ],
+    "totalBytes": 908998,
+    "usedBytes": 603926,
+    "unusedBytes": 305072,
+    "unusedPercent": 34,
+    "importantCount": 1226,
+    "duplicates": 10607,
+    "vendorPrefixes": {
+      "webkit": 362,
+      "moz": 16,
+      "ms": 7,
+      "o": 0
+    },
+    "keyframes": [],
+    "specificity": {
+      "max": [
+        2,
+        14,
+        7
+      ],
+      "average": [
+        0.01,
+        1.81,
+        0.17
+      ],
+      "count": 10513
+    },
+    "issues": [
+      "1226 !important rules",
+      "10607 duplicate declarations"
+    ]
+  }
+}

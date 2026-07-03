@@ -1,0 +1,61 @@
+{
+  "components": [
+    {
+      "cluster": "button--outline",
+      "variant": 0,
+      "path": "screenshots/button-outline-0.png",
+      "bounds": {
+        "w": 94,
+        "h": 32
+      },
+      "kind": "button",
+      "variantHint": "outline",
+      "sizeHint": "",
+      "retina": true
+    },
+    {
+      "cluster": "button--outline",
+      "variant": 1,
+      "path": "screenshots/button-outline-1.png",
+      "bounds": {
+        "w": 104,
+        "h": 32
+      },
+      "kind": "button",
+      "variantHint": "outline",
+      "sizeHint": "",
+      "retina": true
+    },
+    {
+      "cluster": "button--outline",
+      "variant": 2,
+      "path": "screenshots/button-outline-2.png",
+      "bounds": {
+        "w": 28,
+        "h": 28
+      },
+      "kind": "button",
+      "variantHint": "outline",
+      "sizeHint": "",
+      "retina": true
+    },
+    {
+      "cluster": "button--outline--md",
+      "variant": 0,
+      "path": "screenshots/button-outline-md-0.png",
+      "bounds": {
+        "w": 107,
+        "h": 32
+      },
+      "kind": "button",
+      "variantHint": "outline",
+      "sizeHint": "md",
+      "retina": true
+    }
+  ],
+  "fullPage": {
+    "path": "screenshots/full-page.png",
+    "retina": true
+  },
+  "count": 4
+}

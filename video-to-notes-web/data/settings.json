@@ -1,0 +1,7 @@
+{
+  "api_base": "https://api.deepseek.com",
+  "api_key": "sk-7b8f36019aad47e9a0bcedc92c331ab0",
+  "model": "deepseek-chat",
+  "default_mode": "standard",
+  "default_mermaid": true
+}

@@ -1,0 +1,126 @@
+{
+  "tone": "neutral",
+  "pronoun": "you-only",
+  "headingStyle": "Sentence case",
+  "headingLengthClass": "balanced",
+  "ctaVerbs": [
+    {
+      "value": "linear",
+      "count": 5
+    },
+    {
+      "value": "sign",
+      "count": 2
+    },
+    {
+      "value": "pulse",
+      "count": 2
+    },
+    {
+      "value": "initiatives",
+      "count": 2
+    },
+    {
+      "value": "projects",
+      "count": 2
+    },
+    {
+      "value": "agents",
+      "count": 2
+    },
+    {
+      "value": "product",
+      "count": 1
+    },
+    {
+      "value": "resources",
+      "count": 1
+    },
+    {
+      "value": "log",
+      "count": 1
+    },
+    {
+      "value": "inbox",
+      "count": 1
+    }
+  ],
+  "buttonPatterns": [
+    {
+      "value": "linear",
+      "count": 2
+    },
+    {
+      "value": "product",
+      "count": 1
+    },
+    {
+      "value": "resources",
+      "count": 1
+    },
+    {
+      "value": "log in\nsign up",
+      "count": 1
+    },
+    {
+      "value": "log in",
+      "count": 1
+    },
+    {
+      "value": "sign up",
+      "count": 1
+    },
+    {
+      "value": "inbox",
+      "count": 1
+    },
+    {
+      "value": "my issues",
+      "count": 1
+    },
+    {
+      "value": "reviews",
+      "count": 1
+    },
+    {
+      "value": "pulse",
+      "count": 1
+    },
+    {
+      "value": "workspace",
+      "count": 1
+    },
+    {
+      "value": "initiatives",
+      "count": 1
+    },
+    {
+      "value": "projects",
+      "count": 1
+    },
+    {
+      "value": "more",
+      "count": 1
+    },
+    {
+      "value": "favorites",
+      "count": 1
+    }
+  ],
+  "sampleHeadings": [
+    "The product development\nsystem for teams and agents\nThe product development system for teams and agents",
+    "Faster app launch",
+    "A new species of product tool. Purpose-built for modern teams with AI workflows at its core, Linear sets a new standard for planning and building products.",
+    "Make product operations self-driving",
+    "Define the product direction",
+    "Make product operations self-driving",
+    "Define the product direction",
+    "Move work forward across teams and agents",
+    "Review PRs and agent output",
+    "Understand progress at scale"
+  ],
+  "stats": {
+    "buttons": 44,
+    "headings": 16
+  }
+}

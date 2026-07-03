@@ -1,0 +1,100 @@
+{
+  "materialLanguage": {
+    "label": "material-you",
+    "confidence": 0.45,
+    "signals": [
+      {
+        "label": "material-you",
+        "weight": 0.45,
+        "detail": "pill shapes + soft shadows"
+      }
+    ],
+    "metrics": {
+      "saturation": 0.444,
+      "shadowProfile": "soft",
+      "avgShadowBlur": 0,
+      "maxShadowBlur": 0,
+      "insetShadows": 0,
+      "avgRadius": 1167.7,
+      "maxRadius": 9999,
+      "hasPill": true,
+      "hasBackdropBlur": false,
+      "gradientCount": 13
+    },
+    "alternates": []
+  },
+  "imageryStyle": {
+    "label": "mixed",
+    "confidence": 0.017,
+    "counts": {
+      "total": 117,
+      "svg": 89,
+      "icon": 111,
+      "hero": 0,
+      "screenshot": 0,
+      "photoLike": 0
+    },
+    "dominantAspect": "square-ish",
+    "radiusProfile": "soft",
+    "alternates": [
+      {
+        "label": "flat-illustration",
+        "score": 0.55
+      }
+    ],
+    "signals": [
+      "svg-heavy"
+    ]
+  },
+  "backgroundPatterns": {
+    "labels": [
+      "line-grid",
+      "svg-pattern"
+    ],
+    "counts": {
+      "noise": 0,
+      "dotGrid": 0,
+      "lineGrid": 15,
+      "meshCount": 0,
+      "svgPattern": 4
+    },
+    "gradientTotals": {
+      "radial": 10,
+      "linear": 24
+    },
+    "samples": [
+      {
+        "tag": "svg-pattern",
+        "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='832' fill='none'%3E%3Cpath fill='%231C1D1E' d='M0 0h1280v832H0z'/%3E%3Cg filter='url(%23a)' opacity='0.22'%3E%3Cr"
+      },
+      {
+        "tag": "svg-pattern",
+        "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='832' fill='none'%3E%3Cpath fill='%231C1D1E' d='M0 0h1280v832H0z'/%3E%3Cg filter='url(%23a)' opacity='0.22'%3E%3Cr"
+      },
+      {
+        "tag": "svg-pattern",
+        "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='832' fill='none'%3E%3Cpath fill='%231C1D1E' d='M0 0h1280v832H0z'/%3E%3Cg filter='url(%23a)' opacity='0.22'%3E%3Cr"
+      },
+      {
+        "tag": "line-grid",
+        "value": "repeating-linear-gradient(to right, rgb(35, 37, 42) 0px, rgb(35, 37, 42) 3px, rgba(0, 0, 0, 0) 3px, rgba(0, 0, 0, 0) 7px)"
+      },
+      {
+        "tag": "line-grid",
+        "value": "repeating-linear-gradient(to right, rgb(35, 37, 42) 0px, rgb(35, 37, 42) 3px, rgba(0, 0, 0, 0) 3px, rgba(0, 0, 0, 0) 7px)"
+      },
+      {
+        "tag": "line-grid",
+        "value": "repeating-linear-gradient(to right, rgb(35, 37, 42) 0px, rgb(35, 37, 42) 3px, rgba(0, 0, 0, 0) 3px, rgba(0, 0, 0, 0) 7px)"
+      },
+      {
+        "tag": "line-grid",
+        "value": "repeating-linear-gradient(to right, rgb(35, 37, 42) 0px, rgb(35, 37, 42) 3px, rgba(0, 0, 0, 0) 3px, rgba(0, 0, 0, 0) 7px)"
+      },
+      {
+        "tag": "line-grid",
+        "value": "repeating-linear-gradient(to right, rgb(35, 37, 42) 0px, rgb(35, 37, 42) 3px, rgba(0, 0, 0, 0) 3px, rgba(0, 0, 0, 0) 7px)"
+      }
+    ]
+  }
+}

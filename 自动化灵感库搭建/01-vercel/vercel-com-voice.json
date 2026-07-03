@@ -1,0 +1,58 @@
+{
+  "tone": "neutral",
+  "pronoun": "you-only",
+  "headingStyle": "Sentence case",
+  "headingLengthClass": "tight",
+  "ctaVerbs": [
+    {
+      "value": "products",
+      "count": 1
+    },
+    {
+      "value": "resources",
+      "count": 1
+    },
+    {
+      "value": "plugin",
+      "count": 1
+    },
+    {
+      "value": "cookie",
+      "count": 1
+    }
+  ],
+  "buttonPatterns": [
+    {
+      "value": "products",
+      "count": 1
+    },
+    {
+      "value": "resources",
+      "count": 1
+    },
+    {
+      "value": "plugin",
+      "count": 1
+    },
+    {
+      "value": "cookie preferences",
+      "count": 1
+    }
+  ],
+  "sampleHeadings": [
+    "Agent Stack",
+    "Core Platform",
+    "Tools",
+    "Learn",
+    "Build",
+    "Agentic Infrastructure",
+    "Build agents on infrastructure that thinks like them",
+    "Host platforms that serve every customer",
+    "Recently shipped",
+    "Agentic Infrastructure"
+  ],
+  "stats": {
+    "buttons": 4,
+    "headings": 29
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "targets": [
+    {
+      "type": "pricing",
+      "url": "https://stripe.com/en-hk/pricing",
+      "anchor": "Pricing"
+    }
+  ],
+  "pages": [
+    {
+      "url": "https://stripe.com/en-hk/pricing",
+      "type": "pricing",
+      "intent": {
+        "type": "pricing",
+        "confidence": 1,
+        "path": "/en-hk/pricing",
+        "title": "Pricing & Fees",
+        "description": "",
+        "signals": [
+          {
+            "kind": "url",
+            "type": "pricing",
+            "weight": 0.9
+          },
+          {
+            "kind": "title",
+            "type": "pricing",
+            "weight": 0.4
+          }
+        ],
+        "alternates": [],
+        "needsSmart": false
+      },
+      "error": null
+    }
+  ],
+  "consistency": {
+    "pairwise": [],
+    "drift": {},
+    "shared": {}
+  }
+}

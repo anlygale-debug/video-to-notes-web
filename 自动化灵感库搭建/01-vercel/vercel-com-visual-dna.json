@@ -1,0 +1,72 @@
+{
+  "materialLanguage": {
+    "label": "flat",
+    "confidence": 0,
+    "signals": [],
+    "metrics": {
+      "saturation": 0.091,
+      "shadowProfile": "soft",
+      "avgShadowBlur": 0,
+      "maxShadowBlur": 0,
+      "insetShadows": 0,
+      "avgRadius": 6.7,
+      "maxRadius": 12,
+      "hasPill": false,
+      "hasBackdropBlur": false,
+      "gradientCount": 7
+    },
+    "alternates": []
+  },
+  "imageryStyle": {
+    "label": "gradient-mesh",
+    "confidence": 0.513,
+    "counts": {
+      "total": 13,
+      "svg": 9,
+      "icon": 1,
+      "hero": 0,
+      "screenshot": 0,
+      "photoLike": 3
+    },
+    "dominantAspect": "ultra-wide",
+    "radiusProfile": "square",
+    "alternates": [
+      {
+        "label": "flat-illustration",
+        "score": 1.15
+      },
+      {
+        "label": "photography",
+        "score": 0.45
+      }
+    ],
+    "signals": [
+      "raster photo-ext",
+      "raster photo-ext",
+      "raster photo-ext",
+      "svg-heavy"
+    ]
+  },
+  "backgroundPatterns": {
+    "labels": [
+      "gradient-mesh"
+    ],
+    "counts": {
+      "noise": 0,
+      "dotGrid": 0,
+      "lineGrid": 0,
+      "meshCount": 1,
+      "svgPattern": 0
+    },
+    "gradientTotals": {
+      "radial": 3,
+      "linear": 6
+    },
+    "samples": [
+      {
+        "tag": "gradient-mesh",
+        "value": "radial-gradient(circle at 0% 0%, rgb(250, 250, 250) 0%, rgba(0, 0, 0, 0) 30%), radial-gradient(circle at 100% 0%, rgb(250, 250, 250) 0%, rgba(0, 0, 0, 0) 30%), radial-gradient(circle at 100% 100%, rgb"
+      }
+    ]
+  }
+}

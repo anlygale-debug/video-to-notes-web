@@ -1,0 +1,655 @@
+{
+  "always_keep": [
+    "AGENT.md",
+    "DESIGN.md",
+    "design-language.md",
+    "design-tokens.json",
+    "gradients.json",
+    "voice.json",
+    "visual-dna.json",
+    "intent.json",
+    "motion-tokens.json",
+    "mcp.json",
+    "library.json",
+    "icon-system.json",
+    "stack-intel.json",
+    "seo.json",
+    "perf.json",
+    "form-states.json",
+    "screenshots.json",
+    "responsive.json",
+    "figma-variables.json",
+    "wordpress-theme.json",
+    "variables.css",
+    "tailwind-v4.css",
+    "shadcn-theme.css",
+    "gradients.css",
+    "motion.framer.js",
+    "motion.gsap.js",
+    "motion.waapi.js",
+    "motion.one.js",
+    "motion.tailwind.js",
+    "anatomy.tsx",
+    "theme.js",
+    "motion.html",
+    "preview.html"
+  ],
+  "always_skip": [
+    "logo.json",
+    "reset.css",
+    "tokens.d.ts",
+    "tailwind.config.js"
+  ],
+  "varies": [
+    "multipage.json",
+    "motion.css"
+  ],
+  "per_file": {
+    "AGENT.md": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "3,558 – 3,926",
+      "details": {
+        "sections": {
+          "min": 14,
+          "max": 14,
+          "avg": 14.0
+        }
+      }
+    },
+    "DESIGN.md": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "3,848 – 5,094",
+      "details": {
+        "sections": {
+          "min": 8,
+          "max": 8,
+          "avg": 8.0
+        }
+      }
+    },
+    "design-language.md": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "48,984 – 74,251",
+      "details": {
+        "sections": {
+          "min": 81,
+          "max": 121,
+          "avg": 94.0
+        }
+      }
+    },
+    "design-tokens.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "4,964 – 7,080",
+      "details": {
+        "keys": {
+          "min": 184,
+          "max": 301,
+          "avg": 231.25
+        },
+        "depth": {
+          "min": 5,
+          "max": 5,
+          "avg": 5.0
+        }
+      }
+    },
+    "gradients.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,105 – 10,353",
+      "details": {
+        "keys": {
+          "min": 65,
+          "max": 313,
+          "avg": 145.0
+        },
+        "depth": {
+          "min": 3,
+          "max": 3,
+          "avg": 3.0
+        }
+      }
+    },
+    "voice.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "718 – 2,208",
+      "details": {
+        "keys": {
+          "min": 26,
+          "max": 60,
+          "avg": 50.0
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "visual-dna.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "916 – 2,406",
+      "details": {
+        "keys": {
+          "min": 47,
+          "max": 63,
+          "avg": 52.0
+        },
+        "depth": {
+          "min": 3,
+          "max": 3,
+          "avg": 3.0
+        }
+      }
+    },
+    "intent.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "1,315 – 11,489",
+      "details": {
+        "keys": {
+          "min": 52,
+          "max": 433,
+          "avg": 317.75
+        },
+        "depth": {
+          "min": 4,
+          "max": 4,
+          "avg": 4.0
+        }
+      }
+    },
+    "motion-tokens.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "469 – 1,634",
+      "details": {
+        "keys": {
+          "min": 23,
+          "max": 75,
+          "avg": 44.0
+        },
+        "depth": {
+          "min": 3,
+          "max": 3,
+          "avg": 3.0
+        }
+      }
+    },
+    "mcp.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "3,697 – 35,329",
+      "details": {
+        "keys": {
+          "min": 182,
+          "max": 1787,
+          "avg": 922.75
+        },
+        "depth": {
+          "min": 4,
+          "max": 4,
+          "avg": 4.0
+        }
+      }
+    },
+    "library.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "170 – 283",
+      "details": {
+        "keys": {
+          "min": 9,
+          "max": 12,
+          "avg": 9.75
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "logo.json": {
+      "found": 3,
+      "has_data": 3,
+      "size_range": "0 – 248",
+      "details": {
+        "keys": {
+          "min": 0,
+          "max": 11,
+          "avg": 8.25
+        },
+        "depth": {
+          "min": 0,
+          "max": 1,
+          "avg": 0.75
+        }
+      }
+    },
+    "icon-system.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,411 – 4,154",
+      "details": {
+        "keys": {
+          "min": 134,
+          "max": 137,
+          "avg": 135.25
+        },
+        "depth": {
+          "min": 3,
+          "max": 3,
+          "avg": 3.0
+        }
+      }
+    },
+    "stack-intel.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "99 – 118",
+      "details": {
+        "keys": {
+          "min": 6,
+          "max": 6,
+          "avg": 6.0
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "seo.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "1,271 – 3,634",
+      "details": {
+        "keys": {
+          "min": 38,
+          "max": 74,
+          "avg": 52.0
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "perf.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "391 – 400",
+      "details": {
+        "keys": {
+          "min": 27,
+          "max": 27,
+          "avg": 27.0
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "form-states.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "198 – 237",
+      "details": {
+        "keys": {
+          "min": 14,
+          "max": 16,
+          "avg": 15.0
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "screenshots.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "890 – 3,634",
+      "details": {
+        "keys": {
+          "min": 45,
+          "max": 185,
+          "avg": 115.0
+        },
+        "depth": {
+          "min": 3,
+          "max": 3,
+          "avg": 3.0
+        }
+      }
+    },
+    "responsive.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "895 – 895",
+      "details": {
+        "keys": {
+          "min": 34,
+          "max": 34,
+          "avg": 34.0
+        },
+        "depth": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "multipage.json": {
+      "found": 4,
+      "has_data": 1,
+      "size_range": "44 – 524",
+      "details": {
+        "keys": {
+          "min": 1,
+          "max": 27,
+          "avg": 7.5
+        },
+        "depth": {
+          "min": 1,
+          "max": 4,
+          "avg": 1.75
+        }
+      }
+    },
+    "figma-variables.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "5,221 – 8,490",
+      "details": {
+        "keys": {
+          "min": 306,
+          "max": 470,
+          "avg": 388.0
+        },
+        "depth": {
+          "min": 5,
+          "max": 5,
+          "avg": 5.0
+        }
+      }
+    },
+    "wordpress-theme.json": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,743 – 2,908",
+      "details": {
+        "keys": {
+          "min": 116,
+          "max": 125,
+          "avg": 121.25
+        },
+        "depth": {
+          "min": 4,
+          "max": 4,
+          "avg": 4.0
+        }
+      }
+    },
+    "variables.css": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "19,087 – 33,137",
+      "details": {
+        "vars": {
+          "min": 485,
+          "max": 763,
+          "avg": 600.5
+        },
+        "rules": {
+          "min": 1,
+          "max": 1,
+          "avg": 1.0
+        }
+      }
+    },
+    "tailwind-v4.css": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,749 – 3,558",
+      "details": {
+        "vars": {
+          "min": 45,
+          "max": 76,
+          "avg": 64.5
+        },
+        "rules": {
+          "min": 3,
+          "max": 3,
+          "avg": 3.0
+        }
+      }
+    },
+    "shadcn-theme.css": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "345 – 484",
+      "details": {
+        "vars": {
+          "min": 8,
+          "max": 12,
+          "avg": 11.0
+        },
+        "rules": {
+          "min": 1,
+          "max": 1,
+          "avg": 1.0
+        }
+      }
+    },
+    "reset.css": {
+      "found": 4,
+      "has_data": 0,
+      "size_range": "1,911 – 1,946",
+      "details": {
+        "rules": {
+          "min": 15,
+          "max": 15,
+          "avg": 15.0
+        }
+      }
+    },
+    "gradients.css": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,183 – 8,187",
+      "details": {
+        "vars": {
+          "min": 6,
+          "max": 22,
+          "avg": 12.0
+        },
+        "rules": {
+          "min": 13,
+          "max": 45,
+          "avg": 25.0
+        }
+      }
+    },
+    "motion.css": {
+      "found": 4,
+      "has_data": 2,
+      "size_range": "1,553 – 11,335",
+      "details": {
+        "vars": {
+          "min": 4,
+          "max": 13,
+          "avg": 7.5
+        },
+        "rules": {
+          "min": 16,
+          "max": 352,
+          "avg": 100.75
+        }
+      }
+    },
+    "motion.framer.js": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,170 – 4,384",
+      "details": {
+        "variants": {
+          "min": 6,
+          "max": 6,
+          "avg": 6.0
+        },
+        "easings": {
+          "min": 18,
+          "max": 22,
+          "avg": 20.0
+        }
+      }
+    },
+    "motion.gsap.js": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,285 – 2,631",
+      "details": {
+        "variants": {
+          "min": 5,
+          "max": 5,
+          "avg": 5.0
+        },
+        "easings": {
+          "min": 33,
+          "max": 40,
+          "avg": 36.5
+        }
+      }
+    },
+    "motion.waapi.js": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,057 – 18,387",
+      "details": {
+        "variants": {
+          "min": 5,
+          "max": 5,
+          "avg": 5.0
+        },
+        "easings": {
+          "min": 8,
+          "max": 15,
+          "avg": 10.25
+        }
+      }
+    },
+    "motion.one.js": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "2,231 – 5,485",
+      "details": {
+        "variants": {
+          "min": 7,
+          "max": 7,
+          "avg": 7.0
+        },
+        "easings": {
+          "min": 13,
+          "max": 15,
+          "avg": 14.0
+        }
+      }
+    },
+    "motion.tailwind.js": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "1,923 – 13,185",
+      "details": {
+        "variants": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        },
+        "easings": {
+          "min": 17,
+          "max": 56,
+          "avg": 30.0
+        }
+      }
+    },
+    "tokens.d.ts": {
+      "found": 4,
+      "has_data": 0,
+      "size_range": "1,543 – 2,215",
+      "details": {
+        "rules": {
+          "min": 7,
+          "max": 7,
+          "avg": 7.0
+        }
+      }
+    },
+    "anatomy.tsx": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "482 – 1,354",
+      "details": {
+        "components": {
+          "min": 2,
+          "max": 8,
+          "avg": 4.0
+        },
+        "props": {
+          "min": 2,
+          "max": 8,
+          "avg": 4.0
+        }
+      }
+    },
+    "tailwind.config.js": {
+      "found": 4,
+      "has_data": 0,
+      "size_range": "4,007 – 5,827",
+      "details": {
+        "rules": {
+          "min": 22,
+          "max": 28,
+          "avg": 25.5
+        }
+      }
+    },
+    "theme.js": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "4,302 – 4,566",
+      "details": {
+        "variants": {
+          "min": 2,
+          "max": 2,
+          "avg": 2.0
+        }
+      }
+    },
+    "motion.html": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "7,627 – 13,725",
+      "details": {}
+    },
+    "preview.html": {
+      "found": 4,
+      "has_data": 4,
+      "size_range": "23,420 – 30,329",
+      "details": {}
+    }
+  }
+}

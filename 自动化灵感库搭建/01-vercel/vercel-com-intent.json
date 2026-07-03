@@ -1,0 +1,533 @@
+{
+  "pageIntent": {
+    "type": "landing",
+    "confidence": 0.29,
+    "path": "/",
+    "title": "Agentic Infrastructure - Vercel",
+    "description": "The autonomous stack for every app and agent.",
+    "signals": [
+      {
+        "kind": "dom",
+        "type": "blog-post",
+        "weight": 0.35,
+        "detail": "byline|min-read"
+      },
+      {
+        "kind": "dom",
+        "type": "legal",
+        "weight": 0.4
+      },
+      {
+        "kind": "url",
+        "type": "landing",
+        "weight": 0.45,
+        "detail": "root-path"
+      }
+    ],
+    "alternates": [
+      {
+        "type": "legal",
+        "score": 0.4
+      },
+      {
+        "type": "blog-post",
+        "score": 0.35
+      }
+    ],
+    "needsSmart": true
+  },
+  "sectionRoles": {
+    "sections": [
+      {
+        "index": 0,
+        "tag": "header",
+        "role": "cta",
+        "subrole": null,
+        "confidence": 0.75,
+        "heading": "Agent Stack",
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "w": 1280,
+          "h": 64
+        },
+        "buttonCount": 7,
+        "cardCount": 155,
+        "slots": {
+          "heading": "Agent Stack",
+          "subheadings": [
+            "Core Platform",
+            "Tools",
+            "Learn",
+            "Build"
+          ],
+          "ctaCount": 7,
+          "lede": "Products\nResources\nEnterprise\nPricing\nGet a Demo\nLog In\nSign Up"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 1,
+        "tag": "nav",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.9,
+        "heading": null,
+        "bounds": {
+          "x": 65,
+          "y": 0,
+          "w": 356.125,
+          "h": 64
+        },
+        "buttonCount": 2,
+        "cardCount": 70,
+        "slots": {
+          "ctaCount": 2,
+          "lede": "Products\nResources\nEnterprise\nPricing"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 2,
+        "tag": "main",
+        "role": "feature-grid",
+        "subrole": null,
+        "confidence": 0.8,
+        "heading": "Agentic Infrastructure",
+        "bounds": {
+          "x": 0,
+          "y": -3680,
+          "w": 1280,
+          "h": 4759.984375
+        },
+        "buttonCount": 6,
+        "cardCount": 81,
+        "slots": {
+          "heading": "Agentic Infrastructure",
+          "subheadings": [
+            "Build agents on infrastructure that thinks like them",
+            "",
+            "Host platforms that serve every customer",
+            "Recently shipped"
+          ],
+          "ctaCount": 6,
+          "lede": "Agentic Infrastructure\nDeploy Now\nTalk to Sales\nFOR CODING AGENTS to deploy in their native language, with Vercel's API, CLI, MCP, and Skills.\nTO SHIP APPS AND AGENTS in Sandboxed VMs, with durable backends, powered by hundreds of models.\nAUTOMATED BY AGENTS who autonomously investigate errors, plan fixes, and open PRs.\nBuild agents on infrastructure that thinks like them"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 3,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": "Agentic Infrastructure",
+        "bounds": {
+          "x": 24,
+          "y": -3680,
+          "w": 1232,
+          "h": 736
+        },
+        "buttonCount": 0,
+        "cardCount": 32,
+        "slots": {
+          "heading": "Agentic Infrastructure",
+          "lede": "Agentic Infrastructure\nDeploy Now\nTalk to Sales\nFOR CODING AGENTS to deploy in their native language, with Vercel's API, CLI, MCP, and Skills.\nTO SHIP APPS AND AGENTS in Sandboxed VMs, with durable backends, powered by hundreds of models.\nAUTOMATED BY AGENTS who autonomously investigate errors, plan fixes, and open PRs."
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 4,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "Agentic Infrastructure",
+        "bounds": {
+          "x": 24,
+          "y": -3466,
+          "w": 444,
+          "h": 200
+        },
+        "buttonCount": 0,
+        "cardCount": 3,
+        "slots": {
+          "heading": "Agentic Infrastructure",
+          "lede": "Agentic Infrastructure\nDeploy Now\nTalk to Sales"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 5,
+        "tag": "nav",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.9,
+        "heading": null,
+        "bounds": {
+          "x": 892,
+          "y": -3438,
+          "w": 364,
+          "h": 144
+        },
+        "buttonCount": 0,
+        "cardCount": 3,
+        "slots": {
+          "lede": "FOR CODING AGENTS to deploy in their native language, with Vercel's API, CLI, MCP, and Skills.\nTO SHIP APPS AND AGENTS in Sandboxed VMs, with durable backends, powered by hundreds of models.\nAUTOMATED BY AGENTS who autonomously investigate errors, plan fixes, and open PRs."
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 6,
+        "tag": "section",
+        "role": "feature-grid",
+        "subrole": null,
+        "confidence": 0.8,
+        "heading": "Build agents on infrastructure that thinks like them",
+        "bounds": {
+          "x": 24,
+          "y": -2736,
+          "w": 1232,
+          "h": 2201.984375
+        },
+        "buttonCount": 0,
+        "cardCount": 21,
+        "slots": {
+          "heading": "Build agents on infrastructure that thinks like them",
+          "subheadings": [
+            "",
+            "Host platforms that serve every customer"
+          ]
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 7,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": "Build agents on infrastructure that thinks like them",
+        "bounds": {
+          "x": 24,
+          "y": -2736,
+          "w": 1232,
+          "h": 112
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Build agents on infrastructure that thinks like them"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 8,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": null,
+        "bounds": {
+          "x": 24,
+          "y": -1916.671875,
+          "w": 1232,
+          "h": 112
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "heading": ""
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 9,
+        "tag": "section",
+        "role": "testimonials",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "Host platforms that serve every customer",
+        "bounds": {
+          "x": 24,
+          "y": -1097.34375,
+          "w": 1232,
+          "h": 112
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Host platforms that serve every customer"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 10,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": "Recently shipped",
+        "bounds": {
+          "x": 24,
+          "y": -326.015625,
+          "w": 1232,
+          "h": 718
+        },
+        "buttonCount": 0,
+        "cardCount": 6,
+        "slots": {
+          "heading": "Recently shipped",
+          "lede": "Recently shipped\nShip\n26"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 11,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": "Recently shipped",
+        "bounds": {
+          "x": 24,
+          "y": -326.015625,
+          "w": 1232,
+          "h": 56
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Recently shipped"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 12,
+        "tag": "section",
+        "role": "feature-grid",
+        "subrole": null,
+        "confidence": 0.8,
+        "heading": null,
+        "bounds": {
+          "x": 24,
+          "y": -190.015625,
+          "w": 1232,
+          "h": 582
+        },
+        "buttonCount": 0,
+        "cardCount": 5,
+        "slots": {
+          "lede": "Ship\n26"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 13,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 45,
+          "y": 314.984375,
+          "w": 605,
+          "h": 56
+        },
+        "buttonCount": 0,
+        "cardCount": 2,
+        "slots": {
+          "lede": "Ship\n26"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 14,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 670,
+          "y": -8.015625,
+          "w": 605,
+          "h": 79
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "Workflows"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 15,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 670,
+          "y": 311.984375,
+          "w": 605,
+          "h": 59
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "Sandbox"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 16,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": "Built by you, or your agents",
+        "bounds": {
+          "x": 24,
+          "y": 667.984375,
+          "w": 1232,
+          "h": 136
+        },
+        "buttonCount": 6,
+        "cardCount": 22,
+        "slots": {
+          "heading": "Built by you, or your agents",
+          "ctaCount": 6,
+          "lede": "Built by you, or your agents\nDeploy\nPlugin\n$\nnpx plugins add vercel/vercel-plugin"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 17,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": "Built by you, or your agents",
+        "bounds": {
+          "x": 24,
+          "y": 667.984375,
+          "w": 1232,
+          "h": 56
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Built by you, or your agents"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 18,
+        "tag": "footer",
+        "role": "footer",
+        "subrole": null,
+        "confidence": 0.95,
+        "heading": "Agent Stack",
+        "bounds": {
+          "x": 0,
+          "y": 1079.984375,
+          "w": 1280,
+          "h": 846
+        },
+        "buttonCount": 1,
+        "cardCount": 176,
+        "slots": {
+          "heading": "Agent Stack",
+          "subheadings": [
+            "Core Platform",
+            "Security",
+            "Tools",
+            "Frameworks"
+          ],
+          "ctaCount": 1
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 19,
+        "tag": "nav",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.9,
+        "heading": "Agent Stack",
+        "bounds": {
+          "x": 24,
+          "y": 1119.984375,
+          "w": 1232,
+          "h": 700
+        },
+        "buttonCount": 1,
+        "cardCount": 171,
+        "slots": {
+          "heading": "Agent Stack",
+          "subheadings": [
+            "Core Platform",
+            "Security",
+            "Tools",
+            "Frameworks"
+          ],
+          "ctaCount": 1
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 20,
+        "tag": "aside",
+        "role": "sidebar",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 1280,
+          "y": 0,
+          "w": 0,
+          "h": 800
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {},
+        "needsSmart": true
+      }
+    ],
+    "counts": {
+      "cta": 1,
+      "nav": 7,
+      "feature-grid": 3,
+      "content": 7,
+      "testimonials": 1,
+      "footer": 1,
+      "sidebar": 1
+    },
+    "readingOrder": [
+      "feature-grid",
+      "content",
+      "nav",
+      "nav",
+      "feature-grid",
+      "content",
+      "content",
+      "testimonials",
+      "content",
+      "content",
+      "feature-grid",
+      "nav",
+      "cta",
+      "nav",
+      "sidebar",
+      "nav",
+      "nav",
+      "content",
+      "content",
+      "footer",
+      "nav"
+    ]
+  }
+}

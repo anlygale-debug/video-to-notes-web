@@ -324,7 +324,7 @@ SETTINGS_PATH = os.path.join(BASE, "data", "settings.json")
 
 def _load_settings():
     """Load settings from data/settings.json. Returns dict with defaults."""
-    defaults = {"api_base": "", "api_key": "", "model": "deepseek-chat",
+    defaults = {"api_base": "https://api.deepseek.com/anthropic", "api_key": "", "model": "deepseek-chat",
                 "default_mode": "standard", "default_mermaid": False}
     try:
         with open(SETTINGS_PATH) as f:

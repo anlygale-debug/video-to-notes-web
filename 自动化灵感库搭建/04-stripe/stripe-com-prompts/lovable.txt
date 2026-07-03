@@ -1,0 +1,23 @@
+Clone the design language of this landing page and build a fresh equivalent.
+Visual feel: skeuomorphic. Tone: neutral · Headings: Sentence case · CTA verbs: [object Object], [object Object], [object Object], [object Object], [object Object], [object Object]
+Primary palette: #000000, #533afd, #061b31, #50617a, #ffffff.
+Typography: [object Object], [object Object].
+Corner radius vocabulary: 1, 4, 8, 16, 28, 36.
+Shadow vocabulary: rgba(10, 37, 64, 0.22) 0px -1.854px 4.634px 0px inset | rgba(0, 0, 0, 0.1) 0px 2px 5px 0px | rgba(23, 23, 23, 0.06) 0px 3px 6px 0px.
+Page structure:
+- cta
+- pricing-table — heading: "Financial infrastructure to grow your revenue. Accept payments, offer financial "
+- hero — heading: "Financial infrastructure to grow your revenue. Accept payments, offer financial "
+- pricing-table — heading: "Flexible solutions for every business model."
+- stats — heading: "The backbone of global commerce"
+- pricing-table — heading: "Powering businesses of all sizes."
+- testimonials — heading: "Transform your enterprise with agile financial infrastructure"
+- pricing-table — heading: "Build a foundation for your startup that enables faster growth"
+- gallery
+- pricing-table — heading: "Make your SaaS platform a complete financial operating system"
+- pricing-table — heading: "Reliable, extensible infrastructure for every stack."
+- pricing-table — heading: "What's happening"
+- pricing-table — heading: "What's happening"
+- gallery — heading: "What's happening"
+- cta
+- footer

@@ -1,0 +1,24 @@
+# Design brief
+Page type: **landing**.
+Material language: **flat**.
+Voice: Tone: neutral · Headings: Sentence case · CTA verbs: [object Object], [object Object], [object Object], [object Object].
+## Tokens
+```ts
+export const tokens = {
+  colors: ['#ebebeb', '#171717', '#4d4d4d', '#666666', '#ffffff', '#8f8f8f', '#a8a8a8', '#000000', '#0070f3', '#7d7d7d', '#383838'],
+  fonts: ['[object Object]', '[object Object]'],
+  radii: ['2', '6', '12'],
+  shadows: ['rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 255, 255) 0px 0px 0px 2px, rgb(0, 114, 245) 0px 0px 0px 4px', 'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.08) 0px 1px 0px 0px', 'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.04) 0px 2px 2px 0px, rgba(0, 0, 0, 0.04) 0px 8px 16px -4px'],
+};
+```
+## Sections
+- cta — heading: "Agent Stack"
+- feature-grid — heading: "Agentic Infrastructure"
+- feature-grid — heading: "Build agents on infrastructure that thinks like them"
+- testimonials — heading: "Host platforms that serve every customer"
+- feature-grid
+- footer — heading: "Agent Stack"
+- sidebar
+## Library
+
+Use shadcn/ui components (Button, Card, Dialog, Input, Sheet, Tabs). Pair with Tailwind.

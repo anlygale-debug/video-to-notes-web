@@ -1,0 +1,19 @@
+Clone the design language of this landing page and build a fresh equivalent.
+Visual feel: material-you. Tone: neutral · Headings: Sentence case · CTA verbs: [object Object], [object Object], [object Object], [object Object], [object Object], [object Object]
+Primary palette: #f7f8f8, #62666d, #d0d6e0, #e2e4e7, #8a8f98.
+Typography: [object Object], [object Object].
+Corner radius vocabulary: 1, 4, 7, 12, 16, 20.
+Shadow vocabulary: rgba(0, 0, 0, 0.1) 0px 0px 0px 2px | rgba(0, 0, 0, 0.2) 0px 0px 0px 1px | rgb(35, 37, 42) 0px 0px 0px 1px inset.
+Page structure:
+- logo-wall
+- testimonials — heading: "The product development
+system for teams and agents
+The product development syst"
+- testimonials — heading: "Make product operations self-driving"
+- testimonials — heading: "Define the product direction"
+- hero — heading: "Move work forward across teams and agents"
+- testimonial — heading: "Review PRs and agent output"
+- hero — heading: "Understand progress at scale"
+- testimonial
+- cta — heading: "Built for the future. Available today."
+- footer — heading: "Product"

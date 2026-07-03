@@ -1,0 +1,532 @@
+{
+  "pageIntent": {
+    "type": "landing",
+    "confidence": 0.31,
+    "path": "/",
+    "title": "Linear – The system for product development",
+    "description": "Purpose-built for planning and building products with AI agents.",
+    "signals": [
+      {
+        "kind": "dom",
+        "type": "blog-post",
+        "weight": 0.35,
+        "detail": "byline|min-read"
+      },
+      {
+        "kind": "url",
+        "type": "landing",
+        "weight": 0.45,
+        "detail": "root-path"
+      }
+    ],
+    "alternates": [
+      {
+        "type": "blog-post",
+        "score": 0.35
+      }
+    ],
+    "needsSmart": true
+  },
+  "sectionRoles": {
+    "sections": [
+      {
+        "index": 0,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": null,
+        "bounds": {
+          "x": 0,
+          "y": -367,
+          "w": 1280,
+          "h": 0
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {},
+        "needsSmart": true
+      },
+      {
+        "index": 1,
+        "tag": "header",
+        "role": "logo-wall",
+        "subrole": null,
+        "confidence": 0.85,
+        "heading": null,
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "w": 1280,
+          "h": 73
+        },
+        "buttonCount": 9,
+        "cardCount": 13,
+        "slots": {
+          "ctaCount": 9,
+          "lede": "Product\nResources\nCustomers\nPricing\nNow\nContact\nLog in\nSign up"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 2,
+        "tag": "nav",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.9,
+        "heading": null,
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "w": 1280,
+          "h": 72
+        },
+        "buttonCount": 9,
+        "cardCount": 13,
+        "slots": {
+          "ctaCount": 9,
+          "lede": "Product\nResources\nCustomers\nPricing\nNow\nContact\nLog in\nSign up"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 3,
+        "tag": "main",
+        "role": "testimonials",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "The product development\nsystem for teams and agents\nThe product development system for teams and agents",
+        "bounds": {
+          "x": -47,
+          "y": -367,
+          "w": 1280,
+          "h": 10017.203125
+        },
+        "buttonCount": 90,
+        "cardCount": 24,
+        "slots": {
+          "heading": "The product development\nsystem for teams and agents\nThe product development system for teams and agents",
+          "subheadings": [
+            "Faster app launch",
+            "A new species of product tool. Purpose-built for modern teams with AI workflows at its core, Linear sets a new standard for planning and building products.",
+            "Make product operations self-driving",
+            "Define the product direction"
+          ],
+          "ctaCount": 90
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 4,
+        "tag": "nav",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.9,
+        "heading": null,
+        "bounds": {
+          "x": -55,
+          "y": 182,
+          "w": 232,
+          "h": 704
+        },
+        "buttonCount": 16,
+        "cardCount": 0,
+        "slots": {
+          "ctaCount": 16,
+          "lede": "Linear\nInbox\nMy issues\nReviews\nPulse\nWorkspace\nInitiatives\nProjects\nMore\nFavorites\nFaster app launch\nAgent tasks\nUI Refresh\nAgents Insights"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 5,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 178,
+          "y": 183,
+          "w": 670,
+          "h": 44
+        },
+        "buttonCount": 4,
+        "cardCount": 0,
+        "slots": {
+          "ctaCount": 4,
+          "lede": "Faster app launch\n02\n/\n145"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 6,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 717,
+          "y": 386,
+          "w": 398,
+          "h": 48
+        },
+        "buttonCount": 3,
+        "cardCount": 0,
+        "slots": {
+          "ctaCount": 3,
+          "lede": "LinearOpus 4.8"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 7,
+        "tag": "section",
+        "role": "content",
+        "subrole": null,
+        "confidence": 0.3,
+        "heading": null,
+        "bounds": {
+          "x": -55,
+          "y": 886,
+          "w": 232,
+          "h": 0
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {},
+        "needsSmart": true
+      },
+      {
+        "index": 8,
+        "tag": "section",
+        "role": "testimonials",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "Make product operations self-driving",
+        "bounds": {
+          "x": -37,
+          "y": 1787,
+          "w": 1260,
+          "h": 1224.28125
+        },
+        "buttonCount": 38,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Make product operations self-driving",
+          "ctaCount": 38
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 9,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": -28,
+          "y": 2137.28125,
+          "w": 478,
+          "h": 59
+        },
+        "buttonCount": 1,
+        "cardCount": 0,
+        "slots": {
+          "ctaCount": 1,
+          "lede": "Thread in #feedback"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 10,
+        "tag": "section",
+        "role": "testimonials",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "Define the product direction",
+        "bounds": {
+          "x": -37,
+          "y": 3021.28125,
+          "w": 1260,
+          "h": 1216.28125
+        },
+        "buttonCount": 6,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Define the product direction",
+          "ctaCount": 6
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 11,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": -28,
+          "y": 3487.5625,
+          "w": 398,
+          "h": 60
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "Initiatives"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 12,
+        "tag": "section",
+        "role": "hero",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "Move work forward across teams and agents",
+        "bounds": {
+          "x": -37,
+          "y": 4247.5625,
+          "w": 1260,
+          "h": 1172.28125
+        },
+        "buttonCount": 5,
+        "cardCount": 6,
+        "slots": {
+          "heading": "Move work forward across teams and agents",
+          "ctaCount": 5
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 13,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": -27,
+          "y": 4635.84375,
+          "w": 1240,
+          "h": 60
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "Codex"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 14,
+        "tag": "section",
+        "role": "testimonial",
+        "subrole": null,
+        "confidence": 0.8,
+        "heading": "Review PRs and agent output",
+        "bounds": {
+          "x": -37,
+          "y": 5429.84375,
+          "w": 1260,
+          "h": 1090.28125
+        },
+        "buttonCount": 1,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Review PRs and agent output",
+          "ctaCount": 1
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 15,
+        "tag": "section",
+        "role": "hero",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": "Understand progress at scale",
+        "bounds": {
+          "x": -37,
+          "y": 6530.125,
+          "w": 1260,
+          "h": 1196.28125
+        },
+        "buttonCount": 5,
+        "cardCount": 4,
+        "slots": {
+          "heading": "Understand progress at scale",
+          "ctaCount": 5
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 16,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": -52,
+          "y": 6942.40625,
+          "w": 636,
+          "h": 65
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "Issue count by created date"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 17,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": 602,
+          "y": 6942.40625,
+          "w": 636,
+          "h": 65
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "Cycle time by agent"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 18,
+        "tag": "header",
+        "role": "nav",
+        "subrole": null,
+        "confidence": 0.4,
+        "heading": null,
+        "bounds": {
+          "x": -5,
+          "y": 6992.40625,
+          "w": 472,
+          "h": 64
+        },
+        "buttonCount": 2,
+        "cardCount": 0,
+        "slots": {
+          "ctaCount": 2,
+          "lede": "Weekly Pulse for Jul 2\nListen\n1.0×"
+        },
+        "needsSmart": true
+      },
+      {
+        "index": 19,
+        "tag": "section",
+        "role": "testimonial",
+        "subrole": null,
+        "confidence": 0.8,
+        "heading": null,
+        "bounds": {
+          "x": -37,
+          "y": 8466.203125,
+          "w": 1260,
+          "h": 564
+        },
+        "buttonCount": 0,
+        "cardCount": 0,
+        "slots": {
+          "lede": "You’ll probably build a better product, just because of the craft that using Linear infuses on your brain."
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 20,
+        "tag": "section",
+        "role": "cta",
+        "subrole": null,
+        "confidence": 0.75,
+        "heading": "Built for the future. Available today.",
+        "bounds": {
+          "x": -37,
+          "y": 9254.203125,
+          "w": 1260,
+          "h": 172
+        },
+        "buttonCount": 4,
+        "cardCount": 0,
+        "slots": {
+          "heading": "Built for the future. Available today.",
+          "ctaCount": 4,
+          "lede": "Built for the future. Available today.\nGet started\nContact sales"
+        },
+        "needsSmart": false
+      },
+      {
+        "index": 21,
+        "tag": "footer",
+        "role": "footer",
+        "subrole": null,
+        "confidence": 0.95,
+        "heading": "Product",
+        "bounds": {
+          "x": -47,
+          "y": 9650.203125,
+          "w": 1280,
+          "h": 494
+        },
+        "buttonCount": 0,
+        "cardCount": 38,
+        "slots": {
+          "heading": "Product",
+          "subheadings": [
+            "Features",
+            "Company",
+            "Resources",
+            "Connect"
+          ],
+          "lede": "Product\nIntake\nPlan\nBuild\nDiffs\nMonitor\nPricing\nSecurity\nFeatures\nAsks\nAgents\nCoding Sessions\nCustomer Requests\nInsights\nMobile\nIntegrations\nChangelog\nCompany\nAbout\nCustomers\nCareers\nBlog\nMethod\nQuality\nBrand\nResources\nSwitch\nDownload\nDocumentation\nDevelopers\nStatus\nEnterprise\nStartups\nConnect\nContact us\nCommunity\nX (Twitter)\nGitHub\nYouTube\nPrivacy\nTerms\nDPA\nAUP"
+        },
+        "needsSmart": false
+      }
+    ],
+    "counts": {
+      "content": 2,
+      "logo-wall": 1,
+      "nav": 10,
+      "testimonials": 3,
+      "hero": 2,
+      "testimonial": 2,
+      "cta": 1,
+      "footer": 1
+    },
+    "readingOrder": [
+      "content",
+      "testimonials",
+      "logo-wall",
+      "nav",
+      "nav",
+      "nav",
+      "nav",
+      "content",
+      "testimonials",
+      "nav",
+      "testimonials",
+      "nav",
+      "hero",
+      "nav",
+      "testimonial",
+      "hero",
+      "nav",
+      "nav",
+      "nav",
+      "testimonial",
+      "cta",
+      "footer"
+    ]
+  }
+}
