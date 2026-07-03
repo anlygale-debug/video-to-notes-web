@@ -1,53 +1,42 @@
-# Task 3 Report: Add CSS for Input Tabs, Textarea, Title Input, and Mode Buttons
+# Task 3 Report: Settings Redesign -- Full-Page Overlay + Groups + Tooltips
 
-## File Modified
-`/Users/yubo/Claude code test/video-to-notes-web/static/index.html`
+**Status:** Complete
+**File modified:** `static/index.html`
 
-## Changes Made
+## What was done
 
-### Desktop CSS (after `input-row select:focus`, before `/* Buttons */`)
+### 1. HTML replacement
+- Removed the old `<!-- Settings Overlay -->` overlay div and `<!-- Settings Sidebar -->` slide-in sidebar.
+- Inserted the new `<!-- Settings Page -->` full-page overlay with:
+  - Header with back button and title
+  - Two settings groups: "API 配置（必填）" and "默认偏好"
+  - Help icons (`?`) with `data-tip` attributes on every field
+  - Error/success message areas
+  - Footer with "测试连接" and "保存设置" buttons
 
-Added four new CSS sections:
+### 2. CSS replacement
+- Removed all old `.settings-overlay`, `.settings-sidebar`, `.settings-close`, `.settings-sub`, `.settings-help`, `.settings-actions` CSS.
+- Cleaned up `.settings-sidebar { width: 100%; }` from the `@media (max-width: 600px)` block.
+- Inserted new `.settings-page` CSS including:
+  - Full-page overlay with fade transition (opacity-based, z-index: 300)
+  - `.settings-page-head` / `.settings-body` / `.settings-page-foot` layout
+  - Grouped field styling (`.settings-group`, `.settings-group-title`, `.settings-group-desc`)
+  - CSS-only tooltips via `.help-icon::after { content: attr(data-tip) }` (no JS needed)
+  - Responsive overrides for mobile
+- Preserved `.gear-btn` and `.header-row` CSS (still used in main header).
 
-1. **Input Tabs (`.input-tabs`, `.input-tab`)**
-   - Horizontal tab bar with bottom border
-   - Inactive tabs: dimmed text color with transparent bottom border
-   - Active/hover tabs: heading color with accent-colored bottom border
-   - Consistent font and transition timing with existing input styles
+### 3. JS replacement
+- Replaced the entire `// ── Settings ──` block (openSettings through initDefaults) with new behavior:
+  - `openSettings()`: toggles `.settingsPage.classList.add('open')` instead of old sidebar/overlay
+  - `closeSettings()`: removes `.open` from `.settingsPage`, clears error/success
+  - `saveSettings()`: now auto-tests connection after save, only closes settings on success
+  - `testConnection()`: standalone button for pre-save testing, shows latency and model
+  - `toggleKeyVisibility()`: unchanged
+  - `ensureApiConfig()`: now checks both `api_base` AND `api_key` (was only `api_base`)
+  - `initDefaults()`: unchanged, loads default mode/mermaid from server
 
-2. **Textarea (`.input-textarea`)**
-   - Full-width, vertically resizable textarea
-   - Same border, background, and focus styling as the existing `.input-row input`
-   - Minimum height of 120px, matching the app's visual rhythm
-   - Placeholder color matches existing `::placeholder` style
-
-3. **Title Input (`.title-input`)**
-   - Full-width styled input with heavier font weight (500)
-   - Same border, background, and focus styling as other inputs
-   - Placeholder uses normal weight to visually distinguish from filled state
-   - Bottom margin for spacing from following elements
-
-4. **Mode Buttons (`.mode-btn-group`, `.mode-btn`)**
-   - Flex container with small gap for button-style mode selection (alternative to radio-based `.mode-select`)
-   - Inactive: surface background, dimmed text
-   - Active: heading-color background with white text
-   - Hover: accent border highlight
-   - Uses `--radius-sm` to differentiate from full-size buttons
-
-### Mobile CSS (inside `@media (max-width: 600px)`)
-
-Mobile overrides added after `.mode-select` line:
-- `.input-tab`: smaller font (0.82rem) and reduced padding
-- `.input-textarea`: smaller font (0.85rem), reduced min-height (100px), reduced padding
-- `.title-input`: smaller font (0.9rem)
-- `.mode-btn`: smaller font (0.78rem), reduced padding
-
-## Design Consistency
-
-All new styles reuse the project's CSS custom properties:
-- `--font`, `--heading`, `--text-dim`, `--text`, `--surface`, `--border`, `--accent`
-- `--radius` for textarea and title input, `--radius-sm` for mode buttons
-- Same focus ring (`box-shadow: 0 0 0 3px rgba(139,115,85,0.08)`) and transition timings
-
-## Commit
-`f2601d3` - "Add CSS for input tabs, textarea, title input, and mode buttons" (100 insertions)
+### 4. Verification
+- No remaining references to old `settingsOverlay`, `settingsSidebar`, `settings-overlay`, `settings-sidebar`, `settings-close`, `settings-sub`, `settings-help`, `settings-actions`.
+- `.gear-btn` and `.header-row` CSS preserved at lines 495-502.
+- `mermaid.initialize()` preserved at line 1433.
+- No other functions (handleSubmit, processURL, processText, etc.) were modified.

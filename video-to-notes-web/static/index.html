@@ -489,10 +489,9 @@
     .history-actions { margin-top: 4px; }
     .result-card { padding: 10px 14px; }
     footer { font-size: 0.72rem; margin-top: 40px; }
-    .settings-sidebar { width: 100%; }
   }
 
-  /* Settings sidebar — — — — — — — — — — — — — — — — — — — — */
+  /* Settings page — — — — — — — — — — — — — — — — — — — — */
   .gear-btn {
     background: none; border: none; font-size: 1.3rem; cursor: pointer;
     padding: 6px; color: var(--text-dim); transition: color 0.15s;
@@ -502,47 +501,79 @@
   .header-row {
     display: flex; justify-content: space-between; align-items: flex-start;
   }
-  .settings-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200;
-    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  .settings-page {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
-  .settings-overlay.open { opacity: 1; pointer-events: auto; }
-  .settings-sidebar {
-    position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
-    background: var(--surface); z-index: 201;
-    box-shadow: -4px 0 24px rgba(0,0,0,0.08);
-    padding: 32px 28px; overflow-y: auto;
-    transition: right 0.25s ease;
-    display: flex; flex-direction: column; gap: 20px;
+  .settings-page.open { opacity: 1; pointer-events: auto; }
+  .settings-page-head {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
   }
-  .settings-sidebar.open { right: 0; }
-  .settings-sidebar h2 {
+  .settings-page-head h1 {
     font-size: 1.1rem; font-weight: 600; color: var(--heading);
     letter-spacing: -0.02em; margin: 0;
   }
-  .settings-close {
-    position: absolute; top: 20px; right: 20px;
-    background: none; border: none; font-size: 1.3rem; cursor: pointer;
-    color: var(--text-dim); padding: 4px; line-height: 1;
+  .settings-back {
+    background: none; border: none; font-size: 1.2rem; cursor: pointer;
+    color: var(--text-dim); padding: 0; transition: color 0.15s;
   }
-  .settings-close:hover { color: var(--heading); }
-  .settings-field { display: flex; flex-direction: column; gap: 4px; }
+  .settings-back:hover { color: var(--heading); }
+  .settings-body {
+    flex: 1; overflow-y: auto; padding: 24px 28px;
+  }
+  .settings-group {
+    margin-bottom: 28px;
+  }
+  .settings-group-title {
+    font-size: 0.95rem; font-weight: 600; color: var(--heading);
+    margin: 0 0 6px; letter-spacing: -0.02em;
+  }
+  .settings-group-desc {
+    font-size: 0.82rem; color: var(--text-dim);
+    margin: 0 0 18px; line-height: 1.5;
+  }
+  .settings-field { margin-bottom: 16px; }
   .settings-field label {
-    font-size: 0.82rem; font-weight: 500; color: var(--text-dim);
+    display: flex; align-items: center; gap: 4px;
+    font-size: 0.84rem; font-weight: 500; color: var(--text);
+    margin-bottom: 4px;
   }
-  .settings-field input {
-    background: var(--bg); border: 1px solid var(--border);
+  .settings-field input[type="text"],
+  .settings-field input[type="password"] {
+    width: 100%;
+    background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-sm); padding: 9px 12px;
     color: var(--heading); font-size: 0.88rem; font-family: var(--font);
     outline: none; transition: border-color 0.15s;
   }
   .settings-field input:focus { border-color: var(--accent); }
   .settings-field input::placeholder { color: var(--text-dim); }
-  .settings-help {
-    font-size: 0.76rem; color: var(--text-dim); line-height: 1.5;
+  .settings-radios {
+    display: flex; gap: 16px; font-size: 0.86rem;
   }
-  .settings-sub {
-    font-size: 0.82rem; color: var(--text-dim); line-height: 1.6;
+  .settings-radios label {
+    cursor: pointer; color: var(--text-dim); transition: color 0.15s;
+    display: flex; align-items: center; gap: 4px; font-weight: 400;
+  }
+  .settings-radios label:has(input:checked) { color: var(--heading); }
+  .settings-radios input[type="radio"] { accent-color: var(--heading); }
+  .settings-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.84rem; color: var(--text);
+  }
+  .settings-toggle input[type="checkbox"] {
+    accent-color: var(--accent); width: 16px; height: 16px;
+  }
+  .settings-page-foot {
+    display: flex; gap: 8px; padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    justify-content: flex-end;
   }
   .input-with-eye { position: relative; }
   .input-with-eye input { width: 100%; padding-right: 36px; }
@@ -551,30 +582,45 @@
     background: none; border: none; cursor: pointer; color: var(--text-dim);
     font-size: 0.9rem; padding: 2px 4px;
   }
-  .settings-radios {
-    display: flex; gap: 14px; font-size: 0.85rem;
+  /* Help icon + tooltip — — — — — — — — — — — — — — — — */
+  .help-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 0.65rem; font-weight: 500;
+    cursor: help; transition: color 0.15s, border-color 0.15s;
+    position: relative;
   }
-  .settings-radios label {
-    cursor: pointer; color: var(--text-dim); transition: color 0.15s;
-    display: flex; align-items: center; gap: 4px;
+  .help-icon:hover {
+    color: var(--accent); border-color: var(--accent);
   }
-  .settings-radios label:has(input:checked) { color: var(--heading); }
-  .settings-radios input[type="radio"] { accent-color: var(--heading); }
-  .settings-toggle {
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 0.82rem; color: var(--text-dim);
+  .help-icon::after {
+    content: attr(data-tip);
+    display: none;
+    position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    background: var(--heading); color: #fff;
+    font-size: 0.76rem; font-weight: 400; line-height: 1.5;
+    padding: 6px 12px; border-radius: var(--radius-sm);
+    max-width: 260px; white-space: normal;
+    z-index: 10; pointer-events: none;
   }
-  .settings-toggle input[type="checkbox"] {
-    accent-color: var(--accent); width: 16px; height: 16px;
-  }
-  .settings-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .help-icon:hover::after { display: block; }
+  /* Error / Success — — — — — — — — — — — — — — — — — — */
   .settings-error {
-    color: var(--red); font-size: 0.82rem; padding: 8px 12px;
+    color: var(--red); font-size: 0.84rem; padding: 10px 14px;
     background: #fef2f2; border-radius: var(--radius-sm); display: none;
+    margin-bottom: 16px;
   }
   .settings-success {
-    color: var(--green); font-size: 0.82rem; padding: 8px 12px;
+    color: var(--green); font-size: 0.84rem; padding: 10px 14px;
     background: #f0faf0; border-radius: var(--radius-sm); display: none;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 600px) {
+    .settings-page-head { padding: 16px 18px; }
+    .settings-body { padding: 18px; }
+    .settings-page-foot { padding: 12px 18px; }
   }
 </style>
 </head>
@@ -685,61 +731,66 @@
   </footer>
 </div>
 
-<!-- Settings Overlay -->
-<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+<!-- Settings Page -->
+<div class="settings-page" id="settingsPage">
+  <header class="settings-page-head">
+    <button class="settings-back" onclick="closeSettings()" aria-label="返回">‹ 返回</button>
+    <h1>设置</h1>
+  </header>
 
-<!-- Settings Sidebar -->
-<div class="settings-sidebar" id="settingsSidebar">
-  <h2>设置</h2>
-  <button class="settings-close" onclick="closeSettings()">✕</button>
+  <div class="settings-body">
+    <!-- Group: API 配置 -->
+    <div class="settings-group">
+      <h2 class="settings-group-title">API 配置（必填）</h2>
+      <p class="settings-group-desc">支持 OpenAI 兼容协议的服务都能用。默认指向 DeepSeek，换服务改地址即可。</p>
 
-  <p class="settings-sub">配置 API 连接和默认偏好，修改后立即生效。密钥仅存储本地，不会上传。</p>
+      <div class="settings-field">
+        <label>API Key <span class="help-icon" data-tip="服务商提供的 API Key，通常 sk- 开头。密钥仅存储在本地">?</span></label>
+        <div class="input-with-eye">
+          <input type="password" id="setApiKey" placeholder="sk-xxx">
+          <button class="eye-btn" onclick="toggleKeyVisibility()">👁</button>
+        </div>
+      </div>
 
-  <div class="settings-field">
-    <label>API 地址</label>
-    <span class="settings-help">LLM 接口地址，兼容 Anthropic Messages API。DeepSeek 填 <code>https://api.deepseek.com/anthropic</code></span>
-    <input type="text" id="setApiBase" placeholder="https://api.deepseek.com/anthropic">
-  </div>
+      <div class="settings-field">
+        <label>Base URL <span class="help-icon" data-tip="OpenAI 兼容 API 入口。DeepSeek: https://api.deepseek.com/v1。Moonshot/OpenRouter/vLLM 等改这里">?</span></label>
+        <input type="text" id="setApiBase" placeholder="https://api.deepseek.com/v1">
+      </div>
 
-  <div class="settings-field">
-    <label>API 密钥</label>
-    <span class="settings-help">服务商提供的 API Key，通常以 sk- 开头。密钥仅存储在本地</span>
-    <div class="input-with-eye">
-      <input type="password" id="setApiKey" placeholder="sk-xxx">
-      <button class="eye-btn" onclick="toggleKeyVisibility()">👁</button>
+      <div class="settings-field">
+        <label>模型名称 <span class="help-icon" data-tip="模型标识符，如 deepseek-chat、gpt-4o。以服务商文档为准">?</span></label>
+        <input type="text" id="setModel" placeholder="deepseek-chat">
+      </div>
     </div>
-  </div>
 
-  <div class="settings-field">
-    <label>模型名称</label>
-    <span class="settings-help">模型标识符，如 <code>deepseek-chat</code>、<code>claude-sonnet-4-6</code>。具体名称以服务商文档为准</span>
-    <input type="text" id="setModel" placeholder="deepseek-chat">
-  </div>
+    <!-- Group: 默认偏好 -->
+    <div class="settings-group">
+      <h2 class="settings-group-title">默认偏好</h2>
 
-  <div class="settings-field">
-    <label>默认笔记模式</label>
-    <span class="settings-help">新生成笔记的默认模式，可随时在主页切换</span>
-    <div class="settings-radios">
-      <label><input type="radio" name="setMode" value="standard"> 标准</label>
-      <label><input type="radio" name="setMode" value="detailed"> 详细</label>
-      <label><input type="radio" name="setMode" value="scholar"> 详解</label>
+      <div class="settings-field">
+        <label>笔记模式 <span class="help-icon" data-tip="新笔记的默认生成模式，可随时在主页切换">?</span></label>
+        <div class="settings-radios">
+          <label><input type="radio" name="setMode" value="standard"> 标准</label>
+          <label><input type="radio" name="setMode" value="detailed"> 详细</label>
+          <label><input type="radio" name="setMode" value="scholar"> 详解</label>
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <div class="settings-toggle">
+          <span>默认 Mermaid 图解 <span class="help-icon" data-tip="开启后笔记自动插入框架图和内容图解">?</span></span>
+          <input type="checkbox" id="setMermaid">
+        </div>
+      </div>
     </div>
+
+    <div class="settings-error" id="settingsError"></div>
+    <div class="settings-success" id="settingsSuccess"></div>
   </div>
 
-  <div class="settings-toggle">
-    <div>
-      <span>默认开启 Mermaid 图解</span>
-      <p class="settings-help" style="margin:0">开启后笔记会自动插入框架图和内容图解，可随时关闭</p>
-    </div>
-    <input type="checkbox" id="setMermaid">
-  </div>
-
-  <div class="settings-error" id="settingsError"></div>
-  <div class="settings-success" id="settingsSuccess"></div>
-
-  <div class="settings-actions">
+  <div class="settings-page-foot">
     <button class="btn btn-sm" onclick="testConnection()">测试连接</button>
-    <button class="btn btn-primary btn-sm" onclick="saveSettings()">保存设置</button>
+    <button class="btn btn-primary btn-sm" id="settingsSaveBtn" onclick="saveSettings()">保存设置</button>
   </div>
 </div>
 
@@ -1237,14 +1288,12 @@ $url.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); }
 
 // ── Settings ─────────────────────────────────────────────────
 function openSettings() {
-  document.getElementById('settingsOverlay').classList.add('open');
-  document.getElementById('settingsSidebar').classList.add('open');
+  document.getElementById('settingsPage').classList.add('open');
   loadSettings();
 }
 
 function closeSettings() {
-  document.getElementById('settingsOverlay').classList.remove('open');
-  document.getElementById('settingsSidebar').classList.remove('open');
+  document.getElementById('settingsPage').classList.remove('open');
   document.getElementById('settingsError').style.display = 'none';
   document.getElementById('settingsSuccess').style.display = 'none';
 }
@@ -1263,30 +1312,53 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
-  const apiKey = document.getElementById('setApiKey').value;
+  const apiKey = document.getElementById('setApiKey').value.trim();
+  const apiBase = document.getElementById('setApiBase').value.trim();
+  const model = document.getElementById('setModel').value.trim() || 'deepseek-chat';
   const body = {
-    api_base: document.getElementById('setApiBase').value.trim(),
+    api_base: apiBase,
     api_key: apiKey,
-    model: document.getElementById('setModel').value.trim(),
+    model: model,
     default_mode: document.querySelector('input[name="setMode"]:checked')?.value || 'standard',
     default_mermaid: document.getElementById('setMermaid').checked,
   };
+
+  // Save first
   try {
     const resp = await fetch('/api/settings', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
     });
-    if (resp.ok) {
-      document.getElementById('settingsSuccess').style.display = 'block';
-      document.getElementById('settingsSuccess').textContent = '已保存';
-      document.getElementById('settingsError').style.display = 'none';
-      setTimeout(() => closeSettings(), 800);
+    if (!resp.ok) { showToast('保存失败'); return; }
+  } catch (e) { showToast('保存失败'); return; }
+
+  // Auto test connection
+  const errEl = document.getElementById('settingsError');
+  const okEl = document.getElementById('settingsSuccess');
+  errEl.style.display = 'none';
+  okEl.style.display = 'block';
+  okEl.textContent = '验证中…';
+
+  try {
+    const r = await fetch('/api/test-connection', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({api_key: apiKey, api_base: apiBase, model}),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast('已保存');
+      setTimeout(() => closeSettings(), 600);
     } else {
-      showToast('保存失败');
+      errEl.style.display = 'block';
+      errEl.textContent = '连接失败: ' + (data.error || '未知错误');
+      okEl.style.display = 'none';
     }
   } catch (e) {
-    showToast('保存失败');
+    errEl.style.display = 'block';
+    errEl.textContent = '连接失败: ' + e.message;
+    okEl.style.display = 'none';
   }
 }
 
@@ -1296,13 +1368,15 @@ async function testConnection() {
   const model = document.getElementById('setModel').value.trim() || 'deepseek-chat';
   if (!apiKey || !apiBase) {
     document.getElementById('settingsError').style.display = 'block';
-    document.getElementById('settingsError').textContent = '请填写 API 地址和密钥';
+    document.getElementById('settingsError').textContent = '请填写 API Key 和 Base URL';
     document.getElementById('settingsSuccess').style.display = 'none';
     return;
   }
-  document.getElementById('settingsError').style.display = 'none';
-  document.getElementById('settingsSuccess').style.display = 'block';
-  document.getElementById('settingsSuccess').textContent = '测试中…';
+  const errEl = document.getElementById('settingsError');
+  const okEl = document.getElementById('settingsSuccess');
+  errEl.style.display = 'none';
+  okEl.style.display = 'block';
+  okEl.textContent = '测试中…';
   try {
     const resp = await fetch('/api/test-connection', {
       method: 'POST',
@@ -1311,16 +1385,16 @@ async function testConnection() {
     });
     const r = await resp.json();
     if (r.ok) {
-      document.getElementById('settingsSuccess').textContent = `连接成功 · ${r.latency_ms}ms · ${r.model}`;
+      okEl.textContent = `连接成功 · ${r.latency_ms}ms · ${r.model}`;
     } else {
-      document.getElementById('settingsError').style.display = 'block';
-      document.getElementById('settingsError').textContent = '连接失败: ' + (r.error || '未知错误');
-      document.getElementById('settingsSuccess').style.display = 'none';
+      errEl.style.display = 'block';
+      errEl.textContent = '连接失败: ' + (r.error || '未知错误');
+      okEl.style.display = 'none';
     }
   } catch (e) {
-    document.getElementById('settingsError').style.display = 'block';
-    document.getElementById('settingsError').textContent = '连接失败: ' + e.message;
-    document.getElementById('settingsSuccess').style.display = 'none';
+    errEl.style.display = 'block';
+    errEl.textContent = '连接失败: ' + e.message;
+    okEl.style.display = 'none';
   }
 }
 
@@ -1329,12 +1403,11 @@ function toggleKeyVisibility() {
   input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-// Check API config before generating
 async function ensureApiConfig() {
   try {
     const resp = await fetch('/api/settings');
     const s = await resp.json();
-    if (!s.api_base) {
+    if (!s.api_base || !s.api_key) {
       showToast('请先配置 API');
       openSettings();
       return false;
@@ -1343,7 +1416,6 @@ async function ensureApiConfig() {
   } catch (e) { return true; }
 }
 
-// Load default mode and mermaid on page load
 (async function initDefaults() {
   try {
     const resp = await fetch('/api/settings');
