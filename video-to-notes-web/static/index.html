@@ -693,7 +693,7 @@
   <h2>设置</h2>
   <button class="settings-close" onclick="closeSettings()">✕</button>
 
-  <p class="settings-sub">配置 API 连接和默认偏好。修改后立即生效，密钥只显示末 4 位。</p>
+  <p class="settings-sub">配置 API 连接和默认偏好，修改后立即生效。密钥仅存储本地，不会上传。</p>
 
   <div class="settings-field">
     <label>API 地址</label>
@@ -703,7 +703,7 @@
 
   <div class="settings-field">
     <label>API 密钥</label>
-    <span class="settings-help">服务商提供的 API Key，通常以 sk- 开头。保存后只显示末 4 位</span>
+    <span class="settings-help">服务商提供的 API Key，通常以 sk- 开头。密钥仅存储在本地</span>
     <div class="input-with-eye">
       <input type="password" id="setApiKey" placeholder="sk-xxx">
       <button class="eye-btn" onclick="toggleKeyVisibility()">👁</button>

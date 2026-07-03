@@ -948,20 +948,14 @@ async def download(task_id: str):
 
 @app.get("/api/settings")
 async def get_settings():
-    s = _load_settings()
-    # Mask API key for security — only reveal last 4 chars
-    key = s.get("api_key", "")
-    if len(key) > 4:
-        s["api_key"] = "*" * (len(key) - 4) + key[-4:]
-    return JSONResponse(s)
+    return JSONResponse(_load_settings())
 
 
 @app.post("/api/settings")
 async def save_settings(request: Request):
     body = await request.json()
     s = _load_settings()
-    # Only update provided fields; don't overwrite API key with masked value
-    if "api_key" in body and not body["api_key"].startswith("*"):
+    if "api_key" in body:
         s["api_key"] = body["api_key"]
     for field in ["api_base", "model", "default_mode", "default_mermaid"]:
         if field in body:
