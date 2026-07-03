@@ -154,21 +154,31 @@ def step_resolve(task_id, url, platform, xsec=""):
         xsec_flag = f"--xsec-token '{xsec}'" if xsec else ""
         sr = _venv(f"xhs read '{meta['note_id']}' {xsec_flag} --json")
         try:
-            data = json.loads(sr.stdout)
-            items = data.get("data", {}).get("items", [])
-            if not items:
+            resp_data = json.loads(sr.stdout).get("data", {})
+
+            # Support both old format (data.items[0].note_card) and new format (data.* flat)
+            if "items" in resp_data:
+                # Old format: data.items[0].note_card
+                if not resp_data.get("items"):
+                    tasks[task_id]["error"] = "Cannot access note. Try searching by title."
+                    return meta
+                nc = resp_data["items"][0].get("note_card", {})
+                meta["title"] = nc.get("display_title") or nc.get("title", "")
+                meta["creator"] = nc.get("user", {}).get("nickname", "")
+                meta["likes"] = nc.get("interact_info", {}).get("liked_count", "0")
+                meta["desc"] = nc.get("desc", "")
+                video = nc.get("video", {})
+            elif "title" in resp_data:
+                # New format: data.* flat (xhs-cli v2+)
+                meta["title"] = resp_data.get("title", "")
+                meta["creator"] = resp_data.get("user", {}).get("nickname", "")
+                meta["likes"] = str(resp_data.get("interactInfo", {}).get("likedCount", 0))
+                meta["desc"] = resp_data.get("desc", "")
+                video = resp_data.get("video", {})
+            else:
                 tasks[task_id]["error"] = "Cannot access note. Try searching by title."
                 return meta
 
-            nc = items[0].get("note_card", {})
-            meta["title"] = nc.get("display_title") or nc.get("title", "")
-            meta["creator"] = nc.get("user", {}).get("nickname", "")
-            info = nc.get("interact_info", {})
-            meta["likes"] = info.get("liked_count", "0")
-            meta["desc"] = nc.get("desc", "")
-
-            # Get video CDN URL
-            video = nc.get("video", {})
             streams = video.get("media", {}).get("stream", {})
             # Pick smallest h265 stream
             for codec, formats in streams.items():
