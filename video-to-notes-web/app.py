@@ -320,7 +320,22 @@ def step_generate(task_id, transcript, meta, mode="standard", mermaid=False):
 
 
 def _read_api_config():
-    """Read API key, base URL, and model from settings."""
+    """Read API key, base URL, and model. Priority: config.json > env vars > ~/.claude/settings.json."""
+    # 1. Project config.json (highest priority)
+    config_path = os.path.join(BASE, "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path) as f:
+                cfg = json.load(f)
+            api_key = cfg.get("api_key", "")
+            api_base = cfg.get("api_base_url", "")
+            model = cfg.get("model", "")
+            if api_key and api_base:
+                return api_key, api_base, model or "claude-sonnet-4-6"
+        except Exception:
+            pass
+
+    # 2. Environment variables + ~/.claude/settings.json
     settings_path = os.path.expanduser("~/.claude/settings.json")
     api_key = api_base = ""
     model = "claude-sonnet-4-6"
@@ -688,6 +703,44 @@ async def index():
 @app.get("/v2")
 async def index_v2():
     return HTMLResponse(open(os.path.join(STATIC, "index-v2.html")).read())
+
+
+# ── Settings ──────────────────────────────────────────────────
+
+@app.get("/settings")
+async def settings_page():
+    return HTMLResponse(open(os.path.join(STATIC, "settings.html")).read())
+
+
+@app.get("/api/settings")
+async def get_settings():
+    config_path = os.path.join(BASE, "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path) as f:
+                cfg = json.load(f)
+            # Mask API key: show first 4 + last 4 chars
+            key = cfg.get("api_key", "")
+            if len(key) > 8:
+                cfg["api_key"] = key[:4] + "*" * (len(key) - 8) + key[-4:]
+            return JSONResponse(cfg)
+        except Exception:
+            pass
+    return JSONResponse({"api_base_url": "", "api_key": "", "model": ""})
+
+
+@app.post("/api/settings")
+async def save_settings(request: Request):
+    body = await request.json()
+    cfg = {
+        "api_base_url": body.get("api_base_url", "").strip(),
+        "api_key": body.get("api_key", "").strip(),
+        "model": body.get("model", "").strip(),
+    }
+    config_path = os.path.join(BASE, "config.json")
+    with open(config_path, "w") as f:
+        json.dump(cfg, f, indent=2)
+    return JSONResponse({"ok": True})
 
 
 @app.post("/api/search")
