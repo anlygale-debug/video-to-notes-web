@@ -905,6 +905,7 @@ function handleSSEEvent(event) {
     });
   } else if (event.event === 'error') {
     markStep('stepResolve', 'error', event.data);
+    showToast(event.data);
   }
 }
 

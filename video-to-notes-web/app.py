@@ -831,6 +831,12 @@ async def process(request: Request):
                     yield f"data: {json.dumps({'event': 'error', 'data': 'Transcription failed'})}\n\n"
                     return
 
+            # Check API config before generating
+            api_key, api_base, _model = _read_api_config()
+            if not api_key or not api_base:
+                yield f"data: {json.dumps({'event': 'error', 'data': '请先配置 API：点击右上角「设置」填写 API Key 和地址'})}\n\n"
+                return
+
             # Step 4: Generate notes (common to both paths)
             notes = step_generate(task_id, transcript, meta, mode=mode, mermaid=mermaid)
             yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
