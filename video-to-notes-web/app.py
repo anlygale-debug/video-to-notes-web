@@ -679,30 +679,26 @@ Notes:
     result = _call_llm(prompt, max_tokens=32000)
     if not result:
         return note_text
-
-    tasks[task_id]["progress"] = {"step": "generate", "status": "running",
-                                   "message": "Validating diagrams..."}
-    return _validate_mermaid(result)
+    return _fix_mermaid_syntax(result)
 
 
-def _validate_mermaid(text):
-    """Third pass: fix Mermaid syntax errors without changing anything else."""
-    prompt = f"""You are a Mermaid syntax checker. Below is a markdown document containing ```mermaid code blocks. Your ONLY job: scan each mermaid block and fix syntax errors. Do NOT add, remove, or modify anything outside the code blocks. Do NOT change the structure or content of the diagrams — only fix syntax.
+def _fix_mermaid_syntax(text):
+    """Deterministic Mermaid syntax fixes — no LLM call. Handles common LLM errors."""
+    def fix_block(block):
+        # 1. Wrong diagram type name
+        block = re.sub(r'\bganttChart\b', 'gantt', block)
+        # 2. quadrantChart point with square-bracket label: A[label] → "label"
+        block = re.sub(r'^(\s*\w)\[([^\]]+)\]\s*:', r'\1 "\2" :', block, flags=re.MULTILINE)
+        # 3. Chinese punctuation → English (inside code blocks)
+        block = block.replace('；', ';').replace('，', ',').replace('：', ':')
+        block = block.replace('（', '(').replace('）', ')')
+        return block
 
-Common fixes:
-- Diagram type: "ganttChart" → "gantt"
-- quadrantChart point labels: use "Label Name" : [x, y] format, NOT [Label Name] : [x, y]
-- gantt dates: use YYYY-MM-DD format or "after xxx" relative syntax
-- Replace Chinese punctuation inside code blocks with English: ；→; ，→, ：→: （→( ）→)
-- Close all brackets, parentheses, and quotes
-
-Output the COMPLETE document. The only changes allowed are inside ```mermaid code blocks.
-
-Document:
-{text}"""
-
-    result = _call_llm(prompt, max_tokens=32000)
-    return result if result else text
+    return re.sub(
+        r'```mermaid\n(.*?)```',
+        lambda m: '```mermaid\n' + fix_block(m.group(1)) + '```',
+        text, flags=re.DOTALL
+    )
 
 
 def _basic_notes(meta, transcript):
