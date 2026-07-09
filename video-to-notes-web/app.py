@@ -6,23 +6,9 @@ from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSO
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Video to Notes")
-PROXY = "http://127.0.0.1:7890"
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(BASE, "static")
 tasks: dict = {}
-
-# ─── Config ─────────────────────────────────────────────────────
-
-def _get_config(key):
-    try:
-        with open(os.path.expanduser("~/.agent-reach/config.yaml")) as f:
-            for line in f:
-                if ":" in line and key in line:
-                    return line.split(":", 1)[1].strip()
-    except Exception:
-        pass
-    return ""
-
 
 def _parse_duration(dur_str):
     """Parse B站 duration like '1083:13' or '9:42' to seconds."""
@@ -46,174 +32,342 @@ def _venv(cmd):
                           timeout=300, env=env, cwd="/tmp")
 
 
-# ─── Pipeline steps (synchronous, run in threads) ────────────────
+# ═══════════════════════════════════════════════════════════════════
+# Platform Resolver Layer — unified video parser abstraction
+# ═══════════════════════════════════════════════════════════════════
 
-def step_search(task_id, query, platform):
-    """Search for videos. Returns list of {title, creator, id, likes}."""
-    tasks[task_id]["progress"] = {"step": "search", "status": "running",
-                                   "message": f"Searching {platform}..."}
+class BaseResolver:
+    """平台解析器抽象基类。每个平台实现 search / resolve / download。"""
+    platform_id: str = ""
 
-    results = []
-    if platform == "xhs":
-        r = _venv(f"xhs search '{query}' --json")
-        try:
-            data = json.loads(r.stdout)
-            for item in data.get("data", {}).get("items", [])[:8]:
-                nc = item.get("note_card", {})
-                info = nc.get("interact_info", {})
+    def search(self, query: str, task: dict) -> list[dict]:
+        """搜索视频，返回标准化结果列表 [{id, title, creator, likes, url, duration, platform}]"""
+        raise NotImplementedError
+
+    def resolve(self, url: str, task: dict, **kwargs) -> dict:
+        """解析 URL 为统一 Meta 字典"""
+        raise NotImplementedError
+
+    def download(self, meta: dict, output_path: str, task: dict) -> bool:
+        """下载音频到 output_path，返回是否成功"""
+        raise NotImplementedError
+
+
+# ─── B站搜索覆盖（B站公开 API，不需要认证，比 yt-dlp 搜索更可靠）───
+
+def _search_bilibili_api(query: str, task: dict) -> list[dict]:
+    """B站公开搜索 API。返回标准化搜索结果。"""
+    from urllib.parse import quote
+    api_url = f"https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword={quote(query)}"
+    r = subprocess.run([
+        "curl", "-s",
+        "-H", "User-Agent: Mozilla/5.0",
+        api_url
+    ], capture_output=True, text=True, timeout=15)
+    try:
+        data = json.loads(r.stdout)
+        results = []
+        for item in data.get("data", {}).get("result", [])[:12]:
+            bvid = item.get("bvid", "")
+            if bvid:
                 results.append({
-                    "id": item["id"],
-                    "xsec": item.get("xsec_token", ""),
-                    "title": nc.get("display_title", ""),
-                    "creator": nc.get("user", {}).get("nickname", ""),
-                    "likes": info.get("liked_count", "0"),
-                    "platform": "xhs"
+                    "id": bvid,
+                    "url": f"https://www.bilibili.com/video/{bvid}",
+                    "title": re.sub(r'<[^>]+>', '', item.get("title", "")),
+                    "creator": item.get("author", ""),
+                    "likes": str(item.get("video_review", 0)),
+                    "duration": _parse_duration(item.get("duration", "")),
+                    "platform": "bilibili"
                 })
-        except Exception as e:
-            tasks[task_id]["error"] = str(e)
-            return []
+        return results
+    except Exception as e:
+        task["error"] = str(e)
+        return []
 
-    elif platform == "bilibili":
-        # Use B站 official search API (free, no auth needed)
-        from urllib.parse import quote
-        api_url = f"https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword={quote(query)}"
-        r = subprocess.run([
-            "curl", "-s",
-            "-H", "User-Agent: Mozilla/5.0",
-            api_url
-        ], capture_output=True, text=True, timeout=15)
-        try:
-            data = json.loads(r.stdout)
-            for item in data.get("data", {}).get("result", [])[:12]:
-                bvid = item.get("bvid", "")
-                if bvid:
-                    results.append({
-                        "id": bvid,
-                        "url": f"https://www.bilibili.com/video/{bvid}",
-                        "title": re.sub(r'<[^>]+>', '', item.get("title", "")),
-                        "creator": item.get("author", ""),
-                        "likes": str(item.get("video_review", 0)),
-                        "duration": _parse_duration(item.get("duration", "")),
-                        "platform": "bilibili"
-                    })
-        except Exception as e:
-            tasks[task_id]["error"] = str(e)
 
-    elif platform == "youtube":
-        r = _venv(f"yt-dlp --flat-playlist --dump-json 'ytsearch8:{query}' 2>/dev/null")
+# 搜索覆盖表：平台 → 专用搜索函数（默认走 yt-dlp ytsearch）
+_SEARCH_OVERRIDES = {
+    "bilibili": _search_bilibili_api,
+}
+
+
+# ─── YtDlpResolver：主力解析器，覆盖 1800+ 平台 ───
+
+class YtDlpResolver(BaseResolver):
+    """基于 yt-dlp 的统一解析器。支持 B站、YouTube、抖音、快手、优酷等 1800+ 平台。"""
+
+    def __init__(self, platform_id: str, cookie_required: bool = False):
+        self.platform_id = platform_id
+        self._cookie_required = cookie_required
+
+    # ── cookie 降级链 ──
+    def _cookie_flags(self) -> list[str]:
+        """返回尝试序列。bilibili 先带 Chrome cookie 再裸连；其他平台直接裸连。"""
+        if self._cookie_required or self.platform_id == "bilibili":
+            return ["--cookies-from-browser chrome", ""]
+        return [""]
+
+    # ── yt-dlp JSON → 统一 Meta ──
+    def _map_meta(self, d: dict, original_url: str) -> dict:
+        """yt-dlp --dump-json 输出 → 标准 Meta 字典"""
+        desc = d.get("description", "")
+        if not desc or desc == "-":
+            desc = ""
+        return {
+            "title":       d.get("title", ""),
+            "creator":     d.get("uploader") or d.get("channel", ""),
+            "platform":    self.platform_id,
+            "likes":       str(d.get("like_count", 0)),
+            "duration":    d.get("duration", 0) or 0,
+            "thumbnail":   d.get("thumbnail", ""),
+            "webpage_url": d.get("webpage_url", original_url),
+            "download_url": original_url,
+            "description": desc,
+        }
+
+    def _empty_meta(self, url: str) -> dict:
+        """失败时返回字段齐全的空字典（不再静默返回 {}）"""
+        return {"title": "", "creator": "", "platform": self.platform_id,
+                "likes": "0", "duration": 0, "thumbnail": "",
+                "webpage_url": url, "download_url": url, "description": ""}
+
+    # ── 搜索 ──
+    def search(self, query: str, task: dict) -> list[dict]:
+        # 先检查是否有专用搜索覆盖
+        override = _SEARCH_OVERRIDES.get(self.platform_id)
+        if override:
+            return override(query, task)
+
+        # 默认走 yt-dlp 搜索
+        r = _venv(
+            f"yt-dlp --flat-playlist --dump-json "
+            f"\"ytsearch8:{query}\" 2>/dev/null"
+        )
+        results = []
         for line in r.stdout.strip().split("\n"):
             try:
                 d = json.loads(line)
                 results.append({
-                    "id": d.get("id", ""),
-                    "url": d.get("webpage_url", ""),
-                    "title": d.get("title", ""),
-                    "creator": d.get("uploader", ""),
-                    "likes": str(d.get("like_count", 0)),
+                    "id":       d.get("id", ""),
+                    "url":      d.get("webpage_url", ""),
+                    "title":    d.get("title", ""),
+                    "creator":  d.get("uploader", ""),
+                    "likes":    str(d.get("like_count", 0)),
                     "duration": d.get("duration", 0),
-                    "platform": "youtube"
+                    "platform": self.platform_id,
                 })
             except Exception:
                 pass
+        return results
 
-    tasks[task_id]["search_results"] = results
-    tasks[task_id]["progress"] = {"step": "search", "status": "done",
-                                   "message": f"Found {len(results)} results"}
-    return results
+    # ── 解析 ──
+    def resolve(self, url: str, task: dict, **kwargs) -> dict:
+        for flag in self._cookie_flags():
+            cmd = f"yt-dlp {flag} --dump-json '{url}'"
+            r = _venv(cmd)
+            try:
+                d = json.loads(r.stdout)
+                return self._map_meta(d, url)
+            except Exception:
+                continue
+
+        task["error"] = (
+            f"解析 {self.platform_id} 链接失败。"
+            f"视频可能已删除、私密或需要登录。"
+        )
+        return self._empty_meta(url)
+
+    # ── 下载 ──
+    def download(self, meta: dict, output_path: str, task: dict) -> bool:
+        url = meta.get("download_url") or meta.get("webpage_url", "")
+        for flag in self._cookie_flags():
+            cmd = f"yt-dlp {flag} -x --audio-format mp3 -o '{output_path}' '{url}'"
+            _venv(cmd)
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
+                return True
+
+        task["error"] = f"下载 {self.platform_id} 视频失败。请检查网络或登录状态。"
+        return False
 
 
-def step_resolve(task_id, url, platform, xsec=""):
-    """Resolve a URL to get video metadata and download URL."""
-    tasks[task_id]["progress"] = {"step": "resolve", "status": "running",
-                                   "message": "Resolving URL..."}
+# ─── XhsResolver：小红书专用（xhs CLI）───
 
-    meta = {"url": url, "platform": platform}
+class XhsResolver(BaseResolver):
+    """小红书专用解析器。使用 xhs CLI，不走 yt-dlp（yt-dlp 的 XHS extractor 已挂）。"""
+    platform_id = "xhs"
 
-    if platform == "xhs":
-        # Resolve short link
+    def search(self, query: str, task: dict) -> list[dict]:
+        r = _venv(f"xhs search '{query}' --json")
+        try:
+            data = json.loads(r.stdout)
+            results = []
+            for item in data.get("data", {}).get("items", [])[:8]:
+                nc = item.get("note_card", {})
+                info = nc.get("interact_info", {})
+                results.append({
+                    "id":       item["id"],
+                    "xsec":     item.get("xsec_token", ""),
+                    "title":    nc.get("display_title", ""),
+                    "creator":  nc.get("user", {}).get("nickname", ""),
+                    "likes":    info.get("liked_count", "0"),
+                    "platform": "xhs",
+                })
+            return results
+        except Exception as e:
+            task["error"] = f"小红书搜索失败: {e}"
+            return []
+
+    def resolve(self, url: str, task: dict, **kwargs) -> dict:
+        xsec = kwargs.get("xsec", "")
+        meta = {"url": url, "platform": "xhs",
+                "title": "", "creator": "", "likes": "0",
+                "duration": 0, "thumbnail": "", "webpage_url": url,
+                "download_url": "", "description": "",
+                "note_id": "", "xsec_token": xsec}
+
+        # ── 短链追踪 ──
         if "xhslink" in url:
-            r = subprocess.run(["curl", "-sL", "-o", "/dev/null", "-w", "%{url_effective}", url],
-                              capture_output=True, text=True, timeout=15)
+            r = subprocess.run(
+                ["curl", "-sL", "-o", "/dev/null", "-w", "%{url_effective}", url],
+                capture_output=True, text=True, timeout=15)
             final_url = r.stdout.strip()
             note_id = re.search(r'/item/([a-f0-9]+)', final_url)
             if note_id:
                 meta["note_id"] = note_id.group(1)
             else:
                 meta["note_id"] = url.split("/")[-1].split("?")[0]
-            # Extract xsec_token from redirected URL if present
             if not xsec:
                 xt = re.search(r'xsec_token=([^&]+)', final_url)
                 if xt:
-                    xsec = xt.group(1)
+                    meta["xsec_token"] = xt.group(1)
         elif "/explore/" in url:
             meta["note_id"] = url.split("/explore/")[-1].split("?")[0]
         else:
             meta["note_id"] = url
 
-        # Read video metadata
-        xsec_flag = f"--xsec-token '{xsec}'" if xsec else ""
+        # ── 读取笔记元数据 ──
+        xsec_flag = f"--xsec-token '{meta['xsec_token']}'" if meta["xsec_token"] else ""
         sr = _venv(f"xhs read '{meta['note_id']}' {xsec_flag} --json")
         try:
             resp_data = json.loads(sr.stdout).get("data", {})
 
-            # Support both old format (data.items[0].note_card) and new format (data.* flat)
+            # 兼容新旧两种响应格式
             if "items" in resp_data:
-                # Old format: data.items[0].note_card
                 if not resp_data.get("items"):
-                    tasks[task_id]["error"] = "Cannot access note. Try searching by title."
+                    task["error"] = "无法访问该笔记。请尝试用标题搜索。"
                     return meta
                 nc = resp_data["items"][0].get("note_card", {})
-                meta["title"] = nc.get("display_title") or nc.get("title", "")
-                meta["creator"] = nc.get("user", {}).get("nickname", "")
-                meta["likes"] = nc.get("interact_info", {}).get("liked_count", "0")
-                meta["desc"] = nc.get("desc", "")
+                meta["title"]       = nc.get("display_title") or nc.get("title", "")
+                meta["creator"]     = nc.get("user", {}).get("nickname", "")
+                meta["likes"]       = nc.get("interact_info", {}).get("liked_count", "0")
+                meta["description"] = nc.get("desc", "")
                 video = nc.get("video", {})
             elif "title" in resp_data:
-                # New format: data.* flat (xhs-cli v2+)
-                meta["title"] = resp_data.get("title", "")
-                meta["creator"] = resp_data.get("user", {}).get("nickname", "")
-                meta["likes"] = str(resp_data.get("interactInfo", {}).get("likedCount", 0))
-                meta["desc"] = resp_data.get("desc", "")
+                meta["title"]       = resp_data.get("title", "")
+                meta["creator"]     = resp_data.get("user", {}).get("nickname", "")
+                meta["likes"]       = str(resp_data.get("interactInfo", {}).get("likedCount", 0))
+                meta["description"] = resp_data.get("desc", "")
                 video = resp_data.get("video", {})
             else:
-                tasks[task_id]["error"] = "Cannot access note. Try searching by title."
+                task["error"] = "无法访问该笔记。请尝试用标题搜索。"
                 return meta
 
+            # ── 提取 CDN 直链 ──
             streams = video.get("media", {}).get("stream", {})
-            # Pick smallest h265 stream
-            # Pick first available stream (support both old snake_case and new camelCase field names)
             for codec, formats in streams.items():
                 for f in formats:
-                    url = f.get("masterUrl") or f.get("master_url", "")
-                    if url:
-                        meta["download_url"] = url
+                    dl_url = f.get("masterUrl") or f.get("master_url", "")
+                    if dl_url:
+                        meta["download_url"] = dl_url
                         break
                 if meta.get("download_url"):
                     break
         except Exception as e:
-            tasks[task_id]["progress"] = {"step": "resolve", "status": "error",
-                                           "message": str(e)}
-            return meta
+            task["error"] = f"小红书解析失败: {e}"
 
-    elif platform == "bilibili":
-        # Try with cookies first (B站 requires auth since 2026)
-        r = _venv(f"yt-dlp --cookies-from-browser chrome --dump-json '{url}'")
-        try:
-            d = json.loads(r.stdout)
-        except Exception:
-            # Fallback without cookies
-            r = _venv(f"yt-dlp --dump-json '{url}'")
-            try:
-                d = json.loads(r.stdout)
-            except Exception:
-                d = {}
-        meta["title"] = d.get("title", "")
-        meta["creator"] = d.get("uploader", "")
-        meta["download_url"] = url
+        return meta
 
-    elif platform == "youtube":
-        meta["download_url"] = url
+    def download(self, meta: dict, output_path: str, task: dict) -> bool:
+        dl_url = meta.get("download_url")
+        if not dl_url:
+            task["error"] = "无 CDN 下载地址。视频可能已被删除或 token 已过期。"
+            return False
 
+        tempdir = os.path.dirname(output_path)
+        video_path = os.path.join(tempdir, "video.mp4")
+
+        subprocess.run(["curl", "-sL", "-o", video_path, dl_url],
+                       timeout=120, capture_output=True)
+        if os.path.getsize(video_path) <= 1000:
+            task["error"] = "CDN 下载失败：视频文件过小。token 可能已过期，请刷新后重试。"
+            return False
+
+        subprocess.run(["ffmpeg", "-y", "-i", video_path, "-vn",
+                        "-acodec", "libmp3lame", "-q:a", "2", output_path],
+                       timeout=120, capture_output=True)
+        os.remove(video_path)
+        return os.path.exists(output_path) and os.path.getsize(output_path) > 1000
+
+
+# ─── 平台注册表：URL 域名 → 解析器 ───
+
+PLATFORM_REGISTRY: list[tuple] = [
+    (r'(xhs|xiaohongshu|xhslink)\.com',   XhsResolver()),
+    (r'bilibili\.com|b23\.tv',           YtDlpResolver("bilibili", cookie_required=True)),
+    (r'youtube\.com|youtu\.be',          YtDlpResolver("youtube")),
+    (r'douyin\.com',                     YtDlpResolver("douyin", cookie_required=True)),
+    (r'kuaishou\.com',                   YtDlpResolver("kuaishou")),
+    (r'(youku|yk)\.com',                 YtDlpResolver("youku")),
+    (r'mgtv\.com',                       YtDlpResolver("mgtv")),
+    (r'v\.qq\.com',                      YtDlpResolver("qqvideo")),
+    (r'iqiyi\.com',                      YtDlpResolver("iqiyi")),
+]
+
+# platform_id → 解析器（用于搜索场景，用户手动选择平台）
+PLATFORM_MAP: dict[str, BaseResolver] = {
+    r.platform_id: r for _, r in PLATFORM_REGISTRY
+}
+
+
+def detect_platform(url: str) -> BaseResolver:
+    """根据 URL 域名自动匹配解析器。未匹配时兜底走 yt-dlp 通用解析。"""
+    for pattern, resolver in PLATFORM_REGISTRY:
+        if re.search(pattern, url):
+            return resolver
+    return YtDlpResolver("unknown")
+
+
+# ─── Pipeline steps (synchronous, run in threads) ────────────────
+
+def step_search(task_id, query, platform):
+    """搜索视频。通过 PLATFORM_MAP 找到对应解析器并委托搜索。"""
+    tasks[task_id]["progress"] = {"step": "search", "status": "running",
+                                   "message": f"Searching {platform}..."}
+
+    resolver = PLATFORM_MAP.get(platform)
+    if not resolver:
+        tasks[task_id]["error"] = f"未知平台: {platform}"
+        tasks[task_id]["progress"] = {"step": "search", "status": "error",
+                                       "message": f"Unknown platform: {platform}"}
+        return []
+
+    results = resolver.search(query, tasks[task_id])
+    tasks[task_id]["search_results"] = results
+    tasks[task_id]["progress"] = {"step": "search", "status": "done",
+                                   "message": f"Found {len(results)} results"}
+    return results
+
+
+def step_resolve(task_id, url, xsec=""):
+    """解析视频 URL。自动检测平台并委托给对应解析器。"""
+    tasks[task_id]["progress"] = {"step": "resolve", "status": "running",
+                                   "message": "检测平台..."}
+
+    resolver = detect_platform(url)
+    tasks[task_id]["progress"] = {"step": "resolve", "status": "running",
+                                   "message": f"解析 {resolver.platform_id} 链接..."}
+
+    meta = resolver.resolve(url, tasks[task_id], xsec=xsec)
     tasks[task_id]["meta"] = meta
     tasks[task_id]["progress"] = {"step": "resolve", "status": "done",
                                    "message": meta.get("title", url)[:60]}
@@ -221,34 +375,22 @@ def step_resolve(task_id, url, platform, xsec=""):
 
 
 def step_download(task_id, meta):
-    """Download video / extract audio. Returns audio file path."""
-    platform = meta.get("platform", "")
+    """下载视频并提取音频。委托给对应解析器。"""
+    platform = meta.get("platform", "unknown")
     tempdir = tasks[task_id]["tempdir"]
     audio_path = os.path.join(tempdir, "audio.mp3")
 
     tasks[task_id]["progress"] = {"step": "download", "status": "running",
-                                   "message": "Downloading..."}
+                                   "message": "下载中..."}
 
-    if platform == "xhs" and meta.get("download_url"):
-        # Direct CDN download
-        video_path = os.path.join(tempdir, "video.mp4")
-        subprocess.run(
-            ["curl", "-sL", "-o", video_path, meta["download_url"]],
-            timeout=120, capture_output=True)
-        if os.path.getsize(video_path) > 1000:
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "libmp3lame",
-                 "-q:a", "2", audio_path],
-                timeout=120, capture_output=True)
-            os.remove(video_path)
-    elif platform == "bilibili":
-        _venv(f"yt-dlp --cookies-from-browser chrome -x --audio-format mp3 -o '{audio_path}' '{meta['download_url']}'")
-        if not (os.path.exists(audio_path) and os.path.getsize(audio_path) > 1000):
-            _venv(f"yt-dlp -x --audio-format mp3 -o '{audio_path}' '{meta['download_url']}'")
-    else:
-        _venv(f"yt-dlp -x --audio-format mp3 -o '{audio_path}' '{meta['download_url']}'")
+    resolver = PLATFORM_MAP.get(platform)
+    if not resolver:
+        # 兜底：走 yt-dlp 通用下载
+        resolver = YtDlpResolver(platform)
 
-    if os.path.exists(audio_path) and os.path.getsize(audio_path) > 1000:
+    ok = resolver.download(meta, audio_path, tasks[task_id])
+
+    if ok and os.path.exists(audio_path) and os.path.getsize(audio_path) > 1000:
         tasks[task_id]["audio_path"] = audio_path
         size_kb = os.path.getsize(audio_path) // 1024
         tasks[task_id]["progress"] = {"step": "download", "status": "done",
@@ -256,7 +398,7 @@ def step_download(task_id, meta):
         return audio_path
     else:
         tasks[task_id]["progress"] = {"step": "download", "status": "error",
-                                       "message": "Download failed"}
+                                       "message": tasks[task_id].get("error", "下载失败")}
         return None
 
 
@@ -750,7 +892,7 @@ async def process(request: Request):
     """Process a video URL or text input: → transcribe → notes. SSE for progress."""
     body = await request.json()
     url = body.get("url", "").strip()
-    platform = body.get("platform", "xhs")
+    # platform 参数保留但不用于解析路由（后端自动检测）
     mode = body.get("mode", "standard")  # "standard", "detailed", or "scholar"
     mermaid = body.get("mermaid", False)  # whether to insert Mermaid diagrams
     # Allow overriding title from search selection
@@ -801,7 +943,7 @@ async def process(request: Request):
             else:
                 # ── Standard URL processing (unchanged) ──
                 # Step 1: Resolve
-                meta = step_resolve(task_id, url, platform, xsec=override_xsec)
+                meta = step_resolve(task_id, url, xsec=override_xsec)
                 if override_title:
                     meta["title"] = override_title
                 yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
@@ -829,7 +971,7 @@ async def process(request: Request):
 
             # Done
             tasks[task_id]["done"] = True
-            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', platform), 'likes': meta.get('likes','0')}}})}\n\n"
+            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', 'unknown'), 'likes': meta.get('likes','0')}}})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'data': str(e)})}\n\n"

@@ -24,12 +24,14 @@
 ### Task 1: Backend — Prompt 模板追加 Mermaid 指引
 
 **Files:**
+
 - Modify: `app.py:364-397` (`_generate_standard` prompt)
 - Modify: `app.py:433-436` (`_generate_detailed` chunk prompt)
 - Modify: `app.py:476-479` (`_scholar_prompt` chunk prompt)
 - Modify: `app.py:481-521` (`_scholar_prompt` full prompt)
 
 **Interfaces:**
+
 - Produces: modified prompt strings — same return type, same callers, just longer prompts
 
 - [ ] **Step 1: Modify `_generate_standard()` prompt (~L364-397)**
@@ -221,11 +223,13 @@ git commit -m "feat: add Mermaid diagram guidance to all prompt templates"
 ### Task 2: Frontend — Mermaid CDN + async rendering
 
 **Files:**
+
 - Modify: `static/index.html:7` (add CDN after marked.js)
 - Modify: `static/index.html:~1043` (add mermaid.initialize before `</script>`)
 - Modify: `static/index.html:941-962` (make showPreview async with mermaid.run)
 
 **Interfaces:**
+
 - Consumes: `marked.parse()` output (existing), DOM node `#previewContent`
 - Produces: rendered SVG diagrams inside `#previewContent`
 
