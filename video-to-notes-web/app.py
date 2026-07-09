@@ -493,11 +493,13 @@ def _save_settings(data):
 
 
 def _read_api_config():
-    """Read API key, base URL, and model. Priority: env var > settings.json > default."""
+    """读取 API 配置。优先级: 项目专属环境变量 > settings.json > 默认值。
+    注意: 不使用 ANTHROPIC_* 环境变量（那是 Claude Code 自己的配置）。
+    """
     s = _load_settings()
-    api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN") or s.get("api_key", "")
-    api_base = os.environ.get("ANTHROPIC_BASE_URL") or s.get("api_base", "")
-    model = os.environ.get("ANTHROPIC_MODEL") or s.get("model", "deepseek-chat")
+    api_key = os.environ.get("VTN_API_KEY") or s.get("api_key", "")
+    api_base = os.environ.get("VTN_API_BASE") or s.get("api_base", "")
+    model = os.environ.get("VTN_MODEL") or s.get("model", "deepseek-chat")
     return api_key, api_base, model
 
 
@@ -851,7 +853,7 @@ def _basic_notes(meta, transcript):
     return f"""# {title} — 课后笔记
 
 > 视频作者：{creator} | 平台：{platform}
-> 转录：Groq Whisper large-v3
+> 转录：本地 Whisper tiny
 
 ---
 
