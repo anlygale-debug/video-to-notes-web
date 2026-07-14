@@ -1,8 +1,8 @@
 """Video to Notes Web App — FastAPI backend."""
-import os, sys, json, re, uuid, shutil, subprocess, threading, time, tempfile
+import os, sys, json, re, uuid, shutil, subprocess, threading, time, tempfile, urllib.request
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Video to Notes")
@@ -1048,6 +1048,21 @@ async def process(request: Request):
                 shutil.rmtree(tempdir, ignore_errors=True)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.get("/api/proxy-image")
+async def proxy_image(url: str):
+    """代理加载外部图片，绕过浏览器 Referer/CORS 限制。"""
+    if not url or not url.startswith("http"):
+        raise HTTPException(400, "Invalid image URL")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        resp = urllib.request.urlopen(req, timeout=10)
+        content = resp.read()
+        content_type = resp.headers.get("Content-Type", "image/jpeg")
+        return Response(content=content, media_type=content_type)
+    except Exception:
+        raise HTTPException(404, "Image not found")
 
 
 @app.get("/api/download/{task_id}/video")

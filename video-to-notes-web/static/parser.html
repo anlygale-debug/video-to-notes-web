@@ -422,7 +422,7 @@ function showResult(meta) {
   const coverImg = document.getElementById('coverImg');
   const coverPlaceholder = document.getElementById('coverPlaceholder');
   if (meta.thumbnail) {
-    coverImg.src = meta.thumbnail;
+    coverImg.src = '/api/proxy-image?url=' + encodeURIComponent(meta.thumbnail);
     coverImg.style.display = 'block';
     coverPlaceholder.style.display = 'none';
   } else {
