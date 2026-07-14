@@ -68,9 +68,6 @@
   }
   .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
 
-  .btn-sm.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn-sm.primary:hover { background: var(--accent-hover); }
-
   /* Platform tag */
   .platform-badge {
     display: inline-flex; align-items: center; gap: 6px;
@@ -115,7 +112,14 @@
   }
   .result-card .info { padding: 24px; }
   .result-card .info h2 { font-size: 1.2rem; color: var(--heading); line-height: 1.5; margin-bottom: 6px; font-weight: 600; }
-  .result-card .info .desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; max-height: 80px; overflow: hidden; }
+  .result-card .info .desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; max-height: 120px; overflow-y: auto; overscroll-behavior: contain; }
+  .result-card .info .desc::-webkit-scrollbar { width: 4px; }
+  .result-card .info .desc::-webkit-scrollbar-track { background: transparent; }
+  .result-card .info .desc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .result-card .info .desc::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  .result-card .info .source-link { font-size: 0.82rem; margin-bottom: 12px; }
+  .result-card .info .source-link a { color: var(--accent); text-decoration: none; word-break: break-all; }
+  .result-card .info .source-link a:hover { text-decoration: underline; }
   .result-card .meta-row {
     display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.85rem; color: var(--text);
     margin-bottom: 20px;
@@ -195,6 +199,7 @@
     <div class="info">
       <h2 id="infoTitle"></h2>
       <div class="desc" id="infoDesc"></div>
+      <div class="source-link" id="infoSource"></div>
       <div class="meta-row">
         <span id="infoCreator"></span>
         <span id="infoPlatform"></span>
@@ -202,7 +207,7 @@
       </div>
     </div>
     <div class="actions">
-      <button class="btn-sm primary" onclick="downloadAudio()">🎵 下载音频</button>
+      <button class="btn-sm" onclick="downloadAudio()">🎵 下载音频</button>
       <button class="btn-sm" onclick="downloadVideo()">🎬 下载视频</button>
       <button class="btn-sm" onclick="downloadTranscript()">📝 下载转录文本</button>
     </div>
@@ -433,6 +438,10 @@ function showResult(meta) {
   document.getElementById('infoTitle').textContent = meta.title || '无标题';
   document.getElementById('infoDesc').textContent = meta.description || '';
   document.getElementById('infoDesc').style.display = meta.description ? '' : 'none';
+  var sourceUrl = meta.webpage_url || meta.download_url || '';
+  document.getElementById('infoSource').innerHTML = sourceUrl
+    ? '🔗 <a href=\"' + escHtml(sourceUrl) + '\" target=\"_blank\" rel=\"noopener\">' + escHtml(sourceUrl) + '</a>'
+    : '';
   document.getElementById('infoCreator').textContent = '作者：' + (meta.creator || '未知');
   document.getElementById('infoPlatform').textContent = '平台：' + fmtPlatform(meta.platform);
   document.getElementById('infoDuration').textContent = meta.duration ? '时长：' + fmtDuration(meta.duration) : '';
