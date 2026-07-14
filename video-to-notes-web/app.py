@@ -263,6 +263,7 @@ class XhsResolver(BaseResolver):
                 meta["description"] = nc.get("desc", "")
                 meta["thumbnail"]   = (nc.get("imageList", [{}])[0].get("urlDefault", "") or
                                        nc.get("imageList", [{}])[0].get("urlPre", ""))
+                meta["duration"]    = nc.get("video", {}).get("capa", {}).get("duration", 0)
                 video = nc.get("video", {})
             elif "title" in resp_data:
                 meta["title"]       = resp_data.get("title", "")
@@ -271,6 +272,7 @@ class XhsResolver(BaseResolver):
                 meta["description"] = resp_data.get("desc", "")
                 meta["thumbnail"]   = (resp_data.get("imageList", [{}])[0].get("urlDefault", "") or
                                        resp_data.get("imageList", [{}])[0].get("urlPre", ""))
+                meta["duration"]    = resp_data.get("video", {}).get("capa", {}).get("duration", 0)
                 video = resp_data.get("video", {})
             else:
                 task["error"] = "无法访问该链接。请确认链接有效后重试。"
