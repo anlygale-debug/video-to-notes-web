@@ -140,6 +140,14 @@
     font-size: 0.72rem; padding: 2px 8px; border-radius: 10px;
     background: #f0ede8; color: var(--text-dim); margin-right: 10px;
   }
+  .history-item .hi-delete {
+    font-size: 0.78rem; color: var(--text-dim); cursor: pointer;
+    padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
+    margin-left: 8px; opacity: 0;
+  }
+  .history-item:hover .hi-delete { opacity: 1; }
+  .history-item .hi-delete:hover { color: var(--red); background: #fce4ec; }
+  }
   .history-empty { color: var(--text-dim); font-size: 0.85rem; padding: 16px 0; text-align: center; }
 
   /* Toast */
@@ -252,6 +260,7 @@ function renderHistory() {
       <span class="hi-platform">${e.platform || ''}</span>
       <span class="hi-title">${escHtml(e.title || '无标题')}</span>
       <span class="hi-meta">${e.date || ''}</span>
+      <span class="hi-delete" onclick="event.stopPropagation(); deleteHistory(${i})" title="删除">×</span>
     </div>
   `).join('');
 }
@@ -262,10 +271,16 @@ function viewHistory(i) {
   currentTaskId = e.taskId;
   currentMeta = { title: e.title, creator: e.creator, platform: e.platform,
                   likes: e.likes, duration: e.duration, thumbnail: e.thumbnail,
-                  webpage_url: e.webpageUrl };
+                  webpage_url: e.webpageUrl, description: e.description };
   currentTranscript = e.transcript;
   showResult(currentMeta);
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+function deleteHistory(i) {
+  const h = loadHistory();
+  h.splice(i, 1);
+  localStorage.setItem(TRANSCRIPTS_KEY, JSON.stringify(h));
+  renderHistory();
 }
 function escHtml(s) {
   const d = document.createElement('div');
@@ -394,6 +409,7 @@ function handleComplete(data) {
     duration: currentMeta.duration,
     thumbnail: currentMeta.thumbnail,
     webpageUrl: currentMeta.webpage_url,
+    description: currentMeta.description,
     transcript: currentTranscript,
     date: new Date().toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   });
