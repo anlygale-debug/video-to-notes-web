@@ -261,12 +261,16 @@ class XhsResolver(BaseResolver):
                 meta["creator"]     = nc.get("user", {}).get("nickname", "")
                 meta["likes"]       = nc.get("interact_info", {}).get("liked_count", "0")
                 meta["description"] = nc.get("desc", "")
+                meta["thumbnail"]   = (nc.get("imageList", [{}])[0].get("urlDefault", "") or
+                                       nc.get("imageList", [{}])[0].get("urlPre", ""))
                 video = nc.get("video", {})
             elif "title" in resp_data:
                 meta["title"]       = resp_data.get("title", "")
                 meta["creator"]     = resp_data.get("user", {}).get("nickname", "")
                 meta["likes"]       = str(resp_data.get("interactInfo", {}).get("likedCount", 0))
                 meta["description"] = resp_data.get("desc", "")
+                meta["thumbnail"]   = (resp_data.get("imageList", [{}])[0].get("urlDefault", "") or
+                                       resp_data.get("imageList", [{}])[0].get("urlPre", ""))
                 video = resp_data.get("video", {})
             else:
                 task["error"] = "无法访问该链接。请确认链接有效后重试。"
