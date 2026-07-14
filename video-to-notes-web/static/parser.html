@@ -78,6 +78,8 @@
     margin-top: 10px;
   }
   .platform-badge.detected { background: #e8f5e9; color: #2e7d32; }
+  .platform-badge.warning { background: #fff8e1; color: #f57c00; }
+  .platform-badge.error { background: #fce4ec; color: #c62828; }
 
   /* Loading */
   .loading-area {
@@ -330,6 +332,8 @@ async function startParse() {
             handleComplete(evt.data);
             return;
           } else if (evt.event === 'error') {
+            const badge = document.getElementById('platformBadge');
+            badge.innerHTML = '<span class="platform-badge error">❌ 解析失败</span>';
             showToast('❌ ' + evt.data);
             resetUI();
             return;
@@ -347,6 +351,20 @@ function updateLoadingText(data) {
   const step = data.step;
   const msg = data.message || '';
   const el = document.getElementById('loadingText');
+  const badge = document.getElementById('platformBadge');
+
+  // 处理错误状态
+  if (data.status === 'error') {
+    if (data.error_type === 'invalid_url') {
+      // 非视频链接
+      badge.innerHTML = '<span class="platform-badge error">❌ 非视频链接</span>';
+      el.textContent = '请粘贴完整的视频 URL';
+    } else {
+      el.textContent = msg;
+    }
+    return;
+  }
+
   if (step === 'resolve') el.textContent = '🔗 解析链接…';
   else if (step === 'download') el.textContent = '📥 下载中…';
   else if (step === 'transcribe') el.textContent = '🎙️ 语音转录…';
@@ -354,8 +372,11 @@ function updateLoadingText(data) {
   // 拿到平台信息后立刻显示 badge
   if (data.platform) {
     const pname = fmtPlatform(data.platform);
-    document.getElementById('platformBadge').innerHTML =
-      `<span class="platform-badge detected">✅ 已识别为 ${pname}</span>`;
+    if (data.unknown_platform) {
+      badge.innerHTML = `<span class="platform-badge warning">⚠️ 未知平台，尝试解析中…</span>`;
+    } else {
+      badge.innerHTML = `<span class="platform-badge detected">✅ 已识别为 ${pname}</span>`;
+    }
   }
 }
 

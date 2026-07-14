@@ -363,16 +363,36 @@ def step_resolve(task_id, url, xsec=""):
     tasks[task_id]["progress"] = {"step": "resolve", "status": "running",
                                    "message": "检测平台..."}
 
+    # 检查是否为合法 URL（含 http/https协议）
+    is_url = re.match(r'^https?://', url)
+    if not is_url:
+        tasks[task_id]["error"] = "输入的不是视频链接。请粘贴完整的视频 URL（以 http:// 或 https:// 开头）。"
+        tasks[task_id]["progress"] = {"step": "resolve", "status": "error",
+                                       "message": "非视频链接",
+                                       "error_type": "invalid_url"}
+        return {"title": "", "creator": "", "platform": "unknown",
+                "likes": "0", "duration": 0, "thumbnail": "",
+                "webpage_url": url, "download_url": url, "description": ""}
+
     resolver = detect_platform(url)
+    is_unknown = isinstance(resolver, YtDlpResolver) and resolver.platform_id == "unknown"
+
     tasks[task_id]["progress"] = {"step": "resolve", "status": "running",
                                    "message": f"解析 {resolver.platform_id} 链接...",
-                                   "platform": resolver.platform_id}
+                                   "platform": resolver.platform_id,
+                                   "unknown_platform": is_unknown}
 
     meta = resolver.resolve(url, tasks[task_id], xsec=xsec)
     tasks[task_id]["meta"] = meta
+
+    # 未知平台 + 解析失败 → 明确说明平台不支持
+    if is_unknown and tasks[task_id].get("error"):
+        tasks[task_id]["error"] = "暂不支持该视频平台，或该链接不包含视频。请确认链接来自支持的视频网站（小红书、B站、YouTube 等）。"
+
     tasks[task_id]["progress"] = {"step": "resolve", "status": "done",
                                    "message": meta.get("title", url)[:60],
-                                   "platform": resolver.platform_id}
+                                   "platform": resolver.platform_id,
+                                   "unknown_platform": is_unknown}
     return meta
 
 
