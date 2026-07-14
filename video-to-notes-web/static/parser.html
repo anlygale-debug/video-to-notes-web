@@ -209,6 +209,13 @@ let isParsing = false;
 const TRANSCRIPTS_KEY = 'vtn-transcripts';
 const MAX_HISTORY = 30;
 
+// ─── URL 提取（从粘贴的整段文字中提取链接）───
+function extractURL(text) {
+  // 匹配 http/https 开头的 URL
+  const m = text.match(/https?:\/\/[^\s]+/);
+  return m ? m[0] : text.trim();
+}
+
 // ─── Toast ───
 function showToast(msg, ms = 2500) {
   const t = document.getElementById('toast');
@@ -279,9 +286,12 @@ function fmtPlatform(id) { return PLATFORM_NAMES[id] || id; }
 
 // ─── Parse ───
 async function startParse() {
-  const input = document.getElementById('urlInput').value.trim();
-  if (!input) return;
+  const rawInput = document.getElementById('urlInput').value.trim();
+  if (!rawInput) return;
   if (isParsing) return;
+
+  // 智能提取 URL（支持从整段分享文字中提取链接）
+  const input = extractURL(rawInput);
 
   // Reset
   isParsing = true;

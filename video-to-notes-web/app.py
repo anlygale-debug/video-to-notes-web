@@ -254,7 +254,7 @@ class XhsResolver(BaseResolver):
             # 兼容新旧两种响应格式
             if "items" in resp_data:
                 if not resp_data.get("items"):
-                    task["error"] = "无法访问该笔记。请尝试用标题搜索。"
+                    task["error"] = "无法访问该链接。视频可能已被删除或设为私密。"
                     return meta
                 nc = resp_data["items"][0].get("note_card", {})
                 meta["title"]       = nc.get("display_title") or nc.get("title", "")
@@ -269,7 +269,7 @@ class XhsResolver(BaseResolver):
                 meta["description"] = resp_data.get("desc", "")
                 video = resp_data.get("video", {})
             else:
-                task["error"] = "无法访问该笔记。请尝试用标题搜索。"
+                task["error"] = "无法访问该链接。请确认链接有效后重试。"
                 return meta
 
             # ── 提取 CDN 直链 ──
