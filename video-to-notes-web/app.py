@@ -1021,6 +1021,7 @@ async def process(request: Request):
                             'duration': meta.get('duration', 0),
                             'thumbnail': meta.get('thumbnail', ''),
                             'webpage_url': meta.get('webpage_url', url),
+                            'description': meta.get('description', ''),
                         }
                     }})}\n\n"
                     return
@@ -1031,7 +1032,7 @@ async def process(request: Request):
 
             # Done
             tasks[task_id]["done"] = True
-            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', 'unknown'), 'likes': meta.get('likes','0'), 'duration': meta.get('duration', 0), 'thumbnail': meta.get('thumbnail', ''), 'webpage_url': meta.get('webpage_url', url)}}})}\n\n"
+            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', 'unknown'), 'likes': meta.get('likes','0'), 'duration': meta.get('duration', 0), 'thumbnail': meta.get('thumbnail', ''), 'webpage_url': meta.get('webpage_url', url), 'description': meta.get('description', '')}}})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'data': str(e)})}\n\n"

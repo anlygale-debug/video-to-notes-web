@@ -114,9 +114,10 @@
     background: #f0ede8; color: var(--text-dim); font-size: 0.9rem;
   }
   .result-card .info { padding: 24px; }
-  .result-card .info h2 { font-size: 1.2rem; color: var(--heading); line-height: 1.5; margin-bottom: 12px; font-weight: 600; }
+  .result-card .info h2 { font-size: 1.2rem; color: var(--heading); line-height: 1.5; margin-bottom: 6px; font-weight: 600; }
+  .result-card .info .desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; max-height: 80px; overflow: hidden; }
   .result-card .meta-row {
-    display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.88rem; color: var(--text);
+    display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.85rem; color: var(--text);
     margin-bottom: 20px;
   }
   .result-card .meta-row span { display: inline-flex; align-items: center; gap: 4px; }
@@ -185,10 +186,10 @@
     <div class="cover-placeholder" id="coverPlaceholder">🎬 无封面</div>
     <div class="info">
       <h2 id="infoTitle"></h2>
+      <div class="desc" id="infoDesc"></div>
       <div class="meta-row">
         <span id="infoCreator"></span>
         <span id="infoPlatform"></span>
-        <span id="infoLikes"></span>
         <span id="infoDuration"></span>
       </div>
     </div>
@@ -414,10 +415,11 @@ function showResult(meta) {
   }
 
   document.getElementById('infoTitle').textContent = meta.title || '无标题';
-  document.getElementById('infoCreator').textContent = '👤 ' + (meta.creator || '未知');
-  document.getElementById('infoPlatform').textContent = '📺 ' + fmtPlatform(meta.platform);
-  document.getElementById('infoLikes').textContent = '❤️ ' + fmtLikes(meta.likes);
-  document.getElementById('infoDuration').textContent = meta.duration ? '⏱ ' + fmtDuration(meta.duration) : '';
+  document.getElementById('infoDesc').textContent = meta.description || '';
+  document.getElementById('infoDesc').style.display = meta.description ? '' : 'none';
+  document.getElementById('infoCreator').textContent = '作者：' + (meta.creator || '未知');
+  document.getElementById('infoPlatform').textContent = '平台：' + fmtPlatform(meta.platform);
+  document.getElementById('infoDuration').textContent = meta.duration ? '时长：' + fmtDuration(meta.duration) : '';
 
   document.getElementById('resultCard').style.display = 'block';
 }
