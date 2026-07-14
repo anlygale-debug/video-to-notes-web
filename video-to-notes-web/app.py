@@ -1,7 +1,7 @@
 """Video to Notes Web App — FastAPI backend."""
 import os, sys, json, re, uuid, shutil, subprocess, threading, time, tempfile
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -867,12 +867,12 @@ def _basic_notes(meta, transcript):
 
 @app.get("/")
 async def index():
+    return HTMLResponse(open(os.path.join(STATIC, "parser.html")).read())
+
+
+@app.get("/v1")
+async def index_v1():
     return HTMLResponse(open(os.path.join(STATIC, "index.html")).read())
-
-
-@app.get("/v2")
-async def index_v2():
-    return HTMLResponse(open(os.path.join(STATIC, "index-v2.html")).read())
 
 
 @app.post("/api/search")
@@ -894,6 +894,7 @@ async def process(request: Request):
     """Process a video URL or text input: → transcribe → notes. SSE for progress."""
     body = await request.json()
     url = body.get("url", "").strip()
+    stop_at = body.get("stop_at", "generate")  # "transcribe" = 解析后停下，不生成笔记
     # platform 参数保留但不用于解析路由（后端自动检测）
     mode = body.get("mode", "standard")  # "standard", "detailed", or "scholar"
     mermaid = body.get("mermaid", False)  # whether to insert Mermaid diagrams
@@ -939,9 +940,22 @@ async def process(request: Request):
                     "creator": "",
                     "platform": "text",
                     "likes": "0",
+                    "duration": 0,
+                    "thumbnail": "",
+                    "webpage_url": "",
                 }
                 tasks[task_id]["meta"] = meta
                 tasks[task_id]["transcript"] = transcript
+
+                # 文本模式 + stop_at=transcribe：只返回原文，不生成笔记
+                if stop_at == "transcribe":
+                    tasks[task_id]["done"] = True
+                    yield f"data: {json.dumps({'event': 'complete', 'data': {
+                        'task_id': task_id,
+                        'transcript': transcript,
+                        'meta': meta,
+                    }})}\n\n"
+                    return
             else:
                 # ── Standard URL processing (unchanged) ──
                 # Step 1: Resolve
@@ -967,13 +981,31 @@ async def process(request: Request):
                     yield f"data: {json.dumps({'event': 'error', 'data': 'Transcription failed'})}\n\n"
                     return
 
+                # 如果只需要解析（不生成笔记），在此停下
+                if stop_at == "transcribe":
+                    tasks[task_id]["done"] = True
+                    yield f"data: {json.dumps({'event': 'complete', 'data': {
+                        'task_id': task_id,
+                        'transcript': transcript,
+                        'meta': {
+                            'title': meta.get('title', ''),
+                            'creator': meta.get('creator', ''),
+                            'platform': meta.get('platform', 'unknown'),
+                            'likes': meta.get('likes', '0'),
+                            'duration': meta.get('duration', 0),
+                            'thumbnail': meta.get('thumbnail', ''),
+                            'webpage_url': meta.get('webpage_url', url),
+                        }
+                    }})}\n\n"
+                    return
+
             # Step 4: Generate notes (common to both paths)
             notes = step_generate(task_id, transcript, meta, mode=mode, mermaid=mermaid)
             yield f"data: {json.dumps({'event': 'progress', 'data': tasks[task_id]['progress']})}\n\n"
 
             # Done
             tasks[task_id]["done"] = True
-            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', 'unknown'), 'likes': meta.get('likes','0')}}})}\n\n"
+            yield f"data: {json.dumps({'event': 'complete', 'data': {'task_id': task_id, 'notes': notes, 'transcript': transcript, 'meta': {'title': meta.get('title',''), 'creator': meta.get('creator',''), 'platform': meta.get('platform', 'unknown'), 'likes': meta.get('likes','0'), 'duration': meta.get('duration', 0), 'thumbnail': meta.get('thumbnail', ''), 'webpage_url': meta.get('webpage_url', url)}}})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'data': str(e)})}\n\n"
@@ -989,6 +1021,60 @@ async def process(request: Request):
                 shutil.rmtree(tempdir, ignore_errors=True)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.get("/api/download/{task_id}/video")
+async def download_video(task_id: str):
+    """流式下载原视频。不落盘，直接从 CDN/yt-dlp 透传到浏览器。"""
+    task = tasks.get(task_id, {})
+    if not task.get("done"):
+        raise HTTPException(404, "Task not found or not complete")
+
+    meta = task.get("meta", {})
+    platform = meta.get("platform", "")
+    url = meta.get("download_url") or meta.get("webpage_url", "")
+
+    if not url:
+        raise HTTPException(404, "No video URL available")
+
+    # 小红书：curl 重新下载 CDN 视频
+    safe_filename = f"video-{task_id}.mp4"
+    if platform == "xhs":
+        proc = subprocess.Popen(
+            ["curl", "-sL", url],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        return StreamingResponse(
+            proc.stdout,
+            media_type="video/mp4",
+            headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+        )
+
+    # yt-dlp 平台：yt-dlp -o - 输出到 stdout
+    return StreamingResponse(
+        _stream_video_ytdlp(url),
+        media_type="video/mp4",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+    )
+
+
+def _stream_video_ytdlp(url):
+    """用 yt-dlp 下载视频并流式输出。"""
+    import select
+    cmd = f"yt-dlp -f 'best[ext=mp4]/best' -o - '{url}'"
+    proc = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        env={**os.environ, "PATH": f"{os.path.expanduser('~/.agent-reach-venv/bin')}:{os.environ.get('PATH', '')}"}
+    )
+    # 流式读取，每次 64KB
+    try:
+        while True:
+            chunk = proc.stdout.read(65536)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        proc.stdout.close()
+        proc.wait()
 
 
 @app.post("/api/export-pdf")
