@@ -67,6 +67,8 @@
     transition: all 0.15s;
   }
   .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-sm.primary:hover { background: var(--accent-hover); }
 
   /* Platform tag */
   .platform-badge {
@@ -206,10 +208,13 @@
         <span id="infoDuration"></span>
       </div>
     </div>
-    <div class="actions">
+    <div class="actions" id="dlBtns">
       <button class="btn-sm" onclick="downloadAudio()">🎵 下载音频</button>
       <button class="btn-sm" onclick="downloadVideo()">🎬 下载视频</button>
       <button class="btn-sm" onclick="downloadTranscript()">📝 下载转录文本</button>
+    </div>
+    <div class="actions" id="reparseBtn" style="display:none">
+      <button class="btn-sm primary" onclick="reparseFromHistory()">🔄 重新解析</button>
     </div>
   </div>
 
@@ -226,6 +231,8 @@
 // ─── State ───
 let currentTaskId = null;
 let currentMeta = {};
+let isFromHistory = false;
+let historySourceUrl = '';  // 从历史恢复时记下原始 URL，用于重新解析
 let currentTranscript = '';
 let isParsing = false;
 
@@ -273,6 +280,8 @@ function viewHistory(i) {
   const h = loadHistory();
   const e = h[i];
   if (!e) return;
+  isFromHistory = true;
+  historySourceUrl = e.webpageUrl || '';
   currentTaskId = e.taskId;
   currentMeta = { title: e.title, creator: e.creator, platform: e.platform,
                   likes: e.likes, duration: e.duration, thumbnail: e.thumbnail,
@@ -325,6 +334,7 @@ async function startParse() {
 
   // Reset
   isParsing = true;
+  isFromHistory = false;
   document.getElementById('parseBtn').disabled = true;
   document.getElementById('resultCard').style.display = 'none';
   document.getElementById('platformBadge').innerHTML = '';
@@ -447,12 +457,28 @@ function showResult(meta) {
   document.getElementById('infoDuration').textContent = meta.duration ? '时长：' + fmtDuration(meta.duration) : '';
 
   document.getElementById('resultCard').style.display = 'block';
+
+  // 历史记录：隐藏下载按钮，显示重新解析按钮
+  document.getElementById('dlBtns').style.display = isFromHistory ? 'none' : '';
+  document.getElementById('reparseBtn').style.display = isFromHistory ? '' : 'none';
 }
 
 function resetUI() {
   isParsing = false;
   document.getElementById('parseBtn').disabled = false;
   document.getElementById('loadingArea').style.display = 'none';
+}
+
+// ─── Re-parse from history ───
+async function reparseFromHistory() {
+  if (!historySourceUrl) {
+    showToast('无原始链接，请手动粘贴到输入框解析');
+    return;
+  }
+  // 填入输入框并触发解析
+  document.getElementById('urlInput').value = historySourceUrl;
+  isFromHistory = false;
+  await startParse();
 }
 
 // ─── Downloads ───
