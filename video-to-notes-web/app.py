@@ -365,12 +365,14 @@ def step_resolve(task_id, url, xsec=""):
 
     resolver = detect_platform(url)
     tasks[task_id]["progress"] = {"step": "resolve", "status": "running",
-                                   "message": f"解析 {resolver.platform_id} 链接..."}
+                                   "message": f"解析 {resolver.platform_id} 链接...",
+                                   "platform": resolver.platform_id}
 
     meta = resolver.resolve(url, tasks[task_id], xsec=xsec)
     tasks[task_id]["meta"] = meta
     tasks[task_id]["progress"] = {"step": "resolve", "status": "done",
-                                   "message": meta.get("title", url)[:60]}
+                                   "message": meta.get("title", url)[:60],
+                                   "platform": resolver.platform_id}
     return meta
 
 

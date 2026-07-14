@@ -350,6 +350,13 @@ function updateLoadingText(data) {
   if (step === 'resolve') el.textContent = '🔗 解析链接…';
   else if (step === 'download') el.textContent = '📥 下载中…';
   else if (step === 'transcribe') el.textContent = '🎙️ 语音转录…';
+
+  // 拿到平台信息后立刻显示 badge
+  if (data.platform) {
+    const pname = fmtPlatform(data.platform);
+    document.getElementById('platformBadge').innerHTML =
+      `<span class="platform-badge detected">✅ 已识别为 ${pname}</span>`;
+  }
 }
 
 function handleComplete(data) {
