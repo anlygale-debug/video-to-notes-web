@@ -1193,6 +1193,32 @@ async def download_transcript(task_id: str):
     return FileResponse(path, filename=f"{safe}-转录.txt", media_type="text/plain")
 
 
+@app.get("/api/download/{task_id}/transcript-md")
+async def download_transcript_md(task_id: str):
+    """下载 .md 格式转录文本，带视频标题和元数据。"""
+    task = tasks.get(task_id, {})
+    transcript = task.get("transcript", "")
+    if not transcript:
+        raise HTTPException(404, "Transcript not found")
+    meta = task.get("meta", {})
+    title = meta.get("title", "transcript")
+    safe = re.sub(r'[^\w\s-]', '', title)[:30]
+
+    md = f"""# {title} — 转录全文
+
+> 作者：{meta.get('creator', '未知')} | 平台：{meta.get('platform', 'unknown')}
+> 转录：本地 Whisper tiny
+
+---
+
+{transcript}
+"""
+    path = f"/tmp/vtn-transcript-md-{task_id}.md"
+    with open(path, "w") as f:
+        f.write(md)
+    return FileResponse(path, filename=f"{safe}-转录.md", media_type="text/markdown")
+
+
 @app.get("/api/download/{task_id}/merged")
 async def download_merged(task_id: str):
     task = tasks.get(task_id, {})

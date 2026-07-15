@@ -211,10 +211,11 @@
     <div class="actions" id="dlBtns">
       <button class="btn-sm" onclick="downloadAudio()">🎵 下载音频</button>
       <button class="btn-sm" onclick="downloadVideo()">🎬 下载视频</button>
-      <button class="btn-sm" onclick="downloadTranscript()">📝 下载转录文本</button>
+      <button class="btn-sm" onclick="downloadTranscript()">📝 下载转录 .txt</button>
+      <button class="btn-sm" onclick="downloadTranscriptMd()">📄 下载转录 .md</button>
     </div>
     <div class="actions" id="reparseBtn" style="display:none">
-      <button class="btn-sm primary" onclick="reparseFromHistory()">🔄 重新解析</button>
+      <button class="btn-sm" onclick="reparseFromHistory()">🔄 重新解析</button>
     </div>
   </div>
 
@@ -494,8 +495,13 @@ function downloadVideo() {
 }
 function downloadTranscript() {
   if (!currentTaskId) return;
-  showToast('⬇️ 开始下载转录文本…');
+  showToast('⬇️ 开始下载转录 .txt…');
   window.open(`/api/download/${currentTaskId}/transcript`, '_blank');
+}
+function downloadTranscriptMd() {
+  if (!currentTaskId) return;
+  showToast('⬇️ 开始下载转录 .md…');
+  window.open(`/api/download/${currentTaskId}/transcript-md`, '_blank');
 }
 
 // ─── Enter key ───
