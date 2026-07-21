@@ -22,6 +22,16 @@ def _parse_duration(dur_str):
     return 0
 
 
+def _extract_xhs_thumbnail(note_card):
+    """从 XHS note_card 提取封面图 URL。兼容驼峰和下划线两种命名风格。"""
+    il = note_card.get("imageList") or note_card.get("image_list", [])
+    if not il:
+        return ""
+    img = il[0]
+    return (img.get("urlDefault") or img.get("url_default") or
+            img.get("urlPre") or img.get("url_pre") or "")
+
+
 def _venv(cmd):
     """Run a command inside the agent-reach venv."""
     venv_py = os.path.expanduser("~/.agent-reach-venv/bin/python3")
@@ -261,8 +271,7 @@ class XhsResolver(BaseResolver):
                 meta["creator"]     = nc.get("user", {}).get("nickname", "")
                 meta["likes"]       = nc.get("interact_info", {}).get("liked_count", "0")
                 meta["description"] = nc.get("desc", "")
-                meta["thumbnail"]   = (nc.get("imageList", [{}])[0].get("urlDefault", "") or
-                                       nc.get("imageList", [{}])[0].get("urlPre", ""))
+                meta["thumbnail"]   = _extract_xhs_thumbnail(nc)
                 meta["duration"]    = nc.get("video", {}).get("capa", {}).get("duration", 0)
                 video = nc.get("video", {})
             elif "title" in resp_data:
@@ -270,8 +279,7 @@ class XhsResolver(BaseResolver):
                 meta["creator"]     = resp_data.get("user", {}).get("nickname", "")
                 meta["likes"]       = str(resp_data.get("interactInfo", {}).get("likedCount", 0))
                 meta["description"] = resp_data.get("desc", "")
-                meta["thumbnail"]   = (resp_data.get("imageList", [{}])[0].get("urlDefault", "") or
-                                       resp_data.get("imageList", [{}])[0].get("urlPre", ""))
+                meta["thumbnail"]   = _extract_xhs_thumbnail(resp_data)
                 meta["duration"]    = resp_data.get("video", {}).get("capa", {}).get("duration", 0)
                 video = resp_data.get("video", {})
             else:
