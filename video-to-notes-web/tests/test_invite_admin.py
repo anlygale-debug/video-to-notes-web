@@ -12,7 +12,7 @@ from vtn.adapters.media import FakePlatformMedia
 from vtn.adapters.llm import FakeLLM
 from vtn.adapters.transcription import FakeTranscriber
 from vtn.invite_admin import create_invite_admin_app
-from vtn.llm_provider import LLMProviderStore
+from vtn.llm_provider import LLMModelCatalog, LLMProviderStore
 from vtn.storage.sqlite import SQLiteRepository
 from vtn.transcription_provider import TranscriptionProviderStore
 from vtn.web.api import create_v3_router
@@ -656,6 +656,149 @@ class InviteAdminHttpTests(unittest.TestCase):
         self.assertEqual(verifier.calls[0]["api_key"], secret)
         self.assertIsNotNone(tested.json()["profile"]["verified_at"])
         self.assertNotIn(secret, tested.text)
+
+    def test_fcc_model_catalog_keeps_one_direct_nvidia_entry_per_model(self):
+        direct = LLMModelCatalog._catalog_item(
+            "anthropic/nvidia_nim/z-ai/glm-5.2",
+            fcc_proxy=True,
+        )
+        duplicate = LLMModelCatalog._catalog_item(
+            "claude-3-freecc-no-thinking/nvidia_nim/z-ai/glm-5.2",
+            fcc_proxy=True,
+        )
+        compatibility_alias = LLMModelCatalog._catalog_item(
+            "claude-sonnet-4-20250514",
+            fcc_proxy=True,
+        )
+
+        self.assertEqual(direct["upstream_id"], "z-ai/glm-5.2")
+        self.assertEqual(direct["publisher"], "z-ai")
+        self.assertIsNone(duplicate)
+        self.assertIsNone(compatibility_alias)
+
+    def test_free_model_list_and_verified_switch_use_saved_proxy_key(self):
+        class StaticCatalog:
+            def __init__(self):
+                self.calls = []
+
+            def list(self, profile):
+                self.calls.append(dict(profile))
+                return [
+                    {
+                        "id": "anthropic/nvidia_nim/nvidia/nemotron-3-super-120b-a12b",
+                        "upstream_id": "nvidia/nemotron-3-super-120b-a12b",
+                        "publisher": "nvidia",
+                        "label": "nvidia/nemotron-3-super-120b-a12b",
+                    },
+                    {
+                        "id": "anthropic/nvidia_nim/z-ai/glm-5.2",
+                        "upstream_id": "z-ai/glm-5.2",
+                        "publisher": "z-ai",
+                        "label": "z-ai/glm-5.2",
+                    },
+                ]
+
+        class MatchingVerifier:
+            def __init__(self):
+                self.calls = []
+
+            def verify(self, profile):
+                self.calls.append(dict(profile))
+                return {"response_model": profile["model"]}
+
+        store = LLMProviderStore(Path(self.tempdir.name) / "free-models.json")
+        saved = store.save_profile(
+            label="FCC NVIDIA 免费",
+            api_base="http://127.0.0.1:8082",
+            api_key="saved-local-proxy-key",
+            model="anthropic/nvidia_nim/nvidia/nemotron-3-super-120b-a12b",
+            channel="free",
+            protocol="anthropic_messages",
+        )
+        catalog = StaticCatalog()
+        verifier = MatchingVerifier()
+        admin = TestClient(
+            create_invite_admin_app(
+                self.repository,
+                self.access,
+                csrf_token="known-admin-csrf",
+                llm_store=store,
+                llm_verifier=verifier,
+                llm_catalog=catalog,
+            )
+        )
+
+        listed = admin.get(
+            f"/api/llm-providers/{saved['id']}/models",
+            headers=self.headers,
+        )
+        switched = admin.put(
+            f"/api/llm-providers/{saved['id']}/model",
+            headers=self.headers,
+            json={"model": "anthropic/nvidia_nim/z-ai/glm-5.2"},
+        )
+
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()["count"], 2)
+        self.assertNotIn("saved-local-proxy-key", listed.text)
+        self.assertEqual(switched.status_code, 200)
+        self.assertEqual(
+            switched.json()["profile"]["model"],
+            "anthropic/nvidia_nim/z-ai/glm-5.2",
+        )
+        self.assertEqual(
+            switched.json()["verification"]["response_model"],
+            "anthropic/nvidia_nim/z-ai/glm-5.2",
+        )
+        self.assertEqual(verifier.calls[-1]["api_key"], "saved-local-proxy-key")
+        self.assertIsNotNone(switched.json()["profile"]["verified_at"])
+        self.assertNotIn("saved-local-proxy-key", switched.text)
+
+    def test_failed_or_mismatched_free_model_switch_keeps_original_model(self):
+        class StaticCatalog:
+            def list(self, _profile):
+                return [
+                    {
+                        "id": "anthropic/nvidia_nim/z-ai/glm-5.2",
+                        "upstream_id": "z-ai/glm-5.2",
+                        "publisher": "z-ai",
+                        "label": "z-ai/glm-5.2",
+                    }
+                ]
+
+        class MismatchedVerifier:
+            def verify(self, _profile):
+                return {"response_model": "anthropic/nvidia_nim/other/model"}
+
+        store = LLMProviderStore(Path(self.tempdir.name) / "model-mismatch.json")
+        saved = store.save_profile(
+            label="FCC NVIDIA 免费",
+            api_base="http://127.0.0.1:8082",
+            api_key="saved-local-proxy-key",
+            model="claude-sonnet-4-5",
+            channel="free",
+            protocol="anthropic_messages",
+        )
+        admin = TestClient(
+            create_invite_admin_app(
+                self.repository,
+                self.access,
+                csrf_token="known-admin-csrf",
+                llm_store=store,
+                llm_verifier=MismatchedVerifier(),
+                llm_catalog=StaticCatalog(),
+            )
+        )
+
+        response = admin.put(
+            f"/api/llm-providers/{saved['id']}/model",
+            headers=self.headers,
+            json={"model": "anthropic/nvidia_nim/z-ai/glm-5.2"},
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("不一致", response.json()["detail"])
+        self.assertEqual(store.profile(saved["id"])["model"], "claude-sonnet-4-5")
 
     def test_admin_note_switch_controls_real_note_api_without_restart(self):
         store = LLMProviderStore(Path(self.tempdir.name) / "settings.json")

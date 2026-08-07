@@ -76,6 +76,99 @@ def llm_response_text(profile, payload):
     return payload["choices"][0]["message"]["content"]
 
 
+class LLMModelCatalog:
+    """Discover selectable models from a configured provider without exposing its key."""
+
+    def __init__(self, *, timeout_seconds=15):
+        self.timeout_seconds = timeout_seconds
+
+    @staticmethod
+    def _endpoint(profile):
+        base = profile["api_base"].rstrip("/")
+        return base + ("/models" if base.endswith("/v1") else "/v1/models")
+
+    @staticmethod
+    def _catalog_item(raw_model_id, *, fcc_proxy):
+        model_id = str(raw_model_id or "").strip()
+        if not model_id:
+            return None
+        if fcc_proxy:
+            prefix = "anthropic/nvidia_nim/"
+            if not model_id.startswith(prefix):
+                return None
+            upstream_id = model_id[len(prefix):]
+        else:
+            upstream_id = model_id
+        if "/" not in upstream_id:
+            return None
+        publisher = upstream_id.split("/", 1)[0]
+        return {
+            "id": model_id,
+            "upstream_id": upstream_id,
+            "publisher": publisher,
+            "label": upstream_id,
+        }
+
+    def list(self, profile):
+        parsed = urlparse(profile["api_base"])
+        fcc_proxy = parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+        request = urllib.request.Request(
+            self._endpoint(profile),
+            headers={
+                "Authorization": f"Bearer {profile['api_key']}",
+                "x-api-key": profile["api_key"],
+                "Accept": "application/json",
+            },
+        )
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=self.timeout_seconds,
+                context=LLMConnectionVerifier._ssl_context(),
+            ) as response:
+                payload = json.load(response)
+        except urllib.error.HTTPError as exc:
+            message = (
+                "无法读取模型列表：API 密钥无效。"
+                if exc.code in (401, 403)
+                else f"模型目录暂时不可用（HTTP {exc.code}）。"
+            )
+            raise DomainError(
+                "LLM_MODEL_CATALOG_FAILED", message, retryable=exc.code >= 500
+            ) from exc
+        except (OSError, urllib.error.URLError, TimeoutError) as exc:
+            raise DomainError(
+                "LLM_MODEL_CATALOG_FAILED",
+                "暂时无法连接模型目录，请确认本地 NVIDIA 代理正在运行。",
+                retryable=True,
+            ) from exc
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise DomainError(
+                "LLM_MODEL_CATALOG_FAILED",
+                "模型目录返回了无法识别的数据。",
+                retryable=False,
+            ) from exc
+
+        raw_items = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(raw_items, list):
+            raise DomainError(
+                "LLM_MODEL_CATALOG_FAILED",
+                "模型目录没有返回模型列表。",
+                retryable=False,
+            )
+        models = []
+        seen = set()
+        for raw_item in raw_items:
+            if not isinstance(raw_item, dict):
+                continue
+            item = self._catalog_item(raw_item.get("id"), fcc_proxy=fcc_proxy)
+            if item and item["id"] not in seen:
+                seen.add(item["id"])
+                models.append(item)
+        models.sort(key=lambda item: (item["publisher"], item["upstream_id"]))
+        return models
+
+
 class LLMConnectionVerifier:
     def __init__(self, *, timeout_seconds=30):
         self.timeout_seconds = timeout_seconds
@@ -110,6 +203,9 @@ class LLMConnectionVerifier:
             elif exc.code == 429:
                 message = "服务商返回额度不足或请求过于频繁。"
                 retryable = True
+            elif exc.code == 410:
+                message = "这个模型已经被服务商下线，请从模型列表中选择其他模型。"
+                retryable = False
             else:
                 message = f"模型连接测试失败（HTTP {exc.code}）。"
                 retryable = exc.code >= 500
@@ -126,6 +222,10 @@ class LLMConnectionVerifier:
                 "服务已响应，但返回格式与所选接口协议不一致。",
                 retryable=False,
             ) from exc
+        return {
+            "requested_model": profile["model"],
+            "response_model": str(payload.get("model") or "").strip(),
+        }
 
 
 class LLMProviderStore:
@@ -472,6 +572,22 @@ class LLMProviderStore:
                 "LLM_PROFILE_NOT_FOUND", "没有找到这套 LLM 配置。", retryable=False
             )
         return profile
+
+    def set_verified_model(self, profile_id, model):
+        data = self._read()
+        profile = next(
+            (item for item in data["profiles"] if item.get("id") == profile_id),
+            None,
+        )
+        if not profile:
+            raise DomainError(
+                "LLM_PROFILE_NOT_FOUND", "没有找到这套 LLM 配置。", retryable=False
+            )
+        profile["model"] = str(model or "").strip()
+        profile["updated_at"] = utc_now()
+        profile["verified_at"] = profile["updated_at"]
+        self._write(data)
+        return self.profile(profile_id)
 
     def set_default(self, profile_id):
         profile = self.profile(profile_id)

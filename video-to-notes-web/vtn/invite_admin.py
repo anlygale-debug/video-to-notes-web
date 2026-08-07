@@ -20,7 +20,7 @@ from vtn.transcription_provider import (
     CloudflareCredentialVerifier,
     TranscriptionProviderStore,
 )
-from vtn.llm_provider import LLMConnectionVerifier, LLMProviderStore
+from vtn.llm_provider import LLMConnectionVerifier, LLMModelCatalog, LLMProviderStore
 
 
 class CreateGrantRequest(BaseModel):
@@ -87,6 +87,15 @@ class LLMProfileRequest(BaseModel):
     enabled: bool = True
 
     @field_validator("label", "api_base", "api_key", "model")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip()
+
+
+class LLMModelSelectionRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=300)
+
+    @field_validator("model")
     @classmethod
     def strip_text(cls, value):
         return value.strip()
@@ -162,6 +171,7 @@ def create_invite_admin_app(
     cloudflare_verifier=None,
     llm_store=None,
     llm_verifier=None,
+    llm_catalog=None,
 ):
     app = FastAPI(
         title="Video to Notes Invite Control",
@@ -176,6 +186,7 @@ def create_invite_admin_app(
     cloudflare_verifier = cloudflare_verifier or CloudflareCredentialVerifier()
     llm_store = llm_store or LLMProviderStore(Path("data/settings.json"))
     llm_verifier = llm_verifier or LLMConnectionVerifier()
+    llm_catalog = llm_catalog or LLMModelCatalog()
     static_dir = Path(static_dir or Path(__file__).parents[1] / "static" / "invite-admin")
     app.mount("/assets", StaticFiles(directory=static_dir), name="invite-admin-assets")
 
@@ -210,6 +221,85 @@ def create_invite_admin_app(
     @app.get("/api/llm-providers")
     async def llm_provider_status(_=Depends(require_csrf)):
         return llm_store.status()
+
+    @app.get("/api/llm-providers/{profile_id}/models")
+    async def list_llm_models(profile_id: str, _=Depends(require_csrf)):
+        try:
+            profile = llm_store.profile(profile_id)
+            if profile["channel"] != "free":
+                raise DomainError(
+                    "LLM_MODEL_CATALOG_UNSUPPORTED",
+                    "模型下拉列表只用于免费线路；高速线路仍可手动填写模型 ID。",
+                    retryable=False,
+                )
+            models = llm_catalog.list(llm_store.credentials(profile_id))
+            return {
+                "profile_id": profile_id,
+                "current_model": profile["model"],
+                "count": len(models),
+                "models": models,
+                "source": "provider_live_catalog",
+            }
+        except DomainError as exc:
+            status_code = 503 if exc.retryable else 422
+            if exc.code == "LLM_PROFILE_NOT_FOUND":
+                status_code = 404
+            raise HTTPException(status_code=status_code, detail=exc.message) from exc
+
+    @app.put("/api/llm-providers/{profile_id}/model")
+    async def select_llm_model(
+        profile_id: str,
+        body: LLMModelSelectionRequest,
+        _=Depends(require_csrf),
+    ):
+        try:
+            profile = llm_store.profile(profile_id)
+            if profile["channel"] != "free":
+                raise DomainError(
+                    "LLM_MODEL_SELECTION_UNSUPPORTED",
+                    "只有免费线路使用自动验证切换；高速线路请编辑配置后测试连接。",
+                    retryable=False,
+                )
+            credentials = llm_store.credentials(profile_id)
+            models = llm_catalog.list(credentials)
+            selected = next(
+                (item for item in models if item["id"] == body.model), None
+            )
+            if not selected:
+                raise DomainError(
+                    "LLM_MODEL_NOT_IN_CATALOG",
+                    "所选模型不在当前 NVIDIA 免费模型目录中，请刷新列表。",
+                    retryable=False,
+                )
+            candidate = {**credentials, "model": selected["id"]}
+            verification = llm_verifier.verify(candidate) or {}
+            response_model = str(verification.get("response_model") or "").strip()
+            if not response_model:
+                raise DomainError(
+                    "LLM_MODEL_IDENTITY_MISSING",
+                    "服务虽然响应，但没有返回模型 ID，无法确认已调用所选模型；原配置未改变。",
+                    retryable=False,
+                )
+            if response_model != selected["id"]:
+                raise DomainError(
+                    "LLM_MODEL_MISMATCH",
+                    "服务返回的模型与所选模型不一致，已保持原配置不变。",
+                    retryable=False,
+                )
+            saved = llm_store.set_verified_model(profile_id, selected["id"])
+            return {
+                "profile": saved,
+                "verification": {
+                    "requested_model": selected["id"],
+                    "response_model": response_model,
+                },
+                **llm_store.status(),
+            }
+        except DomainError as exc:
+            status_code = 503 if exc.retryable else 422
+            if exc.code == "LLM_PROFILE_NOT_FOUND":
+                status_code = 404
+            raise HTTPException(status_code=status_code, detail=exc.message) from exc
 
     @app.post("/api/llm-providers", status_code=201)
     async def create_llm_profile(

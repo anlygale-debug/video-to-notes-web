@@ -504,6 +504,74 @@
     renderLLM(await api("/api/llm-providers"));
   }
 
+  function resetLLMModelPicker() {
+    const picker = document.querySelector("[data-llm-model-picker]");
+    const manual = document.querySelector("[data-llm-model-manual-field]");
+    const select = document.querySelector("[data-llm-model-select]");
+    const status = document.querySelector("[data-llm-model-status]");
+    picker.hidden = true;
+    manual.hidden = false;
+    select.replaceChildren();
+    status.textContent = "正在读取代理的实时模型目录……";
+    delete status.dataset.tone;
+  }
+
+  async function loadFreeLLMModels(profile = editingLLMProfile) {
+    resetLLMModelPicker();
+    if (!profile?.id || profile.channel !== "free") return;
+    const picker = document.querySelector("[data-llm-model-picker]");
+    const manual = document.querySelector("[data-llm-model-manual-field]");
+    const select = document.querySelector("[data-llm-model-select]");
+    const status = document.querySelector("[data-llm-model-status]");
+    const refresh = document.querySelector("[data-llm-model-refresh]");
+    picker.hidden = false;
+    manual.hidden = true;
+    refresh.disabled = true;
+    status.textContent = "正在从本地 NVIDIA 代理读取实时模型目录……";
+    try {
+      const payload = await api(
+        `/api/llm-providers/${encodeURIComponent(profile.id)}/models`,
+      );
+      if (editingLLMProfile?.id !== profile.id) return;
+      const groups = new Map();
+      payload.models.forEach((model) => {
+        if (!groups.has(model.publisher)) groups.set(model.publisher, []);
+        groups.get(model.publisher).push(model);
+      });
+      if (!payload.models.some((model) => model.id === profile.model)) {
+        const unavailable = document.createElement("optgroup");
+        unavailable.label = "当前配置｜目录未列出，可能已下线";
+        const option = document.createElement("option");
+        option.value = profile.model;
+        option.textContent = profile.model;
+        unavailable.append(option);
+        select.append(unavailable);
+      }
+      groups.forEach((models, publisher) => {
+        const group = document.createElement("optgroup");
+        group.label = publisher.toUpperCase();
+        models.forEach((model) => {
+          const option = document.createElement("option");
+          option.value = model.id;
+          option.textContent = model.label;
+          group.append(option);
+        });
+        select.append(group);
+      });
+      select.value = profile.model;
+      document.querySelector("[data-llm-model]").value = select.value;
+      status.textContent = `已读取 ${payload.count} 个 NVIDIA NIM 直接模型。选择后保存时会发起最小真实请求；验证失败不会替换原模型。`;
+      delete status.dataset.tone;
+    } catch (error) {
+      manual.hidden = false;
+      picker.hidden = false;
+      status.textContent = error.message;
+      status.dataset.tone = "error";
+    } finally {
+      refresh.disabled = false;
+    }
+  }
+
   function openLLMForm(profile = null) {
     editingLLMProfile = profile;
     document.querySelector("[data-llm-dialog-title]");
@@ -522,16 +590,19 @@
       ? "已保存；留空则不修改"
       : "首次配置时必须填写";
     document.querySelector("[data-llm-model]").value = profile?.model || "";
+    resetLLMModelPicker();
     document.querySelector("[data-toggle-llm-key]").textContent = "显示";
     document.querySelector("[data-llm-error]").hidden = true;
     llmDialog.showModal();
     document.querySelector("[data-llm-label]").focus();
+    loadFreeLLMModels(profile);
   }
 
   function closeLLMForm() {
     editingLLMProfile = null;
     if (llmDialog.open) llmDialog.close();
     llmForm.reset();
+    resetLLMModelPicker();
   }
 
   async function switchLLMChannel(channel, button) {
@@ -1020,6 +1091,7 @@
       if (!document.querySelector("[data-llm-label]").value) {
         document.querySelector("[data-llm-label]").value = button.textContent.trim();
       }
+      loadFreeLLMModels();
     });
   });
   document.querySelector("[data-toggle-llm-key]").addEventListener("click", (event) => {
@@ -1027,6 +1099,18 @@
     const willShow = input.type === "password";
     input.type = willShow ? "text" : "password";
     event.currentTarget.textContent = willShow ? "隐藏" : "显示";
+  });
+  document.querySelector("[data-llm-model-select]").addEventListener("change", (event) => {
+    document.querySelector("[data-llm-model]").value = event.currentTarget.value;
+  });
+  document.querySelector("[data-llm-model-refresh]").addEventListener("click", () => {
+    loadFreeLLMModels();
+  });
+  document.querySelector("[data-llm-channel]").addEventListener("change", (event) => {
+    if (editingLLMProfile) {
+      editingLLMProfile = { ...editingLLMProfile, channel: event.currentTarget.value };
+    }
+    loadFreeLLMModels();
   });
   llmForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1037,6 +1121,26 @@
     saveButton.textContent = "正在安全保存…";
     try {
       const profileId = editingLLMProfile?.id;
+      const selectedModel = document.querySelector("[data-llm-model]").value.trim();
+      const channel = document.querySelector("[data-llm-channel]").value;
+      let modelVerified = false;
+      if (
+        profileId &&
+        channel === "free" &&
+        selectedModel !== editingLLMProfile.model
+      ) {
+        saveButton.textContent = "正在真实验证所选模型…";
+        const verified = await api(
+          `/api/llm-providers/${encodeURIComponent(profileId)}/model`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ model: selectedModel }),
+          },
+        );
+        modelVerified = true;
+        editingLLMProfile = verified.profile;
+      }
+      saveButton.textContent = "正在安全保存…";
       const payload = await api(
         profileId
           ? `/api/llm-providers/${encodeURIComponent(profileId)}`
@@ -1047,8 +1151,8 @@
             label: document.querySelector("[data-llm-label]").value.trim(),
             api_base: document.querySelector("[data-llm-api-base]").value.trim(),
             api_key: document.querySelector("[data-llm-api-key]").value.trim(),
-            model: document.querySelector("[data-llm-model]").value.trim(),
-            channel: document.querySelector("[data-llm-channel]").value,
+            model: selectedModel,
+            channel,
             protocol: document.querySelector("[data-llm-protocol]").value,
             enabled: document.querySelector("[data-llm-profile-enabled]").checked,
           }),
@@ -1058,7 +1162,9 @@
       const wasEditing = Boolean(profileId);
       closeLLMForm();
       setLLMMessage(
-        wasEditing
+        modelVerified
+          ? `已真实验证并切换到 ${selectedModel}；之后的新笔记会使用这个模型。`
+          : wasEditing
           ? "LLM 配置已更新；密钥未在页面中回显。"
           : "LLM 配置已保存。你可以先测试连接，再按需设为当前使用。",
       );

@@ -491,9 +491,17 @@
           <input data-llm-api-key name="api_key" type="password" maxlength="2048" autocomplete="new-password" placeholder="首次配置时必须填写" />
           <button type="button" data-toggle-llm-key>显示</button>
         </label>
-        <label class="edit-field">
+        <label class="edit-field" data-llm-model-manual-field>
           <span>模型名称</span>
           <input data-llm-model name="model" type="text" maxlength="200" autocomplete="off" placeholder="deepseek-v4-pro" required />
+        </label>
+        <label class="edit-field llm-model-picker" data-llm-model-picker hidden>
+          <span>选择 NVIDIA 免费模型</span>
+          <div class="llm-model-picker-row">
+            <select data-llm-model-select aria-label="NVIDIA 免费模型"></select>
+            <button type="button" data-llm-model-refresh>刷新列表</button>
+          </div>
+          <small data-llm-model-status>正在读取代理的实时模型目录……</small>
         </label>
 
         <label class="llm-profile-enabled">

@@ -92,6 +92,30 @@ await page.route("**/api/transcription-provider", (route) => reply(route, {
 await page.route("**/api/llm-providers**", async (route) => {
   const request = route.request();
   const path = new URL(request.url()).pathname;
+  if (request.method() === "GET" && path.endsWith("/models")) {
+    const id = path.split("/").at(-2);
+    const profile = profiles.find((item) => item.id === id);
+    return reply(route, {
+      profile_id: id,
+      current_model: profile.model,
+      count: 2,
+      source: "provider_live_catalog",
+      models: [
+        {
+          id: "anthropic/nvidia_nim/nvidia/nemotron-3-super-120b-a12b",
+          upstream_id: "nvidia/nemotron-3-super-120b-a12b",
+          publisher: "nvidia",
+          label: "nvidia/nemotron-3-super-120b-a12b",
+        },
+        {
+          id: "anthropic/nvidia_nim/z-ai/glm-5.2",
+          upstream_id: "z-ai/glm-5.2",
+          publisher: "z-ai",
+          label: "z-ai/glm-5.2",
+        },
+      ],
+    });
+  }
   if (request.method() === "GET") return reply(route, currentState());
   if (request.method() === "POST" && path === "/api/llm-providers") {
     const body = request.postDataJSON();
@@ -134,6 +158,31 @@ await page.route("**/api/llm-providers**", async (route) => {
     profiles.find((item) => item.id === id).enabled = request.postDataJSON().enabled;
     return reply(route, currentState());
   }
+  if (request.method() === "PUT" && path.endsWith("/model")) {
+    const id = path.split("/").at(-2);
+    const profile = profiles.find((item) => item.id === id);
+    profile.model = request.postDataJSON().model;
+    profile.verified_at = "2026-08-07T11:03:00Z";
+    return reply(route, {
+      profile,
+      verification: {
+        requested_model: profile.model,
+        response_model: profile.model,
+      },
+      ...currentState(),
+    });
+  }
+  if (
+    request.method() === "PUT" &&
+    /\/api\/llm-providers\/[^/]+$/.test(path) &&
+    profiles.some((item) => item.id === path.split("/").at(-1))
+  ) {
+    const id = path.split("/").at(-1);
+    const profile = profiles.find((item) => item.id === id);
+    Object.assign(profile, request.postDataJSON());
+    profile.api_key_saved = true;
+    return reply(route, { profile, ...currentState() });
+  }
   if (request.method() === "POST" && path.endsWith("/test")) {
     const id = path.split("/").at(-2);
     const profile = profiles.find((item) => item.id === id);
@@ -168,10 +217,22 @@ try {
     throw new Error("LLM 密钥不应出现在工作台页面");
   }
 
+  await freeCard.getByRole("button", { name: "编辑配置" }).click();
+  const editDialog = page.getByRole("dialog", { name: "编辑 LLM 配置" });
+  await editDialog.getByLabel("NVIDIA 免费模型").waitFor();
+  await editDialog.getByText("已读取 2 个 NVIDIA NIM 直接模型", { exact: false }).waitFor();
+  await editDialog.getByLabel("NVIDIA 免费模型").selectOption(
+    "anthropic/nvidia_nim/z-ai/glm-5.2",
+  );
+  await editDialog.getByRole("button", { name: "保存配置" }).click();
+  await editDialog.waitFor({ state: "hidden" });
+  await freeCard.getByText("anthropic/nvidia_nim/z-ai/glm-5.2", { exact: true }).waitFor();
+  await page.getByText("已真实验证并切换到", { exact: false }).waitFor();
+
   const freeChannel = page.locator('[data-llm-channel="free"]');
   await freeChannel.getByRole("button", { name: "开启整条线路" }).click();
   await freeChannel.getByRole("button", { name: "切换新任务到此线路" }).click();
-  await page.getByText("免费线路：FCC NVIDIA 免费 / claude-sonnet-4-5", { exact: true }).waitFor();
+  await page.getByText("免费线路：FCC NVIDIA 免费 / anthropic/nvidia_nim/z-ai/glm-5.2", { exact: true }).waitFor();
 
   await page.getByRole("button", { name: "开启笔记生成" }).click();
   const enableDialog = page.getByRole("dialog", { name: "开启真实笔记生成？" });
@@ -202,6 +263,8 @@ try {
     notesEnabled: true,
     profileToggleIndependent: true,
     connectionTestedExplicitly: true,
+    liveModelCatalogDropdown: true,
+    selectedModelVerifiedBeforeSwitch: true,
   }));
 } finally {
   await browser.close();
