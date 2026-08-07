@@ -689,13 +689,21 @@ class InviteAdminHttpTests(unittest.TestCase):
         self.assertEqual(revealed.status_code, 200)
         self.assertEqual(revealed.json()["api_key"], secret)
 
-    def test_fcc_model_catalog_keeps_one_direct_nvidia_entry_per_model(self):
+    def test_fcc_model_catalog_adds_note_optimized_ultra_and_filters_eol_models(self):
         direct = LLMModelCatalog._catalog_item(
             "anthropic/nvidia_nim/z-ai/glm-5.2",
             fcc_proxy=True,
         )
-        duplicate = LLMModelCatalog._catalog_item(
+        ignored_duplicate = LLMModelCatalog._catalog_item(
             "claude-3-freecc-no-thinking/nvidia_nim/z-ai/glm-5.2",
+            fcc_proxy=True,
+        )
+        note_optimized_ultra = LLMModelCatalog._catalog_item(
+            "claude-3-freecc-no-thinking/nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b",
+            fcc_proxy=True,
+        )
+        retired_deepseek = LLMModelCatalog._catalog_item(
+            "anthropic/nvidia_nim/deepseek-ai/deepseek-v4-pro",
             fcc_proxy=True,
         )
         compatibility_alias = LLMModelCatalog._catalog_item(
@@ -705,7 +713,11 @@ class InviteAdminHttpTests(unittest.TestCase):
 
         self.assertEqual(direct["upstream_id"], "z-ai/glm-5.2")
         self.assertEqual(direct["publisher"], "z-ai")
-        self.assertIsNone(duplicate)
+        self.assertEqual(direct["reasoning_mode"], "provider_default")
+        self.assertIsNone(ignored_duplicate)
+        self.assertEqual(note_optimized_ultra["reasoning_mode"], "off")
+        self.assertIn("关闭深度思考", note_optimized_ultra["label"])
+        self.assertIsNone(retired_deepseek)
         self.assertIsNone(compatibility_alias)
 
     def test_free_model_list_and_verified_switch_use_saved_proxy_key(self):

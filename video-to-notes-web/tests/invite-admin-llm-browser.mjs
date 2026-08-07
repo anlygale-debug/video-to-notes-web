@@ -98,7 +98,7 @@ await page.route("**/api/llm-providers**", async (route) => {
     return reply(route, {
       profile_id: id,
       current_model: profile.model,
-      count: 2,
+      count: 3,
       source: "provider_live_catalog",
       models: [
         {
@@ -112,6 +112,13 @@ await page.route("**/api/llm-providers**", async (route) => {
           upstream_id: "z-ai/glm-5.2",
           publisher: "z-ai",
           label: "z-ai/glm-5.2",
+        },
+        {
+          id: "claude-3-freecc-no-thinking/nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b",
+          upstream_id: "nvidia/nemotron-3-ultra-550b-a55b",
+          publisher: "nvidia",
+          label: "nvidia/nemotron-3-ultra-550b-a55b（关闭深度思考｜适合笔记）",
+          reasoning_mode: "off",
         },
       ],
     });
@@ -242,19 +249,19 @@ try {
   }
   await editDialog.getByRole("button", { name: "隐藏" }).click();
   await editDialog.getByLabel("NVIDIA 免费模型").waitFor();
-  await editDialog.getByText("已读取 2 个 NVIDIA NIM 直接模型", { exact: false }).waitFor();
+  await editDialog.getByText("已读取 3 个可用模型与笔记模式", { exact: false }).waitFor();
   await editDialog.getByLabel("NVIDIA 免费模型").selectOption(
-    "anthropic/nvidia_nim/z-ai/glm-5.2",
+    "claude-3-freecc-no-thinking/nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b",
   );
   await editDialog.getByRole("button", { name: "保存配置" }).click();
   await editDialog.waitFor({ state: "hidden" });
-  await freeCard.getByText("anthropic/nvidia_nim/z-ai/glm-5.2", { exact: true }).waitFor();
+  await freeCard.getByText("nvidia/nemotron-3-ultra-550b-a55b（关闭深度思考｜适合笔记）", { exact: true }).waitFor();
   await page.getByText("已真实验证并切换到", { exact: false }).waitFor();
 
   const freeChannel = page.locator('[data-llm-channel="free"]');
   await freeChannel.getByRole("button", { name: "开启整条线路" }).click();
   await freeChannel.getByRole("button", { name: "切换新任务到此线路" }).click();
-  await page.getByText("免费线路：FCC NVIDIA 免费 / anthropic/nvidia_nim/z-ai/glm-5.2", { exact: true }).waitFor();
+  await page.getByText("免费线路：FCC NVIDIA 免费 / nvidia/nemotron-3-ultra-550b-a55b（关闭深度思考｜适合笔记）", { exact: true }).waitFor();
 
   await page.getByRole("button", { name: "开启笔记生成" }).click();
   const enableDialog = page.getByRole("dialog", { name: "开启真实笔记生成？" });
@@ -289,6 +296,7 @@ try {
     selectedModelVerifiedBeforeSwitch: true,
     savedKeyPrefilledAndMasked: true,
     browserPasswordAutofillBypassed: true,
+    noteOptimizedUltraSelectable: true,
   }));
 } finally {
   await browser.close();

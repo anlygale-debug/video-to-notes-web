@@ -124,6 +124,32 @@ class LLMGenerationContractTests(unittest.TestCase):
         self.assertEqual(failure.exception.code, "LLM_TIMEOUT")
         self.assertIn("90 秒内没有响应", failure.exception.message)
 
+    def test_free_channel_allows_slow_model_more_time_for_analysis(self):
+        class FreeConfiguredLLM(OpenAICompatibleLLM):
+            def _settings(self):
+                return {
+                    "api_base": "http://127.0.0.1:8082",
+                    "api_key": "test-key",
+                    "model": "test-model",
+                    "channel": "free",
+                }
+
+        observed_timeouts = []
+
+        def timeout_request(request, timeout, context=None):
+            observed_timeouts.append(timeout)
+            raise TimeoutError("controlled free analysis timeout")
+
+        with patch("urllib.request.urlopen", timeout_request):
+            with self.assertRaises(DomainError) as failure:
+                FreeConfiguredLLM("/tmp/unused-free-settings.json").analyze(
+                    "一份需要预读的长逐字稿。", "用于复习"
+                )
+
+        self.assertEqual(observed_timeouts, [180])
+        self.assertEqual(failure.exception.code, "LLM_TIMEOUT")
+        self.assertIn("180 秒内没有响应", failure.exception.message)
+
     def test_generation_request_failure_is_reported_without_hidden_retry(self):
         class FailFastLLM(OpenAICompatibleLLM):
             def __init__(self):

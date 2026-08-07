@@ -344,6 +344,16 @@
     anthropic_messages: "Anthropic / FCC",
   };
 
+  function llmModelDisplayName(modelId) {
+    const value = String(modelId || "");
+    const noThinkingPrefix = "claude-3-freecc-no-thinking/nvidia_nim/";
+    const directPrefix = "anthropic/nvidia_nim/";
+    if (value.startsWith(noThinkingPrefix)) {
+      return `${value.slice(noThinkingPrefix.length)}（关闭深度思考｜适合笔记）`;
+    }
+    return value.startsWith(directPrefix) ? value.slice(directPrefix.length) : value;
+  }
+
   function llmCard(profile, index) {
     const card = document.createElement("article");
     card.className = `llm-card llm-card--${profile.channel}` +
@@ -375,7 +385,7 @@
     title.textContent = profile.label;
     const model = document.createElement("div");
     model.className = "llm-model-name";
-    model.textContent = profile.model;
+    model.textContent = llmModelDisplayName(profile.model);
     identity.append(title, model);
 
     const details = document.createElement("dl");
@@ -434,7 +444,7 @@
         <h3>${llmChannelLabels[channel]}</h3>
         <p>${channel === "free" ? "优先使用免费额度；长内容可能等待更久。" : "优先稳定性和速度；可能消耗账户额度。"}</p>
         <small>${config.available_profile_count} 个 API 开启 / ${config.profile_count} 个已保存</small>
-        <strong>${config.default_profile ? `默认：${escapeHTML(config.default_profile.label)} / ${escapeHTML(config.default_profile.model)}` : "尚未选择默认模型"}</strong>
+        <strong>${config.default_profile ? `默认：${escapeHTML(config.default_profile.label)} / ${escapeHTML(llmModelDisplayName(config.default_profile.model))}` : "尚未选择默认模型"}</strong>
       </div>
       <div class="llm-channel-actions"></div>`;
     const actions = card.querySelector(".llm-channel-actions");
@@ -486,7 +496,7 @@
       ? `${llmChannelLabels[payload.active_channel]} / ${active.label}`
       : `${llmChannelLabels[payload.active_channel]}尚未选择默认模型`;
     document.querySelector("[data-llm-current]").textContent = active
-      ? `${llmChannelLabels[payload.active_channel]}：${active.label} / ${active.model}`
+      ? `${llmChannelLabels[payload.active_channel]}：${active.label} / ${llmModelDisplayName(active.model)}`
       : `${llmChannelLabels[payload.active_channel]}尚未选择模型`;
     const toggle = document.querySelector("[data-toggle-llm]");
     toggle.textContent = masterEnabled ? "暂停笔记生成" : "开启笔记生成";
@@ -544,7 +554,7 @@
         unavailable.label = "当前配置｜目录未列出，可能已下线";
         const option = document.createElement("option");
         option.value = profile.model;
-        option.textContent = profile.model;
+        option.textContent = llmModelDisplayName(profile.model);
         unavailable.append(option);
         select.append(unavailable);
       }
@@ -561,7 +571,7 @@
       });
       select.value = profile.model;
       document.querySelector("[data-llm-model]").value = select.value;
-      status.textContent = `已读取 ${payload.count} 个 NVIDIA NIM 直接模型。选择后保存时会发起最小真实请求；验证失败不会替换原模型。`;
+      status.textContent = `已读取 ${payload.count} 个可用模型与笔记模式；已过滤实时确认下线的模型。选择后保存时会发起真实请求，验证失败不会替换原模型。`;
       delete status.dataset.tone;
     } catch (error) {
       manual.hidden = false;
@@ -1203,7 +1213,7 @@
       closeLLMForm();
       setLLMMessage(
         modelVerified
-          ? `已真实验证并切换到 ${selectedModel}；之后的新笔记会使用这个模型。`
+          ? `已真实验证并切换到 ${llmModelDisplayName(selectedModel)}；之后的新笔记会使用这个模式。`
           : wasEditing
           ? "LLM 配置已更新；密钥未在页面中回显。"
           : "LLM 配置已保存。你可以先测试连接，再按需设为当前使用。",
@@ -1224,7 +1234,7 @@
     const active = llmState?.active_profile;
     if (!active) return;
     document.querySelector("[data-llm-enable-preview]").textContent =
-      `${llmChannelLabels[llmState.active_channel]} / ${active.label} / ${active.model}`;
+      `${llmChannelLabels[llmState.active_channel]} / ${active.label} / ${llmModelDisplayName(active.model)}`;
     document.querySelector("[data-llm-enable-copy]").textContent =
       llmState.active_channel === "free"
         ? "之后的新任务会调用免费线路。长内容可能等待更久，但不会消耗已配置的付费线路额度。"

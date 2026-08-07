@@ -344,6 +344,15 @@ class OpenAICompatibleLLM(LLM):
     def active_profile_id(self):
         return self.settings_store.active_profile_id()
 
+    def _analysis_timeout_seconds(self):
+        try:
+            channel = self._settings().get("channel")
+        except DomainError:
+            # Test doubles and unconfigured instances still fail in _complete;
+            # timeout selection itself must not pre-empt that behavior.
+            channel = None
+        return 180 if channel == "free" else 90
+
     def for_profile(self, profile_id):
         return OpenAICompatibleLLM(
             self.settings_store,
@@ -458,6 +467,7 @@ class OpenAICompatibleLLM(LLM):
             ) from exc
 
     def analyze(self, transcript, request_text):
+        analysis_timeout_seconds = self._analysis_timeout_seconds()
         try:
             result = self._json(
                 "你是笔记生成前的内容规划器，不是出题器。先快速预读逐字稿，再返回严格 JSON。\n"
@@ -483,14 +493,14 @@ class OpenAICompatibleLLM(LLM):
             "返回字段：title、reason、profile、structure、detail、method、modules；"
             "structure、detail、method、modules 都必须包含 question。\n"
                 f"本次笔记需求：{request_text or '无'}\n逐字稿：\n{transcript}",
-                request_timeout_seconds=90,
+                request_timeout_seconds=analysis_timeout_seconds,
                 temperature=0.2,
             )
         except DomainError as exc:
             if exc.code == "LLM_TIMEOUT":
                 raise DomainError(
                     "LLM_TIMEOUT",
-                    "AI 服务 90 秒内没有响应，已停止本次分析，请重试。",
+                    f"AI 服务 {analysis_timeout_seconds} 秒内没有响应，已停止本次分析，请重试。",
                     retryable=True,
                 ) from exc
             raise

@@ -15,6 +15,16 @@ from vtn.domain.models import utc_now
 LLM_CHANNELS = ("free", "paid")
 LLM_PROTOCOLS = ("openai_chat", "anthropic_messages")
 
+FCC_NO_THINKING_PREFIX = "claude-3-freecc-no-thinking/nvidia_nim/"
+FCC_DIRECT_PREFIX = "anthropic/nvidia_nim/"
+FCC_NOTE_OPTIMIZED_MODELS = {
+    "nvidia/nemotron-3-ultra-550b-a55b",
+}
+NVIDIA_EOL_MODELS = {
+    "deepseek-ai/deepseek-v4-flash",
+    "deepseek-ai/deepseek-v4-pro",
+}
+
 
 def llm_endpoint(profile):
     base = profile["api_base"].rstrip("/")
@@ -92,21 +102,33 @@ class LLMModelCatalog:
         model_id = str(raw_model_id or "").strip()
         if not model_id:
             return None
+        reasoning_mode = "provider_default"
         if fcc_proxy:
-            prefix = "anthropic/nvidia_nim/"
-            if not model_id.startswith(prefix):
+            if model_id.startswith(FCC_DIRECT_PREFIX):
+                upstream_id = model_id[len(FCC_DIRECT_PREFIX):]
+            elif model_id.startswith(FCC_NO_THINKING_PREFIX):
+                upstream_id = model_id[len(FCC_NO_THINKING_PREFIX):]
+                if upstream_id not in FCC_NOTE_OPTIMIZED_MODELS:
+                    return None
+                reasoning_mode = "off"
+            else:
                 return None
-            upstream_id = model_id[len(prefix):]
         else:
             upstream_id = model_id
         if "/" not in upstream_id:
             return None
+        if upstream_id in NVIDIA_EOL_MODELS:
+            return None
         publisher = upstream_id.split("/", 1)[0]
+        label = upstream_id
+        if reasoning_mode == "off":
+            label += "（关闭深度思考｜适合笔记）"
         return {
             "id": model_id,
             "upstream_id": upstream_id,
             "publisher": publisher,
-            "label": upstream_id,
+            "label": label,
+            "reasoning_mode": reasoning_mode,
         }
 
     def list(self, profile):
