@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "notes_enabled": true,
+  "active_channel": "free",
+  "channels": {
+    "free": {
+      "enabled": true,
+      "default_profile_id": "free-local"
+    },
+    "paid": {
+      "enabled": false,
+      "default_profile_id": "paid-deepseek"
+    }
+  },
+  "profiles": [
+    {
+      "id": "free-local",
+      "label": "本地免费线路",
+      "api_base": "http://127.0.0.1:8082",
+      "api_key": "",
+      "model": "claude-sonnet-4-5",
+      "channel": "free",
+      "protocol": "anthropic_messages",
+      "enabled": true
+    },
+    {
+      "id": "paid-deepseek",
+      "label": "DeepSeek 高速线路",
+      "api_base": "https://api.deepseek.com",
+      "api_key": "",
+      "model": "deepseek-chat",
+      "channel": "paid",
+      "protocol": "openai_chat",
+      "enabled": false
+    }
+  ]
+}

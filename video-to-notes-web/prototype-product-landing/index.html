@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="把 B站、小红书和 YouTube 视频变成可保存、可复制、可继续学习和分析的内容资产。"
+    />
+    <meta name="theme-color" content="#eee6d6" />
+    <title>VIDE0 / NOTES｜把视频变成可以继续使用的内容资产</title>
+    <link rel="icon" href="../static/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=3" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <div class="paper-noise" aria-hidden="true"></div>
+
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="VIDE0 / NOTES 首页">
+        <span class="brand-star" aria-hidden="true">✦</span>
+        <span class="brand-name">VIDE0 / NOTES</span>
+        <span class="brand-tag">CONTENT LAB</span>
+      </a>
+
+      <nav class="site-nav" aria-label="产品介绍页导航">
+        <a href="#outputs">你会得到什么</a>
+        <a href="#scenarios">使用场景</a>
+        <a href="#workflow">如何使用</a>
+        <a href="#proof">产品实景</a>
+      </nav>
+
+      <a class="header-cta pressable" href="../static/app.html">
+        开始使用 <span aria-hidden="true">↗</span>
+      </a>
+    </header>
+
+    <main id="main">
+      <section id="top" class="hero section-shell">
+        <div class="hero-copy reveal">
+          <div class="eyebrow-row">
+            <span class="status-light" aria-hidden="true"></span>
+            <span>VIDEO CONTENT → YOUR OWN MATERIAL</span>
+          </div>
+          <h1>
+            把视频里的内容，<br />
+            变成可以继续<span class="ink-highlight ink-highlight--blue">学习</span><br />
+            和<span class="ink-highlight ink-highlight--red">分析</span>的资产。
+          </h1>
+          <p class="hero-lead">
+            粘贴 B站、小红书或 YouTube 视频链接，获得视频、音频和可复制、可下载的逐字稿；需要时，再整理成结构化笔记，或交给你常用的 AI 继续处理。
+          </p>
+          <div class="hero-actions">
+            <a class="button button--primary pressable" href="../static/app.html">
+              <span>开始解析视频</span><span aria-hidden="true">→</span>
+            </a>
+            <a class="button button--secondary pressable" href="#workflow">
+              看看它如何工作
+            </a>
+          </div>
+          <ul class="hero-notes" aria-label="产品支持信息">
+            <li><span>01</span> 支持三类主流视频来源</li>
+            <li><span>02</span> 逐字稿可复制、可下载</li>
+            <li><span>03</span> 笔记生成是可选下一步</li>
+          </ul>
+        </div>
+
+        <div class="hero-machine reveal" data-delay="1" aria-label="视频内容资产转化示意">
+          <div class="machine-topline">
+            <span>CONTENT EXTRACTION UNIT</span>
+            <span class="machine-status"><i></i> READY</span>
+          </div>
+
+          <div class="machine-input">
+            <span class="machine-index">IN / 001</span>
+            <div>
+              <small>PUBLIC VIDEO LINK</small>
+              <strong>https://bilibili.com/video/...</strong>
+            </div>
+            <span class="platform-stamp">BILI</span>
+          </div>
+
+          <div class="machine-track" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+
+          <div class="machine-output-grid">
+            <article class="output-ticket output-ticket--video">
+              <div class="ticket-glyph" aria-hidden="true">▶</div>
+              <span>MEDIA / 01</span>
+              <strong>视频 MP4</strong>
+              <small>需要时下载</small>
+            </article>
+            <article class="output-ticket output-ticket--audio">
+              <div class="audio-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+              <span>MEDIA / 02</span>
+              <strong>音频 MP3</strong>
+              <small>随时带走听</small>
+            </article>
+            <article class="output-ticket output-ticket--text">
+              <div class="text-lines" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              <span>TEXT / 03</span>
+              <strong>完整逐字稿</strong>
+              <small>复制 / TXT / MD</small>
+            </article>
+          </div>
+
+          <div class="machine-next">
+            <div>
+              <small>OPTIONAL NEXT STEP</small>
+              <strong>结构化笔记，或发送到你常用的 AI</strong>
+            </div>
+            <span class="turn-arrow" aria-hidden="true">↳</span>
+          </div>
+
+          <div class="machine-seal" aria-hidden="true">
+            <span>OWN</span><strong>IT</strong><small>可继续使用</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="signal-strip" aria-label="产品核心原则">
+        <p><strong>不是看完就消失。</strong> 把有价值的视频内容，真正留在自己的工作流里。</p>
+        <div class="signal-platforms" aria-label="支持平台">
+          <span>BILIBILI</span><span>小红书</span><span>YOUTUBE</span>
+        </div>
+      </section>
+
+      <section id="outputs" class="outputs section-shell section-block">
+        <header class="section-heading reveal">
+          <div>
+            <span class="section-number">01 / TAKE IT OUT</span>
+            <h2>一条链接，不只有一个答案。</h2>
+          </div>
+          <p>有人想收藏原视频，有人只想听音频，有人只需要逐字稿。你决定在哪一步结束，而不是被迫走完一条固定流程。</p>
+        </header>
+
+        <div class="asset-board reveal" data-delay="1">
+          <article class="asset-card asset-card--dark">
+            <span class="asset-code">01 / MP4</span>
+            <div class="asset-icon asset-icon--play" aria-hidden="true">▶</div>
+            <h3>保存视频</h3>
+            <p>需要原始画面时，按需取得视频文件。</p>
+          </article>
+          <article class="asset-card asset-card--gold">
+            <span class="asset-code">02 / MP3</span>
+            <div class="asset-icon" aria-hidden="true">≈</div>
+            <h3>提取音频</h3>
+            <p>通勤、走路，也能继续听一段内容。</p>
+          </article>
+          <article class="asset-card asset-card--blue">
+            <span class="asset-code">03 / TXT + MD</span>
+            <div class="asset-icon" aria-hidden="true">¶</div>
+            <h3>拿到逐字稿</h3>
+            <p>展开全文、一键复制，或下载为 TXT、Markdown。</p>
+          </article>
+          <article class="asset-card asset-card--green">
+            <span class="asset-code">04 / NOTES</span>
+            <div class="asset-icon" aria-hidden="true">✦</div>
+            <h3>继续生成笔记</h3>
+            <p>需要深入学习时，再预读内容并选择合适结构。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="problem section-block">
+        <div class="section-shell problem-grid">
+          <div class="problem-copy reveal">
+            <span class="section-number">02 / THE OLD WAY</span>
+            <h2>以前，用户才是工具之间的连接器。</h2>
+            <p>解析网站、转录工具、本地文件、网页 AI——每一步都能做，但链接和文字一直要靠人手动搬运。</p>
+          </div>
+
+          <div class="chain reveal" data-delay="1" aria-label="旧流程与新流程对比">
+            <div class="chain-row chain-row--old">
+              <span class="chain-label">BEFORE</span>
+              <ol>
+                <li>解析网站</li><li>媒体链接</li><li>转录工具</li><li>手动建文件</li><li>网页 AI</li>
+              </ol>
+              <strong class="chain-result">5 次搬运</strong>
+            </div>
+            <div class="chain-divider"><span>↓</span><strong>把连接工作交给产品</strong></div>
+            <div class="chain-row chain-row--new">
+              <span class="chain-label">NOW</span>
+              <ol>
+                <li>粘贴视频链接</li><li>选择需要的材料</li><li>继续学习或分析</li>
+              </ol>
+              <strong class="chain-result">一条工作流</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scenarios" class="scenarios section-shell section-block">
+        <header class="section-heading reveal">
+          <div>
+            <span class="section-number">03 / TWO PATHS</span>
+            <h2>内容拿出来以后，去哪里由你决定。</h2>
+          </div>
+          <p>同一份逐字稿，可以是一份学习材料，也可以是一次内容研究的起点。</p>
+        </header>
+
+        <div class="scenario-switcher reveal" data-delay="1">
+          <div class="scenario-tabs" role="tablist" aria-label="切换使用场景">
+            <button id="learning-tab" class="scenario-tab is-active" role="tab" aria-selected="true" aria-controls="learning-panel" data-scenario="learning">
+              <span>PATH / A</span><strong>知识学习</strong><small>已有真实样本</small>
+            </button>
+            <button id="creator-tab" class="scenario-tab" role="tab" aria-selected="false" aria-controls="creator-panel" data-scenario="creator">
+              <span>PATH / B</span><strong>内容研究</strong><small>待用户验证</small>
+            </button>
+          </div>
+
+          <div id="learning-panel" class="scenario-panel is-active" role="tabpanel" aria-labelledby="learning-tab" data-scenario-panel="learning">
+            <div class="scenario-copy">
+              <span class="scenario-kicker">LEARN / REVIEW / RETAIN</span>
+              <h3>长视频不必靠记忆硬扛。</h3>
+              <p>把课程、访谈和知识类视频转成逐字稿，再根据本次目标生成适合阅读、编辑和复习的结构化笔记。</p>
+              <ul>
+                <li>快速定位视频讲过的具体内容</li>
+                <li>保留方法、案例和行动步骤</li>
+                <li>把逐字稿交给 AI 继续追问</li>
+              </ul>
+              <a href="../static/app.html" class="text-link">从一条学习视频开始 <span>→</span></a>
+            </div>
+            <div class="scenario-art scenario-art--learning" aria-hidden="true">
+              <div class="note-sheet note-sheet--back"><span>03</span><i></i><i></i><i></i></div>
+              <div class="note-sheet note-sheet--front"><small>STUDY NOTE</small><strong>从问题到方法</strong><i></i><i></i><i></i><i></i><b>复习问题 04</b></div>
+              <div class="annotation">READ IT<br />AGAIN ↗</div>
+            </div>
+          </div>
+
+          <div id="creator-panel" class="scenario-panel" role="tabpanel" aria-labelledby="creator-tab" data-scenario-panel="creator" hidden>
+            <div class="scenario-copy">
+              <span class="scenario-kicker">RESEARCH / COMPARE / CREATE</span>
+              <h3>研究对标内容，不必反复暂停抄写。</h3>
+              <p>把公开可访问或已获授权的视频转成文本，再自行或借助 AI 分析选题、开头、结构和表达方式。</p>
+              <ul>
+                <li>批量积累可搜索的内容样本</li>
+                <li>比较同一账号的结构与表达共性</li>
+                <li>形成自己的内容判断和创作方案</li>
+              </ul>
+              <p class="ethics-note">用于研究方法，不复制原文、不冒用他人内容。</p>
+            </div>
+            <div class="scenario-art scenario-art--creator" aria-hidden="true">
+              <div class="script-sheet"><span>00:18</span><p>开头提出冲突，快速建立观看理由。</p></div>
+              <div class="script-sheet"><span>01:42</span><p>案例推进，加入具体数字与场景。</p></div>
+              <div class="script-sheet"><span>03:20</span><p>总结行动，并回扣最初问题。</p></div>
+              <div class="annotation">PATTERN<br />FOUND ↗</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="workflow" class="workflow section-block">
+        <div class="section-shell">
+          <header class="section-heading section-heading--inverse reveal">
+            <div>
+              <span class="section-number">04 / HOW IT WORKS</span>
+              <h2>三步，把视频带进你的工作流。</h2>
+            </div>
+            <p>产品不替你决定最终用途，它先把原始内容变成你真正拥有的材料。</p>
+          </header>
+
+          <ol class="workflow-steps">
+            <li class="workflow-step reveal">
+              <span class="workflow-number">01</span>
+              <div class="workflow-icon" aria-hidden="true">↘</div>
+              <div>
+                <small>LINK IN</small>
+                <h3>粘贴视频链接</h3>
+                <p>支持 B站、小红书和 YouTube 链接，也可以直接粘贴平台分享文案。</p>
+              </div>
+            </li>
+            <li class="workflow-step reveal" data-delay="1">
+              <span class="workflow-number">02</span>
+              <div class="workflow-icon" aria-hidden="true">≡</div>
+              <div>
+                <small>MATERIAL OUT</small>
+                <h3>取得需要的材料</h3>
+                <p>查看视频信息和逐字稿，复制全文，或按需下载视频、音频与文本文件。</p>
+              </div>
+            </li>
+            <li class="workflow-step reveal" data-delay="2">
+              <span class="workflow-number">03</span>
+              <div class="workflow-icon" aria-hidden="true">✦</div>
+              <div>
+                <small>KEEP GOING</small>
+                <h3>继续学习或分析</h3>
+                <p>生成自适应笔记，或把逐字稿复制到你熟悉的 AI 和知识库里。</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="proof" class="proof section-shell section-block">
+        <header class="section-heading reveal">
+          <div>
+            <span class="section-number">05 / PRODUCT TOUR</span>
+            <h2>从视频链接，到一份可以继续使用的内容。</h2>
+          </div>
+          <p>先获得视频、音频和逐字稿；需要时，再让系统预读内容、推荐笔记结构，最后进入成品阅读。</p>
+        </header>
+
+        <div class="proof-stage reveal" data-delay="1">
+          <div class="proof-nav" role="tablist" aria-label="切换产品实景">
+            <button class="proof-tab is-active" role="tab" aria-selected="true" data-proof="parser"><span>01</span> 解析结果</button>
+            <button class="proof-tab" role="tab" aria-selected="false" data-proof="recommend"><span>02</span> 笔记推荐</button>
+            <button class="proof-tab" role="tab" aria-selected="false" data-proof="reading"><span>03</span> 成品阅读</button>
+          </div>
+          <div class="proof-window">
+            <div class="proof-browserbar"><i></i><i></i><i></i><span>VIDE0 / NOTES — PRODUCT VIEW</span></div>
+            <div class="proof-viewport">
+              <img
+                data-proof-image
+                src="../prototype-phase1-video-parser/screenshots/final-e2e/a-02-parser-result.png"
+                alt="视频解析完成结果页面"
+                style="--proof-shift: -34%"
+              />
+            </div>
+          </div>
+          <aside class="proof-caption" data-proof-caption>
+            <span>STEP 01 / PARSER</span>
+            <h3>先把内容拿出来。</h3>
+            <p>解析完成后，视频信息、逐字稿、复制与下载入口集中在同一页面。</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="ai-bridge section-block">
+        <div class="section-shell ai-bridge-grid">
+          <div class="ai-bridge-mark reveal" aria-hidden="true">
+            <span>YOUR</span><strong>AI</strong><small>YOUR CHOICE</small>
+          </div>
+          <div class="ai-bridge-copy reveal" data-delay="1">
+            <span class="section-number">06 / OPEN WORKFLOW</span>
+            <h2>逐字稿属于你，不被锁在某一个 AI 里。</h2>
+            <p>直接复制全文，带到你习惯使用的 AI、知识库或写作工具。Video to Notes 负责把视频变成干净、可流动的内容入口。</p>
+            <div class="prompt-slip">
+              <small>PASTE TO YOUR AI</small>
+              <p>请分析这组逐字稿的选题规律、开头结构和信息展开方式，并用表格比较……</p>
+              <button type="button" data-copy-prompt>复制示例提示词 <span>↗</span></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="final-cta section-shell section-block reveal">
+        <div class="final-cta-copy">
+          <span class="section-number">READY / START HERE</span>
+          <h2>下一条值得留下的视频，<br />别只让它停在“稍后再看”。</h2>
+          <p>先把内容拿出来。至于怎么继续使用，由你决定。</p>
+          <a class="button button--primary button--large pressable" href="../static/app.html">
+            开始解析一个视频 <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="final-ticket" aria-hidden="true">
+          <span>VIDE0 / NOTES</span>
+          <strong>01</strong>
+          <small>LINK → MATERIAL → KNOWLEDGE</small>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brandline">
+        <span class="brand-star" aria-hidden="true">✦</span>
+        <strong>VIDE0 / NOTES</strong>
+      </div>
+      <p>把视频内容转成可保存、可复制、可继续学习和分析的材料。</p>
+      <div class="footer-meta">
+        <span>仅处理你可以合法访问和使用的内容</span>
+        <span>PRODUCT LANDING PROTOTYPE / 2026.08</span>
+      </div>
+    </footer>
+
+    <div class="toast" role="status" aria-live="polite" data-toast>示例提示词已复制</div>
+    <script src="./script.js?v=2"></script>
+  </body>
+</html>

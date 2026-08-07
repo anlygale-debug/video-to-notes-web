@@ -1,0 +1,7 @@
+{
+  "name": "video-to-notes-web",
+  "private": true,
+  "dependencies": {
+    "gsap": "^3.15.0"
+  }
+}

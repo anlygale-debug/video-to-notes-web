@@ -760,8 +760,8 @@
       </div>
 
       <div class="settings-field">
-        <label>模型名称 <span class="help-icon" data-tip="模型标识符，如 deepseek-chat、gpt-4o。以服务商文档为准">?</span></label>
-        <input type="text" id="setModel" placeholder="deepseek-chat">
+        <label>模型名称 <span class="help-icon" data-tip="模型标识符，如 deepseek-v4-pro、gpt-4o。以服务商文档为准">?</span></label>
+        <input type="text" id="setModel" placeholder="deepseek-v4-pro">
       </div>
     </div>
 
@@ -1306,7 +1306,7 @@ async function loadSettings() {
     const s = await resp.json();
     document.getElementById('setApiBase').value = s.api_base || '';
     document.getElementById('setApiKey').value = s.api_key || '';
-    document.getElementById('setModel').value = s.model || 'deepseek-chat';
+    document.getElementById('setModel').value = s.model || 'deepseek-v4-pro';
     document.getElementById('setMermaid').checked = s.default_mermaid || false;
     const modeRadio = document.querySelector(`input[name="setMode"][value="${s.default_mode || 'standard'}"]`);
     if (modeRadio) modeRadio.checked = true;
@@ -1316,7 +1316,7 @@ async function loadSettings() {
 async function saveSettings() {
   const apiKey = document.getElementById('setApiKey').value.trim();
   const apiBase = document.getElementById('setApiBase').value.trim();
-  const model = document.getElementById('setModel').value.trim() || 'deepseek-chat';
+  const model = document.getElementById('setModel').value.trim() || 'deepseek-v4-pro';
   const body = {
     api_base: apiBase,
     api_key: apiKey,
@@ -1367,7 +1367,7 @@ async function saveSettings() {
 async function testConnection() {
   const apiKey = document.getElementById('setApiKey').value.trim();
   const apiBase = document.getElementById('setApiBase').value.trim();
-  const model = document.getElementById('setModel').value.trim() || 'deepseek-chat';
+  const model = document.getElementById('setModel').value.trim() || 'deepseek-v4-pro';
   if (!apiKey || !apiBase) {
     document.getElementById('settingsError').style.display = 'block';
     document.getElementById('settingsError').textContent = '请填写 API Key 和 Base URL';

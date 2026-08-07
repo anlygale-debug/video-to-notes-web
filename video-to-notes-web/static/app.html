@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="本地视频解析与自适应笔记生成工具" />
+    <meta name="theme-color" content="#eee6d6" />
+    <title>VIDE0 / NOTES｜视频内容知识化工具</title>
+    <link rel="icon" href="/static/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=1" sizes="180x180" />
+    <link rel="stylesheet" href="/static/app.css?v=28" />
+  </head>
+  <body>
+    <div class="scanlines" aria-hidden="true"></div>
+    <header class="site-header">
+      <div class="shell header-row">
+        <a class="brand" href="#parser" aria-label="视频内容知识化工具主页">
+          <span class="brand-mark">✦</span>
+          <span>VIDE0 / NOTES</span>
+        </a>
+        <nav class="primary-nav" aria-label="一级功能">
+          <button class="nav-link is-active" type="button" data-nav="parser">视频解析</button>
+          <button class="nav-link" type="button" data-nav="notes">笔记生成</button>
+          <button class="nav-link nav-link--demo" type="button" data-open-public-demo aria-label="查看公开示例"><span aria-hidden="true">✦</span> 查看公开示例</button>
+        </nav>
+        <div class="access-cluster">
+          <button class="guide-trigger" type="button" data-open-welcome aria-label="使用说明"><span aria-hidden="true">?</span> 使用说明</button>
+          <button class="access-status" type="button" data-open-access hidden>
+            <span class="status-dot"></span>
+            <span><strong data-access-label>公开展示</strong><small data-access-quota>输入内测码，解锁真实体验</small></span>
+          </button>
+          <div class="header-status meta"><span class="status-dot"></span>WEB APP // V4</div>
+        </div>
+      </div>
+      <div class="shell history-quickbar" aria-label="历史记录快捷入口">
+        <div class="history-quickbar__label">
+          <span class="eyebrow">HISTORY CENTER // 本机记录</span>
+          <strong>随时回到已经完成的内容</strong>
+        </div>
+        <button class="history-shortcut history-shortcut--parser" type="button" data-open-parser-history data-history-shortcut="parser">
+          <span class="history-shortcut__index">01</span>
+          <span><strong>解析历史</strong><small>视频来源、逐字稿与下载入口</small></span>
+          <span class="history-shortcut__arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="history-shortcut history-shortcut--notes" type="button" data-open-note-history data-history-shortcut="notes">
+          <span class="history-shortcut__index">02</span>
+          <span><strong>笔记历史</strong><small>成品笔记与可恢复任务</small></span>
+          <span class="history-shortcut__arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+    </header>
+
+    <section id="public-demo-tour" class="shell public-demo-tour" aria-live="polite" hidden>
+      <div class="public-demo-tour__label">
+        <span class="eyebrow">PUBLIC DEMO // SAFE SANDBOX</span>
+        <strong>公开示例 · 全流程体验</strong>
+      </div>
+      <ol class="public-demo-steps" aria-label="公开示例进度">
+        <li data-public-demo-step="parser"><span>01</span><strong>视频解析</strong></li>
+        <li data-public-demo-step="analysis"><span>02</span><strong>AI 预读</strong></li>
+        <li data-public-demo-step="generation"><span>03</span><strong>笔记生成</strong></li>
+        <li data-public-demo-step="note"><span>04</span><strong>成品笔记</strong></li>
+      </ol>
+      <button class="public-demo-exit" type="button" data-exit-public-demo>退出示例</button>
+    </section>
+
+    <main class="shell">
+      <div id="parser-view" class="app-view">
+      <section class="control-deck" aria-label="原型状态切换">
+        <div class="control-deck__copy">
+          <span class="eyebrow">验收控制台 // 假数据状态</span>
+          <strong>无需重走流程，直接查看关键界面。</strong>
+        </div>
+        <div class="state-switcher" role="group" aria-label="切换解析器状态">
+          <button class="state-button is-active" type="button" data-parser-state="empty">01 初始</button>
+          <button class="state-button" type="button" data-parser-state="loading">02 解析中</button>
+          <button class="state-button" type="button" data-parser-state="success">03 结果</button>
+          <button class="state-button" type="button" data-parser-state="failure">04 失败</button>
+          <button class="state-button" type="button" data-parser-state="history">05 历史</button>
+          <button class="state-button danger-button" type="button" data-parser-state="delete">06 删除确认</button>
+        </div>
+      </section>
+
+      <section id="parser" class="page-intro">
+        <div class="intro-rule meta"><span class="square red"></span> 模块 01 / 视频解析器 <span class="slash">//</span> 输入链接，取得可复习的原始材料</div>
+        <div class="intro-grid">
+          <div>
+            <h1>从视频，<span>提取</span><br />可用的原始内容。</h1>
+            <p class="intro-copy">解析公开视频链接，查看来源信息并取得视频、音频与逐字稿。处理结果会安全保存在这台电脑上。</p>
+          </div>
+          <div class="issue-stamp meta">桌面网页 / 第一阶段<br /><strong>状态 01 — 初始</strong><br />BUILD / 2026.07</div>
+        </div>
+      </section>
+
+      <section class="parser-stage" aria-live="polite">
+        <div class="stage-heading">
+          <div>
+            <span class="eyebrow">LINK INTAKE // INPUT 001</span>
+            <h2>视频链接</h2>
+          </div>
+          <p class="meta">支持：小红书 / Bilibili / YouTube<br />其他公开链接将尝试解析</p>
+        </div>
+
+        <form id="parser-form" class="link-form">
+          <label for="video-link">粘贴视频链接或平台分享文案</label>
+          <div class="link-form__row">
+            <input id="video-link" name="video-link" type="text" inputmode="url" placeholder="可直接粘贴 B站 / 小红书的整段分享文案" autocomplete="url" />
+            <button class="button button-primary" type="submit"><span>→</span>开始解析</button>
+          </div>
+          <div id="platform-detection" class="platform-detection is-waiting" aria-live="polite">
+            <span class="meta">CHANNEL SCAN / 渠道识别</span>
+            <span class="chip platform-chip">等待链接</span>
+            <strong class="platform-message">输入链接后，这里会显示识别到的视频平台。</strong>
+          </div>
+          <div class="parser-demo-callout">
+            <div>
+              <span class="eyebrow">NO CODE NEEDED // 无需内测码</span>
+              <strong>第一次来？先看一份完整解析结果。</strong>
+            </div>
+            <button class="button button-demo" type="button" data-open-public-demo aria-label="查看公开示例（输入区）"><span aria-hidden="true">▶</span> 查看公开示例</button>
+          </div>
+          <div class="field-note parser-utility-row"><span><span class="diamond">◆</span> 解析后，你可以下载媒体或把逐字稿带入笔记生成器。</span><button class="text-action" type="button" data-open-parser-history>查看解析历史 →</button></div>
+        </form>
+
+        <div id="state-host" class="state-host"></div>
+      </section>
+
+      <section class="lower-rail" aria-label="原型范围说明">
+        <div class="rail-cell"><span class="meta">已确认范围</span><strong>统一外壳 + 视频解析器</strong></div>
+        <div class="rail-cell"><span class="meta">数据类型</span><strong>本地持久化，不上传云端</strong></div>
+        <div class="rail-cell"><span class="meta">工作流</span><strong>解析后可直接生成笔记</strong></div>
+      </section>
+      </div>
+
+      <div id="notes-view" class="app-view" hidden>
+        <section class="control-deck notes-control-deck" aria-label="笔记生成器状态切换">
+          <div class="control-deck__copy">
+            <span class="eyebrow">验收控制台 // 全流程</span>
+            <strong>直接查看输入、生成、成品与历史状态。</strong>
+          </div>
+          <div class="state-switcher" role="group" aria-label="切换笔记生成器状态">
+            <button class="state-button is-active" type="button" data-notes-state="input">01 输入</button>
+            <button class="state-button" type="button" data-notes-state="ready">02 已就绪</button>
+            <button class="state-button" type="button" data-notes-state="analyzing">03 预读中</button>
+            <button class="state-button" type="button" data-notes-state="recommendations">04 推荐</button>
+            <button class="state-button" type="button" data-notes-state="custom">05 自定义</button>
+            <button class="state-button danger-button" type="button" data-notes-state="stale">06 推荐过期</button>
+            <button class="state-button danger-button" type="button" data-notes-state="analysis-failure">07 预读失败</button>
+            <button class="state-button stage-three-button" type="button" data-notes-state="direct-generating">08 直接生成</button>
+            <button class="state-button stage-three-button" type="button" data-notes-state="outline">09 大纲</button>
+            <button class="state-button stage-three-button" type="button" data-notes-state="outline-regenerating">10 重拟大纲</button>
+            <button class="state-button stage-three-button" type="button" data-notes-state="chapter-generating">11 逐章生成</button>
+            <button class="state-button danger-button" type="button" data-notes-state="chapter-failure">12 章节失败</button>
+            <button class="state-button stage-three-button" type="button" data-notes-state="recovery">13 任务恢复</button>
+            <button class="state-button stage-three-button" type="button" data-notes-state="generation-complete">14 生成完成</button>
+            <button class="state-button stage-four-button" type="button" data-notes-state="reading">15 阅读</button>
+            <button class="state-button stage-four-button" type="button" data-notes-state="editing">16 编辑</button>
+            <button class="state-button stage-four-button" type="button" data-notes-state="chapter-candidate">17 单章候选</button>
+            <button class="state-button stage-four-button" type="button" data-notes-state="export">18 导出</button>
+            <button class="state-button danger-button" type="button" data-notes-state="omission">19 可能遗漏</button>
+            <button class="state-button stage-four-button" type="button" data-notes-state="note-history">20 笔记历史</button>
+            <button class="state-button danger-button" type="button" data-notes-state="note-delete">21 删除确认</button>
+          </div>
+        </section>
+
+        <section id="notes" class="page-intro notes-intro">
+          <div class="intro-rule meta"><span class="square green"></span> 模块 02 / 自适应笔记生成器 <span class="slash">//</span> 先理解内容，再决定笔记形态</div>
+          <div class="intro-grid">
+            <div>
+              <h1>不是套模板，<br /><span>而是先读懂。</span></h1>
+              <p class="intro-copy">提供逐字稿和本次用途，AI 会先预读内容，再推荐结构、详细程度、生成方式与附加模块。</p>
+            </div>
+            <div class="issue-stamp meta">桌面网页 / 第四阶段<br /><strong id="notes-state-stamp">状态 01 — 输入</strong><br />BUILD / 2026.07</div>
+          </div>
+        </section>
+
+        <section class="parser-stage notes-stage" aria-live="polite">
+          <nav class="notes-workspace-bar" data-notes-workspace-bar aria-label="笔记工作区导航" hidden>
+            <div class="notes-workspace-bar__status">
+              <span class="notes-workspace-bar__index" aria-hidden="true">N＋</span>
+              <div><span class="eyebrow" data-notes-workspace-kicker>NOTE WORKSPACE // 随时开始下一份</span><strong data-notes-workspace-title>当前进度会安全保留</strong><small data-notes-workspace-copy>返回首页不会删除任务或成品笔记。</small></div>
+            </div>
+            <div class="notes-workspace-bar__actions">
+              <button class="text-action" type="button" data-open-note-history>笔记历史</button>
+              <button class="button button-abandon-note" type="button" data-abandon-note><span data-abandon-note-label>放弃本次笔记</span><span aria-hidden="true">×</span></button>
+            </div>
+          </nav>
+          <div id="notes-state-host" class="state-host"></div>
+        </section>
+
+        <section class="lower-rail" aria-label="第四阶段范围说明">
+          <div class="rail-cell"><span class="meta">当前范围</span><strong>成品阅读、编辑、导出与历史</strong></div>
+          <div class="rail-cell"><span class="meta">运行方式</span><strong>本地 AI 配置与任务恢复</strong></div>
+          <div class="rail-cell"><span class="meta">数据位置</span><strong>仅保存在当前电脑</strong></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-grid">
+        <div>
+          <div class="brand footer-brand"><span class="brand-mark">✦</span><span>VIDE0 / NOTES</span></div>
+          <p>一个把视频内容转换为可下载素材与可复习知识的本地工具。</p>
+        </div>
+        <div class="footer-meta meta">LOCAL APP // V4<br />DESKTOP / LOCAL ONLY<br />SQLITE PERSISTENCE</div>
+        <div class="footer-meta meta">视频解析<br />自适应笔记<br />本地历史与导出</div>
+      </div>
+    </footer>
+
+    <dialog id="welcome-dialog" class="welcome-dialog" aria-labelledby="welcome-title">
+      <div class="welcome-frame" data-welcome-frame>
+        <header class="welcome-topbar" data-welcome-reveal>
+          <div><span class="square blue"></span> FIRST RUN // PRODUCT BRIEF</div>
+          <span>ISSUE 001 · PRIVATE BETA</span>
+          <button class="welcome-close" type="button" data-welcome-dismiss aria-label="关闭使用说明">×</button>
+        </header>
+        <section class="welcome-hero" data-welcome-reveal>
+          <div>
+            <span class="eyebrow">VIDEO → TRANSCRIPT → KNOWLEDGE</span>
+            <h2 id="welcome-title">欢迎使用视频内容知识化工具</h2>
+            <p class="welcome-lead">把一条视频，变成一份真正能复习的笔记。</p>
+            <p>它会先提取视频信息与逐字稿，再理解内容、推荐笔记结构，最后生成可以阅读、编辑和导出的成品笔记。</p>
+          </div>
+          <div class="welcome-ticket" aria-hidden="true"><span>START</span><strong>01</strong><small>完整体验入口</small></div>
+        </section>
+        <ol class="welcome-steps" aria-label="产品使用流程" data-welcome-reveal>
+          <li><span class="welcome-step-number">01</span><div><strong>粘贴视频链接</strong><p>支持 Bilibili、小红书、YouTube 等公开视频来源。</p></div></li>
+          <li><span class="welcome-step-number">02</span><div><strong>AI 预读并推荐</strong><p>根据内容与用途推荐结构、详细程度和生成方式。</p></div></li>
+          <li><span class="welcome-step-number">03</span><div><strong>阅读、编辑与导出</strong><p>得到完整成品笔记，并继续修改、复习或下载。</p></div></li>
+        </ol>
+        <section class="welcome-beta-note" data-welcome-reveal>
+          <div class="welcome-beta-mark"><span>!</span><small>BETA<br />STATUS</small></div>
+          <div><span class="eyebrow">当前开放状态</span><strong>公开案例可以完整体验</strong><p>无需内测码，也不会消耗额度或发起真实 AI 请求。</p></div>
+          <div class="welcome-beta-access"><strong>当前公网真实调用暂未开放</strong><p>后续开放时，内测码将用于解锁个人额度内的真实解析与笔记生成。</p></div>
+        </section>
+        <footer class="welcome-actions" data-welcome-reveal>
+          <div><span class="eyebrow">推荐从这里开始</span><strong>先用 2 分钟走完整个产品流程。</strong></div>
+          <div class="welcome-button-row">
+            <button class="button button-primary welcome-demo-button" type="button" data-welcome-demo>体验完整公开案例 <span>→</span></button>
+            <button class="button button-secondary" type="button" data-welcome-dismiss>先看看页面</button>
+          </div>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog id="access-dialog" class="modal access-dialog">
+      <form method="dialog" data-access-form>
+        <div class="modal__label meta"><span class="square blue"></span> PRIVATE BETA // 真实体验授权</div>
+        <h2>输入内测码，开始真实体验。</h2>
+        <p>页面和示例结果可以公开查看；只有解析真实视频和生成真实笔记会消耗内测额度。</p>
+        <label class="field-label" for="access-code">内测码</label>
+        <input id="access-code" name="access-code" type="password" autocomplete="one-time-code" placeholder="VTN-••••••••" required />
+        <p class="access-error" data-access-error hidden></p>
+        <div class="modal__actions">
+          <button class="button button-primary" type="submit">进入真实体验 →</button>
+          <button class="button button-secondary" type="button" data-close-access>继续查看公开示例</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="notes-dialog" class="modal">
+      <div class="modal__label meta"><span class="square blue"></span> 原型完成边界</div>
+      <h2>四阶段核心流程已齐备。</h2>
+      <p>下一步是端到端整体验收并锁定 UI 合同。在用户完成整体验收前，不进入技术规格或真实产品实现。</p>
+      <button class="button button-primary" type="button" data-close-modal>返回笔记</button>
+    </dialog>
+
+    <dialog id="delete-dialog" class="modal modal--danger">
+      <div class="modal__label meta"><span class="square red"></span> 永久删除确认</div>
+      <h2>删除这条解析记录？</h2>
+      <p><strong>将删除：</strong>来源信息、封面、解析逐字稿与这条历史记录。<br /><strong>不会删除：</strong>已关联的笔记及其各自保存的逐字稿副本；已下载到电脑的文件。</p>
+      <div class="modal__actions">
+        <button class="button button-danger" type="button" data-confirm-delete>确认永久删除</button>
+        <button class="button button-secondary" type="button" data-close-modal>取消</button>
+      </div>
+    </dialog>
+
+    <dialog id="restore-dialog" class="modal">
+      <div class="modal__label meta"><span class="square blue"></span> VERSION RESTORE</div>
+      <h2>恢复 AI 初始版本？</h2>
+      <p>这会把当前编辑内容替换为首次生成的版本。系统会先保存当前版本快照，再执行恢复。</p>
+      <div class="modal__actions">
+        <button class="button button-primary" type="button" data-confirm-restore>确认恢复</button>
+        <button class="button button-secondary" type="button" data-close-modal>取消</button>
+      </div>
+    </dialog>
+
+    <dialog id="note-delete-dialog" class="modal modal--danger">
+      <div class="modal__label meta"><span class="square red"></span> 永久删除笔记</div>
+      <h2>删除这条笔记任务？</h2>
+      <p><strong>将删除：</strong>当前笔记、生成依据逐字稿、设置、版本与任务状态。<br /><strong>不会删除：</strong>关联的视频解析记录及其逐字稿；已下载到电脑的 Markdown 或 PDF。<br /><strong>此操作无法恢复。</strong></p>
+      <div class="modal__actions">
+        <button class="button button-danger" type="button" data-confirm-note-delete>确认永久删除</button>
+        <button class="button button-secondary" type="button" data-close-modal>取消</button>
+      </div>
+    </dialog>
+
+    <dialog id="new-note-dialog" class="modal modal--danger new-note-dialog" aria-labelledby="new-note-dialog-title">
+      <div class="modal__label meta"><span class="square red"></span> ABANDON TASK // 无法恢复</div>
+      <h2 id="new-note-dialog-title">放弃本次笔记生成？</h2>
+      <p>确认后，本次未完成的分析、设置、大纲和章节进度都会删除，并返回笔记首页。此任务不会再出现在“恢复任务”中。</p>
+      <div class="new-note-dialog__receipt meta"><span>未完成进度</span><strong>全部删除</strong><span>恢复任务</span><strong>不会保留</strong></div>
+      <p class="new-note-dialog__fineprint">已经发出的 AI 请求可能无法立即中断，已经消耗的额度也无法退还；但返回结果不会继续保存。</p>
+      <div class="modal__actions">
+        <button class="button button-danger" type="button" data-confirm-abandon-note>放弃并返回首页</button>
+        <button class="button button-secondary" type="button" data-close-modal>继续当前任务</button>
+      </div>
+    </dialog>
+
+    <template id="empty-template">
+      <div class="empty-state framed-panel">
+        <div class="empty-icon" aria-hidden="true">↗</div>
+        <div>
+          <span class="eyebrow">WAITING FOR SOURCE</span>
+          <h3>把一个视频链接<br />放进这里。</h3>
+          <p>解析完成后，视频信息、下载操作和逐字稿会按来源归档在同一个结果区。</p>
+        </div>
+        <div class="empty-state__side meta">INPUT REQUIRED<br />NO TASK RUNNING</div>
+      </div>
+    </template>
+
+    <template id="loading-template">
+      <div class="progress-panel framed-panel" data-parser-stage="resolve" aria-busy="true">
+        <div class="progress-panel__top">
+          <div><span class="eyebrow" data-parser-task-label>TASK / 正在创建</span><h3 data-parser-progress-title>正在识别视频来源</h3></div>
+          <div class="parser-progress-status"><div class="parser-progress-orbit" aria-hidden="true"><span></span></div><span class="chip chip-blue" data-parser-progress-chip>识别来源 · 10%</span></div>
+        </div>
+        <p data-parser-progress-description>正在确认平台并读取视频标题、作者和时长。</p>
+        <div class="parser-progress-track" role="progressbar" aria-label="视频解析进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="10"><span data-parser-progress-bar></span></div>
+        <ol class="progress-list">
+          <li data-parser-stage-item="resolve" class="is-current"><span>01</span><strong>识别链接与视频信息</strong><em>进行中</em></li>
+          <li data-parser-stage-item="download"><span>02</span><strong>获取视频音频</strong><em>等待</em></li>
+          <li data-parser-stage-item="transcribe"><span>03</span><strong>语音转成逐字稿</strong><em>等待</em></li>
+          <li data-parser-stage-item="save"><span>04</span><strong>整理并保存结果</strong><em>等待</em></li>
+        </ol>
+        <div class="progress-tip meta" aria-live="polite"><span class="square blue parser-live-square"></span> <span data-parser-progress-live>当前：识别视频来源</span> · 可以离开此页，任务会保存在当前电脑。</div>
+      </div>
+    </template>
+
+    <template id="success-template">
+      <div class="result-stack">
+        <div class="result-banner"><span class="chip chip-green">✓ 解析完成</span><span class="meta">TASK #P-0727-04 // 逐字稿 08:42 // 2026.07.27</span></div>
+        <article class="result-card framed-panel">
+          <div class="video-cover" role="img" aria-label="视频封面加载中"><img class="video-cover-image" data-result-thumbnail alt="" /><span class="cover-duration">08:42</span><span class="cover-platform">bilibili</span></div>
+          <div class="result-main">
+            <div class="result-meta"><span class="chip chip-red" data-result-platform>BILIBILI</span><span class="meta"><span data-result-creator-label>UP 主</span> / 阿澈的工具箱</span></div>
+            <h3>刚毕业一年，我如何用 AI 重建自己的学习系统</h3>
+            <p>从把资料堆进收藏夹，到用问题驱动学习和复盘：一套适合没有技术背景的新手实践的个人知识工作流。</p>
+            <dl class="video-spec">
+              <div><dt>作者</dt><dd>阿澈的工具箱</dd></div>
+              <div><dt>平台</dt><dd data-result-platform-name>Bilibili</dd></div>
+              <div><dt>时长</dt><dd>08:42</dd></div>
+              <div><dt>来源</dt><dd><a href="#source" aria-label="打开原视频链接">原视频 ↗</a></dd></div>
+            </dl>
+          </div>
+          <div class="result-index meta">SOURCE<br />ENTRY 0042<br /><br />READY<br /><span>●</span></div>
+        </article>
+        <div class="asset-grid">
+          <section class="transcript-panel framed-panel">
+            <div class="panel-title"><div><span class="eyebrow">MATERIAL 03 / TRANSCRIPT</span><h3 data-transcript-character-count>逐字稿</h3></div><span class="chip chip-green">已就绪</span></div>
+            <p id="transcript-preview" class="transcript-preview">“以前我学习新东西，总是先收藏二十篇文章，再等一个完美的周末。后来我换了一个顺序：先明确自己要解决什么问题，再用 AI 把零散材料变成可以执行的一页笔记……”</p>
+            <div class="transcript-actions">
+              <button class="button button-secondary transcript-button" type="button" data-toggle-transcript aria-controls="transcript-preview" aria-expanded="false">展开完整逐字稿 ↓</button>
+              <button class="button button-secondary transcript-button" type="button" data-copy-transcript>复制全文</button>
+              <button class="button button-secondary transcript-button" type="button" data-download="transcript-txt">↓ 下载 TXT</button>
+              <button class="button button-secondary transcript-button" type="button" data-download="transcript-md">↓ 下载 MD</button>
+            </div>
+          </section>
+          <section class="downloads-panel framed-panel">
+            <span class="eyebrow">MATERIALS / ON-DEMAND</span>
+            <h3>按需下载</h3>
+            <p>媒体不会长期留在历史中；你点击后才重新获取。</p>
+            <div class="download-buttons"><button class="button button-secondary" type="button" data-download="video">↓ 视频 MP4</button><button class="button button-secondary" type="button" data-download="audio">↓ 音频 MP3</button></div>
+          </section>
+        </div>
+        <aside class="free-capacity-notice framed-panel" data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
+          <div><span class="eyebrow">FREE LINE // LENGTH CHECK</span><strong data-free-capacity-title>正在判断免费线路适配度</strong></div>
+          <p><span data-free-capacity-copy>系统会同时参考视频时长和逐字稿字量。</span><small data-free-capacity-facts></small></p>
+          <span class="chip" data-free-capacity-chip>等待内容</span>
+        </aside>
+        <section class="next-module framed-panel">
+          <div><span class="eyebrow"><span class="square green"></span> 已关联的下一步</span><h3>准备把这份逐字稿变成笔记？</h3><p>进入笔记生成器后，AI 会先预读内容，再给出本次笔记的推荐设置。</p></div>
+          <button class="button button-primary" type="button" data-open-notes>用此逐字稿生成笔记 <span>→</span></button>
+        </section>
+      </div>
+    </template>
+
+    <template id="failure-template">
+      <div class="failure-panel framed-panel">
+        <div class="failure-code">!</div>
+        <div><span class="eyebrow" data-parser-failure-code>TASK / NEEDS ATTENTION</span><h3 data-parser-failure-title>这条链接暂时无法解析。</h3><p data-parser-failure-message>我们没有稳定读取到视频页面信息。它可能已失效、受权限限制，或当前平台格式发生变化。</p><div class="failure-actions"><button class="button button-primary" type="button" data-retry>↻ 重试解析</button><button class="button button-secondary" type="button" data-edit-link>修改链接</button></div></div>
+        <aside class="failure-note meta"><span>你可以检查</span><br />01 链接是否完整<br />02 视频是否公开<br />03 稍后再试</aside>
+      </div>
+    </template>
+
+    <template id="history-template">
+      <section class="history-section">
+        <div class="stage-heading"><div><span class="eyebrow">FIELD LOG // RECENT PARSES</span><h2>解析历史</h2></div><p class="meta">默认显示最近 30 条<br />不会因新增记录自动删除</p></div>
+        <div class="history-list">
+          <article class="history-item is-linked">
+            <div class="history-thumb thumb-one"></div><div class="history-copy"><div class="history-line"><span class="chip chip-green">已生成笔记</span><span class="meta">今天 19:40 / BILIBILI</span></div><h3>刚毕业一年，我如何用 AI 重建自己的学习系统</h3><p>阿澈的工具箱 · 08:42 · 逐字稿已保存</p></div><div class="history-actions"><button class="text-action" type="button" data-open-existing-note>查看已生成笔记 →</button><button class="text-action" type="button" data-delete>删除</button></div>
+          </article>
+          <article class="history-item">
+            <div class="history-thumb thumb-two"></div><div class="history-copy"><div class="history-line"><span class="chip chip-blue">已解析</span><span class="meta">昨天 21:12 / XIAOHONGSHU</span></div><h3>产品新人第一年：别急着学框架</h3><p>小满同学 · 05:18 · 逐字稿已保存</p></div><div class="history-actions"><button class="text-action" type="button" data-download="video">下载视频 ↓</button><button class="text-action" type="button" data-delete>删除</button></div>
+          </article>
+          <article class="history-item is-download">
+            <div class="history-thumb thumb-three"></div><div class="history-copy"><div class="history-line"><span class="chip chip-red">下载准备中</span><span class="meta">07.24 / YOUTUBE</span></div><h3>如何做出一个真正有人用的小工具</h3><p>Build with Mira · 12:06 · 正在重新获取视频</p><div class="mini-progress"><span></span></div></div><div class="history-actions"><span class="meta">62%<br />请勿关闭</span></div>
+          </article>
+        </div>
+        <p class="history-foot meta">提示：删除解析记录不会删除已经生成的笔记；两侧逐字稿副本会分别保留。</p>
+      </section>
+    </template>
+
+    <template id="notes-input-template">
+      <section class="notes-input-layout">
+        <div class="stage-heading notes-section-head">
+          <div><span class="eyebrow">TRANSCRIPT INTAKE // INPUT 001</span><h2>提供逐字稿</h2></div>
+          <div class="notes-history-entry"><p class="meta">粘贴文本或上传 TXT / MD<br />不会自动调用 AI</p><div><button class="text-action" type="button" data-open-task-recovery>恢复任务</button><button class="text-action" type="button" data-open-note-history>笔记历史</button></div></div>
+        </div>
+        <div class="notes-source-grid">
+          <form class="notes-paste-card framed-panel" data-notes-form>
+            <div class="panel-title"><div><span class="eyebrow">方式 01 / 直接粘贴</span><h3>粘贴逐字稿</h3></div><span class="chip chip-blue">推荐</span></div>
+            <label class="field-label" for="notes-transcript-input">逐字稿正文</label>
+            <textarea id="notes-transcript-input" class="notes-textarea" rows="10" placeholder="把已有的逐字稿粘贴到这里……"></textarea>
+            <aside class="free-capacity-notice free-capacity-notice--compact" data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
+              <div><span class="eyebrow">免费线路长度评估</span><strong data-free-capacity-title>粘贴后自动判断免费线路适配度</strong></div>
+              <p><span data-free-capacity-copy>系统会同时参考视频时长和逐字稿字量。</span><small data-free-capacity-facts></small></p>
+              <span class="chip" data-free-capacity-chip>等待内容</span>
+            </aside>
+            <label class="field-label" for="notes-request-input">本次笔记需求 <span>选填</span></label>
+            <textarea id="notes-request-input" class="notes-request" rows="3" placeholder="例如：用于面试准备，重点保留方法步骤和案例。"></textarea>
+            <button class="button button-primary notes-analyze-button" type="button" data-start-analysis>分析逐字稿 <span>→</span></button>
+          </form>
+          <aside class="notes-upload-card framed-panel">
+            <span class="eyebrow">方式 02 / 文件上传</span>
+            <div class="upload-glyph" aria-hidden="true">TXT<br /><span>+</span> MD</div>
+            <h3>上传文本文件</h3>
+            <p>支持 <strong>.txt</strong> 与 <strong>.md</strong>。选择文件后仍由你点击“分析逐字稿”，不会自动预读。</p>
+            <button class="button button-secondary" type="button" data-fake-upload>选择 TXT / MD 文件</button>
+            <div class="upload-spec meta">MAX / 5 MB<br />LOCAL FILE / TXT OR MD</div>
+          </aside>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-ready-template">
+      <section class="notes-ready-stack">
+        <div class="source-ready-banner"><span class="chip chip-green">✓ 内容已就绪</span><span class="meta" data-ready-source-summary>来源 / 文件上传 // 3,842 字</span></div>
+        <aside class="free-capacity-notice framed-panel" data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
+          <div><span class="eyebrow">FREE LINE // LENGTH CHECK</span><strong data-free-capacity-title>正在判断免费线路适配度</strong></div>
+          <p><span data-free-capacity-copy>系统会同时参考视频时长和逐字稿字量。</span><small data-free-capacity-facts></small></p>
+          <span class="chip" data-free-capacity-chip>等待内容</span>
+        </aside>
+        <div class="notes-ready-card framed-panel">
+          <div>
+            <span class="eyebrow">TRANSCRIPT READY // WAITING FOR ACTION</span>
+            <h2>逐字稿已经准备好。</h2>
+            <p>系统只保存了本次输入；尚未调用 AI。点击分析后，AI 才会预读内容并生成推荐设置。</p>
+          </div>
+          <div class="ready-file">
+            <span class="file-corner meta" data-ready-file-type>MD / 01</span>
+            <strong data-ready-file-name>AI_Agent_学习方法.md</strong>
+            <span data-ready-file-meta>3,842 字 · UTF-8 · 已读取</span>
+          </div>
+        </div>
+        <div class="notes-request-card framed-panel">
+          <label class="field-label" for="ready-request-input">本次笔记需求 <span>选填</span></label>
+          <textarea id="ready-request-input" class="notes-request" rows="3">用于快速复习，重点保留学习步骤、具体案例和可以立刻执行的方法。</textarea>
+          <div class="ready-actions">
+            <button class="button button-primary" type="button" data-start-analysis>分析逐字稿 <span>→</span></button>
+            <button class="button button-secondary" type="button" data-notes-state-jump="input">重新选择内容</button>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-analyzing-template">
+      <section class="analysis-panel framed-panel">
+        <div class="analysis-top">
+          <div><span class="eyebrow" data-analysis-task-label>AI PRE-READ // TASK —</span><h2>正在理解这份逐字稿</h2><p>这里只展示与推荐设置有关的语义阶段，不展开内部判断报告。</p></div>
+          <div class="analysis-orbit" aria-hidden="true"><span>AI</span></div>
+        </div>
+        <ol class="analysis-steps">
+          <li class="is-complete"><span>01</span><strong>读取逐字稿与本次需求</strong><em>完成</em></li>
+          <li class="is-current"><span>02</span><strong>判断内容重点与适合的结构</strong><em>进行中</em></li>
+          <li><span>03</span><strong>组合本次推荐设置</strong><em>等待</em></li>
+        </ol>
+        <div class="analysis-source meta" data-analysis-source><span class="square green"></span> 生成依据：AI_Agent_学习方法.md // 3,842 字</div>
+      </section>
+    </template>
+
+    <template id="notes-recommendations-template">
+      <section class="recommendation-stack">
+        <div class="recommendation-banner">
+          <div>
+            <span class="eyebrow">AI RECOMMENDATION // READY</span>
+            <h2>推荐设置已准备好。</h2>
+            <p class="analysis-source meta" data-analysis-source><span class="square green"></span> 生成依据：AI_Agent_学习方法.md // 3,842 字</p>
+          </div>
+          <span class="chip chip-green">预读完成</span>
+        </div>
+        <section class="note-title-card framed-panel">
+          <label class="field-label" for="suggested-note-title">笔记标题 <span>可随时修改</span></label>
+          <input id="suggested-note-title" class="note-title-input" value="用 AI Agent 重建个人学习系统：从收藏到行动" />
+          <p class="recommendation-reason"><span class="square blue"></span> 这份内容以方法步骤和个人案例为主，适合按“问题 → 方法 → 实践”组织成完整详解。</p>
+        </section>
+        <div class="recommendation-grid">
+          <article class="recommend-card" data-recommendation-card="structure"><span class="meta">01 / 笔记结构</span><strong>沿原文脉络</strong><p>根据逐字稿的天然组织方式生成。</p></article>
+          <article class="recommend-card" data-recommendation-card="detail"><span class="meta">02 / 详细程度</span><strong>完整详解</strong><p>根据内容密度与本次需求判断。</p></article>
+          <article class="recommend-card" data-recommendation-card="method"><span class="meta">03 / 生成方式</span><strong>一次性生成</strong><p>根据篇幅与结构复杂度判断。</p></article>
+          <article class="recommend-card recommend-card--modules" data-recommendation-card="modules"><span class="meta">04 / 附加模块</span><strong>等待判断</strong><p>正文优先，也可以不增加任何模块。</p></article>
+        </div>
+        <details class="transcript-drawer framed-panel">
+          <summary><span><span class="eyebrow">生成依据逐字稿</span><strong>查看或修正内容</strong></span><span class="meta" data-transcript-drawer-count>默认收起 // 正在统计 ＋</span></summary>
+          <div class="drawer-body">
+            <textarea class="notes-textarea" rows="8" data-transcript-edit>以前我学习新东西，总是先收藏二十篇文章，再等一个完美的周末。后来我换了一个顺序：先明确自己要解决什么问题，再用 AI 把零散材料变成可以执行的一页笔记……</textarea>
+            <p class="field-note"><span class="diamond">◆</span> 修改逐字稿后，当前推荐会立即过期，需要重新分析。</p>
+          </div>
+        </details>
+        <div class="recommendation-actions framed-panel">
+          <div><span class="eyebrow">接受推荐</span><strong>无需逐项回答，直接采用以上四项设置。</strong></div>
+          <div class="button-row-right">
+            <button class="button button-primary" type="button" data-phase3>按推荐快速生成 <span>→</span></button>
+            <button class="button button-secondary" type="button" data-notes-state-jump="custom">自定义生成</button>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-custom-template">
+      <section class="custom-settings">
+        <div class="stage-heading notes-section-head">
+          <div><span class="eyebrow">CUSTOM BUILD // 04 DECISIONS</span><h2>调整本次笔记设置</h2></div>
+          <p class="meta">AI 推荐已默认选中<br />统一检查后再开始生成</p>
+        </div>
+        <div class="custom-intro framed-panel"><span class="square blue"></span><strong>推荐依据：</strong><span data-custom-recommendation-reason>正在载入本次逐字稿的真实判断。</span></div>
+        <div class="settings-stack">
+          <section class="setting-block framed-panel" data-setting-group="structure">
+            <div class="setting-number">01</div><div class="setting-content"><span class="eyebrow">笔记结构</span><h3 data-structure-question>这份笔记最适合怎样组织？</h3><p data-structure-reason>根据逐字稿的天然结构选择。</p>
+              <div class="choice-grid" data-structure-options></div>
+            </div>
+          </section>
+          <section class="setting-block framed-panel" data-setting-group="detail">
+            <div class="setting-number">02</div><div class="setting-content"><span class="eyebrow">详细程度</span><h3 data-detail-question>这次需要保留多少解释、案例和原话？</h3><p data-detail-reason>根据内容密度与本次需求判断。</p>
+              <div class="choice-grid" data-detail-options><button class="choice-card" type="button" data-choice="quick"><strong>速查摘要</strong><small>只保留框架和核心结论</small></button><button class="choice-card" type="button" data-choice="key"><strong>要点提炼＋关键原话</strong><small>提炼重点，按价值保留原话</small></button><button class="choice-card is-selected" type="button" data-choice="complete"><span class="chip chip-blue">AI 推荐</span><strong>完整详解</strong><small>保留推理、步骤、案例和限制</small></button></div>
+            </div>
+          </section>
+          <section class="setting-block framed-panel" data-setting-group="method">
+            <div class="setting-number">03</div><div class="setting-content"><span class="eyebrow">生成方式</span><h3 data-method-question>生成正文前，要不要先确认大纲？</h3><p data-method-reason>根据篇幅、主题数量与推理复杂度判断。</p>
+              <div class="choice-grid choice-grid--two" data-method-options><button class="choice-card is-selected" type="button" data-choice="direct"><span class="chip chip-blue">AI 推荐</span><strong>一次性生成</strong><small>直接得到完整结果</small></button><button class="choice-card" type="button" data-choice="outline"><strong>先确认大纲</strong><small>查看只读章节后再继续</small></button></div>
+            </div>
+          </section>
+          <section class="setting-block framed-panel">
+            <div class="setting-number">04</div><div class="setting-content"><span class="eyebrow">附加模块</span><h3 data-modules-question>正文之外，还需要哪些复习工具？</h3><p>每项都由 AI 独立判断；正文已经足够时可以一项不选。</p>
+              <div class="module-grid">
+                <label class="module-choice module-choice--none" data-module-none><input type="checkbox" /><strong>只要正文</strong><small>不额外增加复习模块</small></label>
+                <label class="module-choice" data-module="summary"><input type="checkbox" /><strong>核心摘要</strong><small>快速回顾全文</small></label>
+                <label class="module-choice" data-module="concepts"><input type="checkbox" /><strong>关键概念</strong><small>概念与术语合并整理</small></label>
+                <label class="module-choice" data-module="actions"><input type="checkbox" /><strong>实践提炼</strong><small>行动、练习与案例启示</small></label>
+                <label class="module-choice" data-module="review_questions"><input type="checkbox" /><strong>复习问题</strong><small>检验是否真正理解</small></label>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="conflict-notice" data-conflict hidden><span class="conflict-mark">!</span><div><strong>这个组合可以执行，但通常没有必要。</strong><p>“速查摘要 + 大纲确认”会增加一步确认，却不会产生很多章节。推荐改为一次性生成；你仍可坚持当前选择。</p></div></div>
+        <div class="other-requirement framed-panel"><label class="field-label" for="custom-other-request">其他要求 <span>选填</span></label><input id="custom-other-request" placeholder="例如：多保留作者的失败案例，不要生成 Mermaid。" /></div>
+        <div class="custom-actions"><button class="button button-primary" type="button" data-phase3>按当前设置开始生成 <span>→</span></button><button class="button button-secondary" type="button" data-notes-state-jump="recommendations">返回 AI 推荐</button></div>
+      </section>
+    </template>
+
+    <template id="notes-stale-template">
+      <section class="stale-layout">
+        <div class="stale-warning framed-panel"><span class="conflict-mark">!</span><div><span class="eyebrow">RECOMMENDATION EXPIRED</span><h2>逐字稿已经修改，原推荐不再适用。</h2><p>为避免继续使用过期判断，快速生成与自定义提交暂时不可用。重新分析后会产生一份新的推荐。</p></div></div>
+        <div class="stale-editor framed-panel"><div class="panel-title"><div><span class="eyebrow">生成依据逐字稿 / 已修改</span><h3>当前修正版</h3></div><span class="chip chip-red">未重新分析</span></div><textarea class="notes-textarea" rows="11">以前我学习新东西，总是先收藏二十篇文章……&#10;&#10;【新增要求】请重点保留如何把学习目标拆成一周行动，以及失败后怎样复盘。</textarea><div class="stale-actions"><button class="button button-primary" type="button" data-start-analysis>重新分析逐字稿 <span>→</span></button><button class="button button-secondary" type="button" data-notes-state-jump="recommendations">放弃修改</button></div></div>
+      </section>
+    </template>
+
+    <template id="notes-analysis-failure-template">
+      <section class="failure-panel framed-panel notes-analysis-failure">
+        <div class="failure-code">!</div>
+        <div><span class="eyebrow">AI PRE-READ / RETRY REQUIRED</span><h3>暂时无法完成逐字稿分析。</h3><p data-analysis-failure-message>内容已经安全保留。你可以重试分析，或返回检查逐字稿内容与本次需求。</p><div class="failure-actions"><button class="button button-primary" type="button" data-start-analysis>↻ 重试分析</button><button class="button button-secondary" type="button" data-notes-state-jump="ready">返回检查内容</button></div></div>
+        <aside class="failure-note meta"><span data-analysis-failure-code>ANALYSIS_FAILED</span><br />逐字稿内容已保留<br />本次笔记需求已保留<br />来源信息已保留</aside>
+      </section>
+    </template>
+
+    <template id="notes-direct-generating-template">
+      <section class="generation-stack">
+        <div class="task-reconnect-banner">
+          <span><span class="square green"></span><strong>任务已保存在当前浏览器</strong>，刷新或暂时关闭页面后可以重新连接。</span>
+          <span class="meta" data-direct-task-label>TASK — // DIRECT GENERATION</span>
+        </div>
+        <div class="generation-hero framed-panel">
+          <div>
+            <span class="eyebrow">DIRECT GENERATION // BACKGROUND CHUNKS HIDDEN</span>
+            <h2>正在生成完整笔记</h2>
+            <p>你选择了一次性生成。长内容可能在后台分块处理，但不会要求你逐章确认，完成后一次展示整份结果。</p>
+          </div>
+          <div class="generation-counter" data-direct-stage-count><strong data-direct-stage-current>00</strong><span data-direct-stage-total>/ 05 阶段</span></div>
+        </div>
+        <div class="generation-layout">
+          <ol class="semantic-progress framed-panel">
+            <li data-direct-stage="understand"><span>01</span><div><strong>理解逐字稿</strong><small>沿用本次笔记需求</small></div><em>等待</em></li>
+            <li data-direct-stage="organize"><span>02</span><div><strong>组织结构</strong><small>按最终设置组织内容</small></div><em>等待</em></li>
+            <li data-direct-stage="generate_content"><span>03</span><div><strong>生成内容</strong><small>写入主体与附加模块</small></div><em>等待</em></li>
+            <li data-direct-stage="check"><span>04</span><div><strong>检查遗漏</strong><small>结合逐字稿、需求与最终设置</small></div><em>等待</em></li>
+            <li data-direct-stage="complete"><span>05</span><div><strong>完成</strong><small>保存本次生成结果</small></div><em>等待</em></li>
+          </ol>
+          <aside class="generation-receipt framed-panel" data-generation-settings>
+            <span class="eyebrow">FINAL SETTINGS</span>
+            <h3>本次生成依据</h3>
+            <dl>
+              <div><dt>结构</dt><dd data-generation-structure>正在读取</dd></div>
+              <div><dt>详细度</dt><dd data-generation-detail>正在读取</dd></div>
+              <div><dt>流程</dt><dd data-generation-method>一次性生成</dd></div>
+              <div><dt>附加模块</dt><dd data-generation-modules>正在读取</dd></div>
+            </dl>
+            <p class="meta">已生成的内容会持续保留；发生短暂错误时先自动重试。</p>
+          </aside>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-outline-template">
+      <section class="outline-stack">
+        <div class="outline-header framed-panel">
+          <div><span class="eyebrow">OUTLINE CONFIRMATION // READ ONLY</span><h2>先确认笔记大纲</h2><p>第一版大纲只读。你可以直接确认、补充一句要求后重新生成整份大纲，或返回修改设置。</p></div>
+          <span class="chip chip-blue">等待确认</span>
+        </div>
+        <div class="outline-context">
+          <div><span class="meta">笔记标题</span><strong>用 AI Agent 重建个人学习系统：从收藏到行动</strong></div>
+          <div><span class="meta">本次需求</span><strong>用于快速复习，保留学习步骤、案例和行动方法。</strong></div>
+        </div>
+        <ol class="outline-list">
+          <li><span class="outline-index">01</span><div><strong>为什么收藏很多资料，却没有真正开始？</strong><p>交代信息囤积、等待完美时间和缺少具体问题的旧循环。</p></div><span class="meta">问题背景</span></li>
+          <li><span class="outline-index">02</span><div><strong>把“学习主题”改写成“待解决问题”</strong><p>说明如何把模糊目标缩小成一周内可检验的学习任务。</p></div><span class="meta">核心方法</span></li>
+          <li><span class="outline-index">03</span><div><strong>让 AI 把零散材料变成行动笔记</strong><p>保留输入、筛选、组织和形成一页行动笔记的具体步骤。</p></div><span class="meta">实践步骤</span></li>
+          <li><span class="outline-index">04</span><div><strong>一个真实案例：从 Agent 原理到可运行工具</strong><p>用作者的实践展示如何边学边做，并在失败后调整路径。</p></div><span class="meta">案例</span></li>
+          <li><span class="outline-index">05</span><div><strong>建立每周复盘与下一步行动</strong><p>收束为行动清单、复习问题与可持续迭代方式。</p></div><span class="meta">行动</span></li>
+        </ol>
+        <div class="outline-actions framed-panel">
+          <div class="outline-confirm"><span class="eyebrow">大纲只读预览</span><strong>章节标题、增删和排序将在后续版本开放。</strong></div>
+          <button class="button button-primary" type="button" data-confirm-outline>确认大纲并开始生成 <span>→</span></button>
+        </div>
+        <div class="outline-revise framed-panel">
+          <label class="field-label" for="outline-feedback">补充一句要求 <span>选填</span></label>
+          <div class="outline-revise-row"><input id="outline-feedback" value="" placeholder="例如：把某个概念的解释写得更具体。" /><button class="button button-secondary" type="button" data-regenerate-outline>重新生成整份大纲</button><button class="text-action" type="button" data-notes-state-jump="custom">返回修改设置</button></div>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-outline-regenerating-template">
+      <section class="outline-regenerating framed-panel">
+        <div class="analysis-orbit" aria-hidden="true"><span>02</span></div>
+        <div><span class="eyebrow">OUTLINE REVISION // REQUEST APPLIED</span><h2>正在重新组织整份大纲</h2><p>已收到补充要求：“<span data-outline-feedback-copy>按本次要求重新组织</span>” 系统会重新生成完整大纲，不只局部改写一个标题。</p></div>
+        <ol class="mini-step-list">
+          <li class="is-complete">读取原设置与本次需求 <em>完成</em></li>
+          <li class="is-current">应用补充要求并重组章节 <em>进行中</em></li>
+          <li>保存新的只读大纲 <em>等待</em></li>
+        </ol>
+      </section>
+    </template>
+
+    <template id="notes-chapter-generating-template">
+      <section class="chapter-generation-stack">
+        <div class="task-reconnect-banner">
+          <span><span class="square green"></span><strong>可以离开此页</strong>，任务会在当前浏览器保留并继续。</span>
+          <span class="meta" data-chapter-task-label>TASK — // OUTLINE LOCKED</span>
+        </div>
+        <div class="chapter-progress-head framed-panel">
+          <div><span class="eyebrow">OUTLINE MODE // CHAPTER PROGRESS</span><h2>正在按已确认大纲生成</h2><p>已完成章节会立即保存；继续任务时会沿用逐字稿、最终设置、大纲与上下文摘要。</p></div>
+          <div class="chapter-meter">
+            <span role="progressbar" aria-label="逐章生成进度" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" data-chapter-progressbar><i data-chapter-meter-fill></i></span>
+            <strong data-chapter-meter-count>0 / 0</strong><small data-chapter-meter-label>准备章节</small>
+          </div>
+        </div>
+        <div class="chapter-workspace">
+          <ol class="chapter-list framed-panel">
+            <li><span>—</span><div><strong>正在读取已确认大纲</strong><small>章节任务创建后显示真实标题</small></div><em>—</em></li>
+          </ol>
+          <aside class="saved-content framed-panel" data-chapter-saved-panel>
+            <span class="eyebrow">PRESERVED CONTENT</span>
+            <h3 data-chapter-saved-title>已安全保存 0 / 0 章</h3>
+            <p data-chapter-saved-copy>章节开始生成后，这里会同步显示当前进度。</p>
+            <div class="context-token"><span class="meta">最新上下文摘要</span><strong data-chapter-context-summary>第一章完成后显示</strong></div>
+          </aside>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-chapter-failure-template">
+      <section class="chapter-failure-stack">
+        <div class="chapter-failure-banner framed-panel">
+          <div class="conflict-mark">!</div>
+          <div><span class="eyebrow" data-chapter-failure-eyebrow>CHAPTER — // RETRY AVAILABLE</span><h2 data-chapter-failure-title>章节生成未完成。</h2><p data-chapter-failure-copy>正在读取真实失败章节与已保留内容。</p></div>
+          <span class="chip chip-red" data-chapter-failure-attempt>本章尝试 1 次</span>
+        </div>
+        <ol class="chapter-list framed-panel">
+          <li><span>—</span><div><strong>正在读取失败章节</strong><small>真实状态载入后显示</small></div><em>—</em></li>
+        </ol>
+        <div class="failure-recovery-actions framed-panel">
+          <div><span class="eyebrow">恢复将沿用全部上下文</span><strong>生成依据逐字稿 · 本次需求 · 最终设置 · 大纲 · 已完成章节</strong></div>
+          <div class="button-row-right"><button class="button button-primary" type="button" data-continue-chapter>继续当前章节</button><button class="button button-secondary" type="button" data-resume-later>稍后继续</button><button class="text-action danger-text" type="button" data-restart-generation>整份重新生成</button></div>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-recovery-template">
+      <section class="recovery-stack">
+        <div class="recovery-hero framed-panel">
+          <div><span class="eyebrow">LOCAL TASK RECOVERY // SAME BROWSER</span><h2>发现可以恢复的笔记任务</h2><p>刷新或关闭标签页后，可以从本机任务状态继续；第一版不要求注册，也不进行跨设备同步。</p></div>
+          <div class="recovery-glyph">↻<span>05</span></div>
+        </div>
+        <div class="recovery-list">
+          <article><span class="status-rail waiting"></span><div><span class="meta">等待设置 · 18:42</span><strong>AI Agent 学习方法：从收藏到行动</strong><small>推荐已生成，尚未选择快速或自定义路径</small></div><button class="button button-secondary" type="button" data-resume-state="recommendations">继续设置</button></article>
+          <article><span class="status-rail outline"></span><div><span class="meta">等待大纲 · 18:26</span><strong>产品新人第一年：问题驱动的学习路径</strong><small>只读大纲已保存，等待确认</small></div><button class="button button-secondary" type="button" data-resume-state="outline">查看大纲</button></article>
+          <article class="is-current"><span class="status-rail running"></span><div><span class="meta">生成中 · 刚刚重新连接</span><strong>用 AI Agent 重建个人学习系统</strong><small>已完成 2 / 5 章，将从第三章继续显示进度</small></div><button class="button button-primary" type="button" data-resume-state="chapter-generating">重新连接</button></article>
+          <article><span class="status-rail failed"></span><div><span class="meta">需要处理 · 昨天 22:14</span><strong>从需求到第一个可用产品</strong><small>第三章连续失败，已完成内容仍保留</small></div><button class="button button-secondary" type="button" data-resume-state="chapter-failure">处理失败</button></article>
+          <article><span class="status-rail complete"></span><div><span class="meta">已完成 · 07.25 20:08</span><strong>没有技术背景，怎样开始做 AI 产品</strong><small>无需再次调用 AI，可以直接打开</small></div><button class="button button-secondary" type="button" data-resume-state="generation-complete">打开结果</button></article>
+        </div>
+        <p class="recovery-note meta"><span class="square green"></span> 默认加载最近任务；更早记录与笔记历史将在第四阶段统一呈现。</p>
+      </section>
+    </template>
+
+    <template id="notes-generation-complete-template">
+      <section class="generation-complete-stack">
+        <div class="completion-hero framed-panel">
+          <div class="completion-mark">✓</div>
+          <div><span class="eyebrow">GENERATION COMPLETE // SAVED LOCALLY</span><h2>完整笔记已经生成。</h2><p>本次结果已与生成依据逐字稿、最终设置和来源信息一起保存。刷新页面后无需再次调用 AI。</p></div>
+          <span class="chip chip-green" data-completion-status>5 / 5 章完成</span>
+        </div>
+        <div class="completion-grid">
+          <section class="completion-summary framed-panel">
+            <span class="eyebrow" data-completion-receipt>PUBLIC DEMO // NOTE 0042</span>
+            <h3 data-completion-title>用 AI Agent 重建个人学习系统：从收藏到行动</h3>
+            <dl>
+              <div><dt>正文</dt><dd data-completion-character-count data-value="3486">3,486 字 · 5 章</dd></div>
+              <div><dt>附加模块</dt><dd data-completion-modules>核心摘要、行动清单、学习闭环</dd></div>
+              <div><dt>来源</dt><dd data-completion-source>Bilibili 视频逐字稿 · 3,842 字</dd></div>
+              <div><dt>完成时间</dt><dd data-completion-time>2026.07.27 19:26</dd></div>
+            </dl>
+          </section>
+          <aside class="integrity-check framed-panel" data-integrity-panel>
+            <span class="chip chip-green" data-integrity-chip>✓ 内容检查完成</span>
+            <h3 data-integrity-title>未发现明显遗漏</h3>
+            <p data-integrity-message>已结合生成依据逐字稿、本次笔记需求与最终设置完成检查。合理压缩的重复表达未计为遗漏。</p>
+            <button class="button button-secondary compact-button" type="button" data-recheck-integrity hidden>重新检查内容</button>
+            <span class="meta">不显示没有可靠依据的覆盖率百分比</span>
+          </aside>
+        </div>
+        <div class="completion-actions framed-panel">
+          <div><span class="eyebrow">下一步 / 阅读笔记</span><strong>打开排版后的单栏阅读视图，继续编辑、导出或管理历史。</strong></div>
+          <div class="completion-action-buttons"><button class="button button-secondary" type="button" data-new-note>再生成一份</button><button class="button button-primary" type="button" data-phase4>打开笔记 <span>→</span></button></div>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-reading-template">
+      <section class="note-reading-stack">
+        <div class="reader-command-bar framed-panel">
+          <div><span class="eyebrow">NOTE — // CURRENT VERSION</span><strong data-save-label>正在读取保存时间</strong></div>
+          <div class="button-row-right"><button class="button button-new-note compact-button" type="button" data-new-note>新建笔记 <span aria-hidden="true">＋</span></button><button class="button button-secondary compact-button" type="button" data-regenerate-note>重新生成整份笔记</button><button class="button button-secondary compact-button" type="button" data-edit-note>编辑笔记</button><button class="button button-secondary compact-button" type="button" data-export-note>导出</button><button class="text-action" type="button" data-open-note-history>笔记历史</button></div>
+        </div>
+        <article class="note-document framed-panel">
+          <header class="note-document-header">
+            <div class="note-kicker meta"><span class="chip chip-green">完整详解</span><span>视频解析 · Bilibili · 08:42</span></div>
+            <div class="editable-title-row"><h2 data-note-title contenteditable="false">用 AI Agent 重建个人学习系统：从收藏到行动</h2><button class="title-edit-button" type="button" data-edit-title>修改标题</button></div>
+            <div class="note-overview-block">
+              <span class="eyebrow">核心概述 / OVERVIEW</span>
+              <div class="note-deck">真正有效的学习，不是收藏更多资料，而是先明确要解决的问题，再让 AI 帮你把材料变成可以执行、可以复盘的行动笔记。</div>
+            </div>
+            <div class="note-byline meta"><span>生成 / 2026.07.27 19:26</span><span>修改 / 2026.07.27 19:26</span><span>3,486 字</span></div>
+          </header>
+          <div class="note-body">
+            <nav class="note-toc" aria-label="笔记目录">
+              <span class="eyebrow">目录 / CONTENTS</span>
+              <a href="#note-01"><span>01</span><strong>收藏为什么没有带来行动</strong></a>
+              <a href="#note-02"><span>02</span><strong>把学习主题改写成问题</strong></a>
+              <a href="#note-03"><span>03</span><strong>用 AI 生成行动笔记</strong></a>
+              <a href="#note-04"><span>04</span><strong>从一次返工中调整路径</strong></a>
+              <a href="#note-05"><span>05</span><strong>建立每周学习闭环</strong></a>
+            </nav>
+            <div class="note-content">
+              <section class="note-summary">
+                <span class="eyebrow">核心摘要 / 先记住这三点</span>
+                <h3>AI 不替你学习，它负责把行动路径照亮。</h3>
+                <p>真正有效的学习从一个需要解决的问题开始。你负责确定问题、做出判断并完成实践；AI 负责整理材料、显化结构，帮助你更快走到下一步。</p>
+                <ul class="summary-points"><li>先有具体问题，再收集必要材料。</li><li>把资料整理成可以执行的一页笔记。</li><li>用实践结果决定下一轮学什么。</li></ul>
+              </section>
+
+              <section id="note-01" class="note-chapter">
+                <div class="chapter-label meta">01 / 问题背景</div>
+                <h3>收藏为什么没有带来真正的行动？</h3>
+                <p>以前我学习一个新领域，会先收藏二十篇文章、十个视频，然后等一个“完整的周末”再开始。结果通常是资料越来越多，真正动手的时间越来越晚。</p>
+                <p>卡住我的并不是信息不足，而是没有一个需要立即回答的问题。没有具体问题时，每份资料看起来都重要，也就无法判断应该先读什么、读到什么程度。</p>
+                <blockquote>资料的数量不能替代一次真实尝试。问题足够具体，学习才会有方向。</blockquote>
+              </section>
+
+              <section id="note-02" class="note-chapter">
+                <div class="chapter-label meta">02 / 核心方法</div>
+                <h3>把“我要学什么”改写成“我要解决什么”</h3>
+                <p>“我要学会 AI Agent”是一个没有终点的主题。更有效的写法是：“我要让一个工具读取视频逐字稿，并生成可以复习的结构化笔记。”</p>
+                <p>后一种表达天然带着输入、结果和验收标准。它也会帮你筛掉暂时用不到的知识，只学习完成当前任务真正需要的部分。</p>
+                <ul><li><strong>限定时间：</strong>目标最好能在一周内产生结果。</li><li><strong>明确输入：</strong>写清楚你已经有什么材料。</li><li><strong>定义完成：</strong>提前确定一个最小验收标准。</li></ul>
+              </section>
+
+              <section id="note-03" class="note-chapter">
+                <div class="chapter-heading-row"><div><div class="chapter-label meta">03 / 实践步骤</div><h3>让 AI 把零散材料变成行动笔记</h3></div><button class="text-action" type="button" data-regenerate-chapter>重新生成本章 ↻</button></div>
+                <p>AI 最适合接手的是“整理与结构化”，而不是替你决定什么值得相信。把下面四步作为一次最小工作流：</p>
+                <ol class="method-steps"><li><strong>输入真实材料</strong><span>提供逐字稿、项目记录，以及已经出现的具体问题。</span></li><li><strong>说明本次用途</strong><span>告诉 AI 这份笔记用于复习、面试，还是立刻实践。</span></li><li><strong>检查内容结构</strong><span>确认笔记围绕问题、方法和行动，而不是机械复述原文。</span></li><li><strong>执行一个动作</strong><span>从笔记里选一项，在真实项目中完成验证。</span></li></ol>
+                <p>最终的学习目标可以压缩成一个公式：</p>
+                <pre><code>真实问题 ＋ 最小结果 ＋ 验收方式</code></pre>
+              </section>
+
+              <section id="note-04" class="note-chapter">
+                <div class="chapter-label meta">04 / 案例与复盘</div>
+                <h3>从一次返工中调整实现路径</h3>
+                <p>第一次实现视频转笔记工具时，我先接通后端，再不断补前端流程。虽然功能在本地可以运行，但其他人不知道任务进行到哪里，也不知道失败后该怎么继续。</p>
+                <p>后来我把顺序改成：先画清用户路径并确认交互原型，再让真实实现逐页对照。技术工作并没有减少，但返工明显变少了，因为每一步都有清楚的完成标准。</p>
+                <aside class="note-callout"><strong>常见错误／注意事项</strong><p>不要把“我能在本地跑通”当成“别人已经可以使用”。产品还需要进度反馈、失败恢复、数据保留，以及前后一致的交互规则。</p></aside>
+              </section>
+
+              <section id="note-05" class="note-chapter">
+                <div class="chapter-label meta">05 / 行动清单</div>
+                <h3>用每周复盘形成下一轮学习闭环</h3>
+                <p>一周结束时，不要只记录“学了什么”。更重要的是检查哪些行动真实发生、哪些判断被证伪，以及下周应该增加什么约束。</p>
+                <p>你可以直接从下面四项开始：</p>
+                <ul class="task-list"><li><span class="task-box" aria-hidden="true"></span><span>本周只选择一个真实问题。</span></li><li><span class="task-box" aria-hidden="true"></span><span>用一页笔记记录方法、证据和下一步。</span></li><li><span class="task-box" aria-hidden="true"></span><span>周末检查哪些行动真正发生了。</span></li><li><span class="task-box" aria-hidden="true"></span><span>把失败原因写成下周的约束条件。</span></li></ul>
+              </section>
+
+              <section class="note-chapter note-module">
+                <div class="chapter-label meta">附加模块 / 学习闭环</div>
+                <h3>把一次学习变成可持续循环</h3>
+                <div class="learning-loop" aria-label="学习闭环步骤"><span>真实问题</span><i>→</i><span>定向材料</span><i>→</i><span>行动笔记</span><i>→</i><span>最小实践</span><i>→</i><span>复盘与新问题</span></div>
+                <p>每次复盘都会产生一个更具体的新问题，下一轮学习因此不再从“继续收藏”开始。</p>
+              </section>
+
+              <details class="reading-source-drawer"><summary>查看生成依据与来源信息 <span>＋</span></summary><div><p><strong>生成依据逐字稿：</strong>用户修正后的实际生成版本，共 3,842 字。</p><p><strong>来源视频：</strong>刚毕业一年，我如何用 AI 重建自己的学习系统 · 阿澈的工具箱 · Bilibili</p></div></details>
+            </div>
+          </div>
+          <footer class="note-version-footer">
+            <div><span class="eyebrow">VERSION / 02</span><strong>当前版本包含你的修改；AI 初始版本仍被保留。</strong></div>
+            <button class="text-action" type="button" data-restore-initial>恢复 AI 初始版本</button>
+          </footer>
+        </article>
+        <button class="final-boundary-button" type="button" data-final-boundary>四阶段已完成，查看下一步 →</button>
+      </section>
+    </template>
+
+    <template id="notes-regenerate-template">
+      <section class="regenerate-note-stack">
+        <div class="regenerate-note-hero framed-panel">
+          <div>
+            <span class="eyebrow">NEW NOTE PATH // PRESERVE CURRENT</span>
+            <h2>重新生成整份笔记</h2>
+            <p>继续使用这份笔记的生成依据，换一个问题、结构或详细程度重新分析。新结果会保存为独立笔记。</p>
+          </div>
+          <span class="chip chip-green">原笔记会完整保留</span>
+        </div>
+        <div class="regenerate-note-layout">
+          <form class="regenerate-request-card framed-panel" data-regenerate-note-form>
+            <div class="panel-title">
+              <div><span class="eyebrow">QUESTION RESET // STEP 01</span><h3>这次希望怎样调整？</h3></div>
+              <span class="chip chip-blue">重新分析</span>
+            </div>
+            <label class="field-label" for="regenerate-note-request">新的笔记要求 <span>选填</span></label>
+            <textarea id="regenerate-note-request" class="notes-request regenerate-request-input" rows="5" placeholder="例如：生成得更详细，增加概念解释、案例拆解、常见误区和逐步行动建议。"></textarea>
+            <div class="regenerate-prompt-section">
+              <span class="meta">快速起草 / 点击后仍可继续修改</span>
+              <div class="regenerate-prompt-grid">
+                <button type="button" data-regenerate-prompt="生成得更详细，保留更多解释、推理过程、案例和行动步骤。"><strong>更详细</strong><small>展开解释与案例</small></button>
+                <button type="button" data-regenerate-prompt="换一种结构重新组织内容，先讲核心问题，再讲原因、方法和实践。"><strong>换结构</strong><small>重新组织阅读路径</small></button>
+                <button type="button" data-regenerate-prompt="只聚焦我最关心的问题，减少泛泛总结，给出具体判断和执行建议。"><strong>聚焦重点</strong><small>围绕新问题生成</small></button>
+              </div>
+            </div>
+            <details class="regenerate-source-drawer">
+              <summary><span><span class="eyebrow">生成依据逐字稿</span><strong>已自动带入，无需重新粘贴</strong></span><span class="meta" data-regenerate-character-count>0 字 ＋</span></summary>
+              <div class="regenerate-source-body"><textarea class="notes-textarea" rows="8" readonly data-regenerate-transcript></textarea></div>
+            </details>
+            <div class="regenerate-actions">
+              <button class="button button-primary" type="submit" data-confirm-regenerate>重新分析并生成新笔记 <span>→</span></button>
+              <button class="button button-secondary" type="button" data-cancel-regenerate>返回当前笔记</button>
+            </div>
+          </form>
+          <aside class="regenerate-preservation-panel framed-panel">
+            <span class="eyebrow">ORIGINAL NOTE // SAFE</span>
+            <div class="regenerate-preservation-mark" aria-hidden="true">N＋</div>
+            <h3 data-regenerate-original-title>当前成品笔记</h3>
+            <p>这次操作会新建笔记任务，不会覆盖当前正文、编辑版本或导出文件。</p>
+            <dl>
+              <div><dt>当前笔记</dt><dd>继续保留</dd></div>
+              <div><dt>生成依据</dt><dd>自动复用</dd></div>
+              <div><dt>新结果</dt><dd>独立保存</dd></div>
+            </dl>
+          </aside>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-editing-template">
+      <section class="note-editing-stack">
+        <div class="editor-toolbar framed-panel" role="toolbar" aria-label="轻量笔记编辑工具">
+          <div class="editor-mode"><span class="chip chip-blue">编辑中</span><span class="meta" data-autosave-status>已自动保存 · 19:28</span></div>
+          <div class="format-tools"><button type="button" data-format="formatBlock" data-value="h2" title="章节标题">H2</button><button type="button" data-format="bold" title="加粗"><strong>B</strong></button><button type="button" data-format="insertUnorderedList" title="列表">☷</button><button type="button" data-format="formatBlock" data-value="blockquote" title="引用">❝</button><button type="button" data-format="formatBlock" data-value="pre" title="代码块">&lt;/&gt;</button><span></span><button type="button" data-format="undo" title="撤销">↶</button><button type="button" data-format="redo" title="重做">↷</button></div>
+          <button class="button button-primary compact-button" type="button" data-finish-edit>完成编辑</button>
+        </div>
+        <article class="note-document note-document--editing framed-panel">
+          <header class="note-document-header">
+            <div class="note-kicker meta"><span class="chip chip-blue">可视化编辑</span><span>不会显示原始 Markdown</span></div>
+            <h2 class="visual-editable" contenteditable="true" data-editor-content data-note-title>用 AI Agent 重建个人学习系统：从收藏到行动</h2>
+            <p class="note-deck visual-editable" contenteditable="true" data-editor-content>真正有效的学习，不是收藏更多资料，而是先明确要解决的问题，再让 AI 帮你把材料变成可以执行、可以复盘的行动笔记。</p>
+          </header>
+          <div class="note-body">
+            <section class="note-summary visual-editable" contenteditable="true" data-editor-content><span class="eyebrow">核心摘要</span><p>这套方法的关键不是让 AI 替你学习，而是让它帮助材料显化结构，再由你完成实践与判断。</p></section>
+            <section class="note-chapter visual-editable" contenteditable="true" data-editor-content><div class="chapter-label meta">01 / 问题背景</div><h3>收藏为什么没有带来真正的行动？</h3><p>资料越多，开始的心理门槛反而越高。真正卡住我的不是信息不足，而是没有一个需要立即回答的问题。</p><blockquote>资料的数量不能替代一次真实的尝试。</blockquote></section>
+            <section class="note-chapter visual-editable" contenteditable="true" data-editor-content><div class="chapter-label meta">02 / 核心方法</div><h3>把“我要学什么”改写成“我要解决什么”</h3><p>把模糊主题改写为带输入、结果和验收标准的真实任务。</p><ul><li>缩小到一周内可以完成的结果。</li><li>先写清楚最小验收标准。</li><li>只在遇到缺口时定向学习。</li></ul></section>
+            <section class="note-chapter visual-editable" contenteditable="true" data-editor-content><div class="chapter-label meta">03 / 实践步骤</div><h3>让 AI 把零散材料变成行动笔记</h3><ol><li>输入真实材料。</li><li>说明本次用途。</li><li>检查笔记结构。</li><li>立刻执行一个行动。</li></ol><pre><code>学习目标 = 真实问题 + 最小结果 + 验收方式</code></pre></section>
+          </div>
+          <footer class="note-version-footer"><div><span class="eyebrow">AUTO SAVE / LOCAL</span><strong>输入后自动保存，无需单独提交。</strong></div><button class="text-action" type="button" data-restore-initial>恢复 AI 初始版本</button></footer>
+        </article>
+      </section>
+    </template>
+
+    <template id="notes-chapter-candidate-template">
+      <section class="candidate-stack">
+        <div class="candidate-hero framed-panel"><div><span class="eyebrow">CHAPTER REGENERATION // CANDIDATE READY</span><h2 data-candidate-heading>当前章节的新版本已经准备好。</h2><p>候选内容参考了生成依据逐字稿、整份大纲、前后章节和本次设置。它不会直接覆盖你修改过的当前版本。</p></div><span class="chip chip-blue">等待选择</span></div>
+        <div class="candidate-context meta"><span data-candidate-context>章节 / 正在读取</span><span>当前版本仍在使用</span></div>
+        <div class="candidate-compare">
+          <article class="candidate-card framed-panel"><span class="eyebrow">CURRENT / 当前版本</span><h3 data-candidate-title>当前章节</h3><div data-candidate-current-content></div><p class="candidate-foot meta" data-candidate-current-count>包含你的编辑</p></article>
+          <article class="candidate-card candidate-card--new framed-panel"><span class="eyebrow">CANDIDATE / AI 候选版本</span><h3 data-candidate-title>当前章节</h3><div data-candidate-new-content></div><p class="candidate-foot meta" data-candidate-new-count>新候选 · 尚未保存</p></article>
+        </div>
+        <div class="candidate-actions framed-panel"><div><span class="eyebrow">不会自动覆盖</span><strong>请选择替换当前章节，或保留你现有的版本。</strong></div><div class="button-row-right"><button class="button button-primary" type="button" data-accept-candidate>用候选版本替换</button><button class="button button-secondary" type="button" data-keep-current>保留当前版本</button></div></div>
+      </section>
+    </template>
+
+    <template id="notes-export-template">
+      <section class="export-stack">
+        <div class="export-hero framed-panel"><div><span class="eyebrow">EXPORT DESK // LATEST EDITED VERSION</span><h2>导出这份笔记</h2><p>Markdown、PDF 与复制全文都使用最新编辑版本，并按你的选择附带生成依据与来源。</p></div><span class="chip chip-green">当前版本已保存</span></div>
+        <div class="export-layout">
+          <form class="export-controls framed-panel">
+            <fieldset><legend>01 / 导出格式</legend><div class="export-format-grid"><label class="export-choice is-selected"><input type="radio" name="export-format" value="md" checked /><strong>Markdown</strong><small>.md · 保留标题与分隔线</small></label><label class="export-choice"><input type="radio" name="export-format" value="pdf" /><strong>PDF</strong><small>适合阅读与分享</small></label><label class="export-choice"><input type="radio" name="export-format" value="copy" /><strong>复制全文</strong><small>复制最新笔记内容</small></label></div></fieldset>
+            <fieldset><legend>02 / 内容范围</legend><label class="export-radio is-selected"><input type="radio" name="export-content" value="note" checked /><span><strong>仅笔记</strong><small>默认选项，不附带逐字稿</small></span></label><label class="export-radio"><input type="radio" name="export-content" value="transcript" /><span><strong>笔记 + 生成依据逐字稿</strong><small>附带实际用于生成的修正版逐字稿</small></span></label></fieldset>
+            <fieldset><legend>03 / 来源信息</legend><label class="source-toggle is-selected"><input type="checkbox" checked /><span><strong>包含来源信息</strong><small>标题、作者、平台、原链接、生成与修改时间</small></span></label></fieldset>
+            <div class="export-actions"><button class="button button-primary" type="button" data-run-export>准备 Markdown 下载 <span>→</span></button><button class="button button-secondary" type="button" data-notes-state-jump="reading">返回笔记</button></div>
+          </form>
+          <aside class="export-preview framed-panel">
+            <span class="eyebrow">DOCUMENT PREVIEW</span><div class="paper-preview"><div class="paper-lines"><strong>用 AI Agent 重建个人学习系统</strong><span></span><span></span><span class="short"></span><h4>01 收藏为什么没有带来行动</h4><span></span><span></span><h4>02 把主题改写成问题</h4><span></span><span class="short"></span></div></div><dl><div><dt>文件名</dt><dd data-export-filename>用_AI_Agent_重建个人学习系统.md</dd></div><div><dt>内容</dt><dd data-export-scope>仅笔记 · 包含来源</dd></div><div><dt>版本</dt><dd>最新编辑版本</dd></div></dl>
+          </aside>
+        </div>
+      </section>
+    </template>
+
+    <template id="notes-omission-template">
+      <section class="omission-stack">
+        <div class="omission-warning framed-panel"><div class="conflict-mark">!</div><div><span class="eyebrow">CONTENT CHECK // POSSIBLE OMISSION</span><h2>有一处内容可能没有充分展开。</h2><p>逐字稿在 06:12 提到“失败后如何调整下一周目标”，当前笔记只保留了结论，没有写出判断步骤。这不会阻止阅读、编辑或导出。</p></div><button class="button button-secondary" type="button" data-regenerate-chapter>重新生成相关章节</button></div>
+        <article class="note-document note-document--compact framed-panel">
+          <header class="note-document-header"><div class="note-kicker meta"><span class="chip chip-red">1 项提醒</span><span>其他内容检查完成</span></div><h2>用 AI Agent 重建个人学习系统：从收藏到行动</h2><p class="note-deck">当前提醒位于第四章；你仍然可以继续使用这份笔记。</p></header>
+          <div class="note-body"><section class="note-chapter"><div class="chapter-heading-row"><div><div class="chapter-label meta">04 / 案例与复盘</div><h3>从失败中调整路径</h3></div><span class="chip chip-red">可能遗漏</span></div><p>失败不是简单地“再试一次”，而是检查目标是否过大、材料是否不足，以及验收标准是否模糊。</p><div class="omission-inline"><strong>建议补充</strong><span>明确失败后如何判断是缩小目标、补充证据，还是更换实现路径。</span></div></section></div>
+        </article>
+        <div class="omission-actions"><button class="button button-primary" type="button" data-edit-note>继续编辑笔记</button><button class="button button-secondary" type="button" data-export-note>仍然导出</button><button class="text-action" type="button" data-notes-state-jump="reading">返回完整阅读</button></div>
+      </section>
+    </template>
+
+    <template id="notes-note-history-template">
+      <section class="note-history-stack">
+        <div class="stage-heading"><div><span class="eyebrow">NOTE ARCHIVE // LOCAL BROWSER</span><h2>笔记历史</h2></div><p class="meta">默认加载最近 30 条<br />更早内容通过“加载更多”查看</p></div>
+        <div class="note-history-list">
+          <article class="is-featured"><div class="note-history-index">N1</div><div><div class="history-line"><span class="chip chip-green">已完成</span><span class="meta">视频解析 · 今天 19:26</span></div><h3>用 AI Agent 重建个人学习系统：从收藏到行动</h3><p>5 章 · 3,486 字 · 已修改 · 关联 Bilibili 解析记录</p></div><div class="history-actions"><button class="text-action" type="button" data-open-note>打开笔记 →</button><button class="text-action" type="button" data-note-delete>删除</button></div></article>
+          <article><div class="note-history-index">N2</div><div><div class="history-line"><span class="chip chip-blue">等待大纲</span><span class="meta">粘贴文本 · 今天 18:26</span></div><h3>产品新人第一年：问题驱动的学习路径</h3><p>大纲已保存 · 本次需求：用于面试复盘</p></div><div class="history-actions"><button class="text-action" type="button" data-resume-state="outline">继续任务 →</button><button class="text-action" type="button" data-note-delete>删除</button></div></article>
+          <article class="has-warning"><div class="note-history-index">N3</div><div><div class="history-line"><span class="chip chip-red">需要处理</span><span class="meta">TXT 文件 · 昨天 22:14</span></div><h3>从需求到第一个可用产品</h3><p>第三章失败 · 已完成 2 / 5 章并保留</p></div><div class="history-actions"><button class="text-action" type="button" data-resume-state="chapter-failure">处理失败 →</button><button class="text-action" type="button" data-note-delete>删除</button></div></article>
+          <article><div class="note-history-index">N4</div><div><div class="history-line"><span class="chip chip-green">已完成</span><span class="meta">MD 文件 · 07.25 20:08</span></div><h3>没有技术背景，怎样开始做 AI 产品</h3><p>4 章 · 2,918 字 · 未修改</p></div><div class="history-actions"><button class="text-action" type="button" data-open-note>打开笔记 →</button><button class="text-action" type="button" data-note-delete>删除</button></div></article>
+        </div>
+        <button class="load-more-button" type="button" data-load-more>加载更早的笔记 ↓</button>
+        <p class="history-foot meta">删除笔记不会删除关联解析记录；两侧分别保存自己的逐字稿副本。</p>
+      </section>
+    </template>
+
+    <script src="/static/vendor/gsap/gsap.min.js"></script>
+    <script src="/static/vendor/gsap/ScrollTrigger.min.js"></script>
+    <script src="/static/free-capacity.js?v=1"></script>
+    <script src="/static/app-prototype.js?v=18"></script>
+    <script src="/static/real-app.js?v=33"></script>
+    <script src="/static/motion.js?v=5"></script>
+  </body>
+</html>

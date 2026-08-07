@@ -1,0 +1,26 @@
+[Unit]
+Description=Video to Notes private invite administration
+After=network-online.target video-to-notes.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vtn
+Group=vtn
+UMask=0077
+WorkingDirectory=/opt/video-to-notes
+EnvironmentFile=/etc/video-to-notes.env
+Environment=PATH=/opt/video-to-notes/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/opt/video-to-notes/.venv/bin/uvicorn invite_admin_app:app --host 127.0.0.1 --port 8768 --workers 1
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/video-to-notes
+MemoryMax=320M
+
+[Install]
+WantedBy=multi-user.target

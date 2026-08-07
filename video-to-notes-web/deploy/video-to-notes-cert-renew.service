@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew Video to Notes TLS certificate
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/renew-video-to-notes-cert

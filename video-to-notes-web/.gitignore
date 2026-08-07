@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+
+# Local runtime state and credentials. Never commit these files.
+data/settings.json
+data/transcription-provider.json
+data/*.sqlite3
+data/*.sqlite3-*
+data/models/
+
+# Generated verification output and heavyweight visual evidence.
+dogfood-output/
+prototype-phase1-video-parser/screenshots/
+prototype-product-landing/*.png

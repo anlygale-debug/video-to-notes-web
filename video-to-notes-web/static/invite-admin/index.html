@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vtn-admin-csrf" content="__VTN_ADMIN_CSRF__" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>内测码控制台 · VIDEO / NOTES</title>
+    <link rel="stylesheet" href="/assets/admin.css?v=6" />
+    <script src="/assets/admin.js?v=6" defer></script>
+  </head>
+  <body>
+    <div class="scanlines" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="内测码控制台首页">
+        <span class="brand-mark">✦</span>
+        <span>VIDE0 / NOTES</span>
+      </a>
+      <div class="channel">
+        <span class="live-dot" aria-hidden="true"></span>
+        PRIVATE CONTROL ROOM
+      </div>
+      <div class="secure-stamp">
+        <span aria-hidden="true">▣</span>
+        <span><strong>仅通过 SSH 安全通道访问</strong><small>公网用户无法进入</small></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <span class="eyebrow">INVITE OPERATIONS // 内测资格管理</span>
+          <h1 id="page-title">内测码控制台</h1>
+          <p>给每位测试者发一张独立通行证。额度、使用记录和吊销状态彼此隔离。</p>
+        </div>
+        <div class="label-explainer">
+          <span class="ticket-index">01</span>
+          <div>
+            <strong>LABEL = 你的管理备注</strong>
+            <p>备注只供你识别，不参与用户登录。</p>
+            <small>测试者只需要输入内测码，不需要用户名。</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="内测概况">
+        <article>
+          <span class="stat-index">A</span>
+          <span><small>全部资格</small><strong data-stat-total>—</strong></span>
+        </article>
+        <article class="stat-active">
+          <span class="stat-index">B</span>
+          <span><small>当前可用</small><strong data-stat-active>—</strong></span>
+        </article>
+        <article class="stat-revoked">
+          <span class="stat-index">C</span>
+          <span><small>已经吊销</small><strong data-stat-revoked>—</strong></span>
+        </article>
+      </section>
+
+      <section class="provider-console" aria-labelledby="provider-title">
+        <div class="provider-heading">
+          <div>
+            <span class="eyebrow">TRANSCRIPTION ROUTER // 转录引擎</span>
+            <h2 id="provider-title">选择视频由谁转成文字</h2>
+          </div>
+          <div class="provider-live">
+            <span class="provider-pulse" aria-hidden="true"></span>
+            <span><small>当前线路</small><strong data-active-provider>读取中…</strong></span>
+          </div>
+        </div>
+
+        <div class="provider-grid">
+          <article class="provider-card provider-local" data-provider-card="local">
+            <div class="provider-card-top">
+              <span class="provider-number">01</span>
+              <span class="provider-badge" data-local-badge>待机</span>
+            </div>
+            <span class="eyebrow">ON SERVER // 离线可用</span>
+            <h3>本地 tiny</h3>
+            <p>在阿里云服务器本地完成转录，不消耗 Cloudflare 额度。速度较慢，但无需外部 API。</p>
+            <dl>
+              <div><dt>模型</dt><dd data-local-model>tiny</dd></div>
+              <div><dt>凭证</dt><dd>不需要</dd></div>
+            </dl>
+            <button class="provider-switch" type="button" data-switch-local>
+              切换到本地 tiny
+            </button>
+          </article>
+
+          <article class="provider-card provider-cloud" data-provider-card="cloudflare">
+            <div class="provider-card-top">
+              <span class="provider-number">02</span>
+              <span class="provider-badge" data-cloudflare-badge>未配置</span>
+            </div>
+            <span class="eyebrow">CLOUDFLARE WORKERS AI // 云端</span>
+            <h3>Whisper large v3 turbo</h3>
+            <p>使用 Cloudflare API 转录，通常更快、模型更强。只有你切换到这条线路后，解析视频才会调用它。</p>
+            <dl>
+              <div><dt>Account ID</dt><dd data-cloudflare-account>尚未保存</dd></div>
+              <div><dt>API Token</dt><dd data-cloudflare-token>尚未保存</dd></div>
+              <div><dt>最近验证</dt><dd data-cloudflare-verified>—</dd></div>
+            </dl>
+            <div class="provider-actions">
+              <button class="credential-button" type="button" data-open-cloudflare>
+                配置 Cloudflare
+              </button>
+              <button class="provider-switch" type="button" data-switch-cloudflare>
+                切换到 Cloudflare
+              </button>
+            </div>
+            <button class="credential-delete" type="button" data-delete-cloudflare hidden>
+              删除已保存凭证
+            </button>
+          </article>
+
+          <article class="usage-card">
+            <div class="usage-title">
+              <span>
+                <small>LOCAL METER // 本工具估算</small>
+                <strong>今日 Cloudflare 用量</strong>
+              </span>
+              <span class="usage-date">UTC 00:00 重置</span>
+            </div>
+            <div class="usage-numbers">
+              <div>
+                <small>本工具今日已转录</small>
+                <strong><span data-usage-minutes>0</span> 分钟</strong>
+              </div>
+              <div>
+                <small>估算免费余量</small>
+                <strong><span data-remaining-minutes>—</span> 分钟</strong>
+              </div>
+            </div>
+            <div class="usage-track" aria-label="本工具估算神经元用量">
+              <span data-usage-bar></span>
+            </div>
+            <div class="usage-caption">
+              <span><strong data-used-neurons>0</strong> / <span data-free-neurons>10,000</span> neurons</span>
+              <span>模型费率 <strong data-neuron-rate>46.63</strong> / 分钟</span>
+            </div>
+            <div class="usage-notice">
+              <span aria-hidden="true">i</span>
+              <p><strong>这不是官网实时余额。</strong>这里只统计本工具成功完成的 Cloudflare 转录；如果同一账号还在别处使用，请以 Cloudflare Dashboard 为准。</p>
+            </div>
+            <a class="dashboard-link" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">
+              打开 Cloudflare Dashboard ↗
+            </a>
+          </article>
+        </div>
+        <p class="provider-message" data-provider-message role="status" hidden></p>
+      </section>
+
+      <section class="llm-console" aria-labelledby="llm-console-title">
+        <div class="llm-heading">
+          <div>
+            <span class="eyebrow">NOTE INTELLIGENCE ROUTER // 笔记模型</span>
+            <h2 id="llm-console-title">控制免费与高速笔记线路</h2>
+            <p>两条线路各自管理 API、启停状态和默认模型；新任务只会进入当前选中的线路。</p>
+          </div>
+          <div class="llm-master" data-llm-master>
+            <span class="llm-master-light" aria-hidden="true"></span>
+            <span>
+              <small>MASTER GATE // 真实调用</small>
+              <strong data-llm-enabled-label>读取中…</strong>
+              <em data-llm-active-summary>正在检查模型配置</em>
+            </span>
+            <button type="button" data-toggle-llm>读取中…</button>
+          </div>
+        </div>
+
+        <div class="llm-channel-board" data-llm-channel-board aria-label="笔记生成线路"></div>
+
+        <div class="llm-toolbar">
+          <div class="llm-current">
+            <span class="route-glyph" aria-hidden="true">↳</span>
+            <span><small>下一项笔记任务将使用</small><strong data-llm-current>尚未选择模型</strong></span>
+          </div>
+          <button class="llm-add-button" type="button" data-add-llm>
+            <span aria-hidden="true">＋</span> 新增 LLM 配置
+          </button>
+        </div>
+
+        <div class="llm-profile-list" data-llm-list aria-live="polite"></div>
+        <div class="llm-empty" data-llm-empty hidden>
+          <span>NO ROUTE</span>
+          <strong>还没有可用的 LLM 配置</strong>
+          <p>先给免费线路或高速线路新增一套 API，再开启对应线路。</p>
+        </div>
+        <div class="llm-safety-strip">
+          <span aria-hidden="true">▣</span>
+          <p><strong>密钥只写入服务器权限为 600 的配置文件，不会回传到页面。</strong>“测试连接”会发起一次最小真实请求；保存、编辑和切换本身不会调用模型。</p>
+        </div>
+        <p class="llm-message" data-llm-message role="status" hidden></p>
+      </section>
+
+      <section class="workspace">
+        <aside class="create-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">CREATE PASS // 生成新码</span>
+            <strong>给一位测试者创建独立额度</strong>
+          </div>
+          <form data-create-form>
+            <label class="field field-wide">
+              <span>测试者备注</span>
+              <input
+                name="label"
+                type="text"
+                maxlength="80"
+                autocomplete="off"
+                placeholder="例如：小王｜第一轮产品体验"
+                required
+              />
+              <small>建议写“名字｜测试轮次”，以后容易查找。</small>
+            </label>
+
+            <fieldset class="preset-field">
+              <legend>快速额度模板</legend>
+              <div class="preset-row">
+                <button type="button" data-preset="light">轻量试用</button>
+                <button type="button" data-preset="deep">深度体验</button>
+                <button type="button" data-preset="custom">自定义</button>
+              </div>
+            </fieldset>
+
+            <div class="limit-grid">
+              <label class="field">
+                <span>总转录分钟</span>
+                <input name="transcription_minutes" type="number" min="1" max="1440" value="30" required />
+              </label>
+              <label class="field">
+                <span>笔记生成次数</span>
+                <input name="note_generations" type="number" min="1" max="500" value="5" required />
+              </label>
+              <label class="field field-wide">
+                <span>单个视频最长分钟</span>
+                <input name="max_video_minutes" type="number" min="1" max="180" value="20" required />
+              </label>
+            </div>
+
+            <div class="security-note">
+              <span aria-hidden="true">!</span>
+              <p><strong>服务器不会保存内测码明文。</strong>新码会留在这台 Mac 的浏览器保险箱中，方便你之后直接复制。</p>
+            </div>
+            <p class="form-error" data-form-error role="alert" hidden></p>
+            <button class="primary-button" type="submit">
+              <span>生成内测码</span><span aria-hidden="true">→</span>
+            </button>
+          </form>
+        </aside>
+
+        <section class="roster" aria-labelledby="roster-title">
+          <div class="roster-heading">
+            <div>
+              <span class="eyebrow">PASS ROSTER // 发放记录</span>
+              <h2 id="roster-title">谁拥有测试资格</h2>
+            </div>
+            <button class="refresh-button" type="button" data-refresh>
+              <span aria-hidden="true">↻</span> 刷新状态
+            </button>
+          </div>
+          <div class="roster-list" data-grant-list aria-live="polite"></div>
+          <div class="empty-state" data-empty-state hidden>
+            <span>00</span>
+            <strong>还没有发放内测码</strong>
+            <p>从左侧创建第一位测试者的独立通行证。</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>LOCAL TUNNEL ONLY // NO PUBLIC ADMIN ROUTE</span>
+      <span>生成 · 查看额度 · 转录线路 · 吊销</span>
+    </footer>
+
+    <dialog class="result-dialog" data-result-dialog aria-labelledby="result-title">
+      <div class="dialog-topbar">
+        <span>PASS GENERATED // ONE-TIME VIEW</span>
+        <button type="button" data-result-close aria-label="关闭生成结果">×</button>
+      </div>
+      <div class="result-body">
+        <div class="result-copy">
+          <span class="success-mark" aria-hidden="true">✓</span>
+          <span class="eyebrow">创建成功</span>
+          <h2 id="result-title">内测码已生成</h2>
+          <p>现在可以直接复制或扫码。关闭窗口后，卡片上仍会保留复制入口。</p>
+          <div class="code-slip">
+            <small>INVITE CODE</small>
+            <strong data-created-code></strong>
+          </div>
+          <button class="copy-button" type="button" data-copy-code>复制内测码</button>
+        </div>
+        <div class="qr-panel">
+          <span class="eyebrow">SCAN TO TRANSFER</span>
+          <div class="qr-frame" data-created-qr></div>
+          <strong>扫码获取内测码</strong>
+          <small>二维码本身等同于密码，请勿公开发布。</small>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <span>请先完成复制或扫码</span>
+        <button class="complete-button" type="button" data-result-complete>完成</button>
+      </div>
+    </dialog>
+
+    <dialog class="confirm-dialog" data-revoke-dialog aria-labelledby="revoke-title">
+      <div class="danger-flag" aria-hidden="true">!</div>
+      <span class="eyebrow">REVOKE ACCESS // 不可撤回</span>
+      <h2 id="revoke-title">确认吊销内测码</h2>
+      <p><strong data-revoke-label></strong> 的内测资格会立即失效，已经登录的会话也不能继续使用。</p>
+      <div class="confirm-actions">
+        <button type="button" data-revoke-cancel>暂不吊销</button>
+        <button class="danger-button" type="button" data-revoke-confirm>确认吊销</button>
+      </div>
+    </dialog>
+
+    <dialog class="confirm-dialog import-dialog" data-import-dialog aria-labelledby="import-title">
+      <div class="import-flag" aria-hidden="true">↘</div>
+      <span class="eyebrow">LOCAL CODE VAULT // 本机保存</span>
+      <h2 id="import-title">导入已有内测码</h2>
+      <p>把 <strong data-import-label></strong> 对应的旧码粘贴到这里。验证成功后，只保存在这台 Mac 的浏览器中。</p>
+      <label class="import-field">
+        <span>已有内测码</span>
+        <input data-import-code type="password" autocomplete="off" placeholder="VTN-…" />
+      </label>
+      <p class="import-error" data-import-error role="alert" hidden></p>
+      <div class="confirm-actions">
+        <button type="button" data-import-cancel>取消</button>
+        <button class="import-button" type="button" data-import-confirm>验证并保存</button>
+      </div>
+    </dialog>
+
+    <dialog class="edit-dialog" data-edit-dialog aria-labelledby="edit-title">
+      <div class="dialog-topbar">
+        <span>EDIT PASS // QUOTA CONTROL</span>
+        <button type="button" data-edit-close aria-label="关闭额度编辑">×</button>
+      </div>
+      <div class="edit-body">
+        <span class="eyebrow">修改立即生效 · 已使用记录不会改变</span>
+        <h2 id="edit-title">编辑测试资格</h2>
+        <p>你填写的是“从现在开始还可以使用多少”，系统会自动保留此前的使用量。</p>
+
+        <label class="edit-field edit-field-wide">
+          <span>测试者备注</span>
+          <input data-edit-label type="text" maxlength="80" autocomplete="off" />
+        </label>
+        <div class="edit-grid">
+          <label class="edit-field">
+            <span>剩余转录分钟</span>
+            <input data-edit-transcription type="number" min="0" max="10080" step="0.1" />
+          </label>
+          <label class="edit-field">
+            <span>剩余笔记次数</span>
+            <input data-edit-notes type="number" min="0" max="5000" step="1" />
+          </label>
+          <label class="edit-field edit-field-wide">
+            <span>单个视频最长分钟</span>
+            <input data-edit-max-video type="number" min="1" max="180" step="0.1" />
+          </label>
+        </div>
+
+        <div class="change-preview" aria-label="修改前后对比">
+          <div><small>剩余转录</small><strong data-preview-transcription>—</strong></div>
+          <div><small>剩余笔记</small><strong data-preview-notes>—</strong></div>
+          <div><small>单条上限</small><strong data-preview-max-video>—</strong></div>
+        </div>
+        <p class="edit-warning" data-edit-warning role="status" hidden>
+          单视频上限高于剩余转录额度，请同时补充转录额度。
+        </p>
+        <p class="edit-error" data-edit-error role="alert" hidden></p>
+      </div>
+      <div class="edit-actions">
+        <span>保存后内测码和历史记录保持不变</span>
+        <div>
+          <button type="button" data-edit-cancel>取消</button>
+          <button class="save-edit-button" type="button" data-edit-save>保存修改</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="edit-dialog credential-dialog" data-cloudflare-dialog aria-labelledby="cloudflare-title">
+      <div class="dialog-topbar">
+        <span>CLOUDFLARE CREDENTIALS // ENCRYPTED TUNNEL</span>
+        <button type="button" data-cloudflare-close aria-label="关闭 Cloudflare 配置">×</button>
+      </div>
+      <form class="credential-body" data-cloudflare-form>
+        <span class="eyebrow">VERIFY BEFORE SAVE // 保存前验证</span>
+        <h2 id="cloudflare-title">连接 Cloudflare Workers AI</h2>
+        <p>填写后会先向 Cloudflare 验证账号与 Workers AI 权限。验证请求不会产生转录费用，也不会切换当前线路。</p>
+        <label class="edit-field">
+          <span>Account ID</span>
+          <input
+            data-cloudflare-account-input
+            name="account_id"
+            type="text"
+            inputmode="text"
+            maxlength="32"
+            pattern="[0-9a-fA-F]{32}"
+            autocomplete="off"
+            placeholder="32 位 Account ID"
+            required
+          />
+        </label>
+        <label class="edit-field credential-token-field">
+          <span>Workers AI API Token</span>
+          <input
+            data-cloudflare-token-input
+            name="api_token"
+            type="password"
+            maxlength="512"
+            autocomplete="new-password"
+            placeholder="首次配置时必须填写"
+          />
+          <button type="button" data-toggle-cloudflare-token>显示</button>
+        </label>
+        <div class="credential-security">
+          <span aria-hidden="true">▣</span>
+          <p><strong>Token 不会回传到浏览器。</strong>它只保存在服务器权限为 600 的配置文件中，页面只显示“已保存”。</p>
+        </div>
+        <p class="edit-error" data-cloudflare-error role="alert" hidden></p>
+        <div class="credential-form-actions">
+          <button type="button" data-cloudflare-cancel>取消</button>
+          <button class="save-edit-button" type="submit" data-cloudflare-save>
+            验证并保存
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="confirm-dialog" data-cloudflare-delete-dialog aria-labelledby="cloudflare-delete-title">
+      <div class="danger-flag" aria-hidden="true">!</div>
+      <span class="eyebrow">DELETE CREDENTIALS // 不可撤回</span>
+      <h2 id="cloudflare-delete-title">删除 Cloudflare 凭证？</h2>
+      <p>删除后 Account ID 和 Token 无法恢复。如果 Cloudflare 正在使用，系统会先自动切回本地 tiny，之后解析仍可继续。</p>
+      <p class="edit-error" data-cloudflare-delete-error role="alert" hidden></p>
+      <div class="confirm-actions">
+        <button type="button" data-cloudflare-delete-cancel>暂不删除</button>
+        <button class="danger-button" type="button" data-cloudflare-delete-confirm>确认删除凭证</button>
+      </div>
+    </dialog>
+
+    <dialog class="edit-dialog llm-dialog" data-llm-dialog aria-labelledby="llm-dialog-title">
+      <div class="dialog-topbar">
+          <span>LLM PROFILE // ROUTE CONFIG</span>
+        <button type="button" data-llm-close aria-label="关闭 LLM 配置">×</button>
+      </div>
+      <form class="llm-form" data-llm-form>
+        <span class="eyebrow">MODEL ROUTE // 模型线路</span>
+        <h2 id="llm-dialog-title">新增 LLM 配置</h2>
+        <p>先决定它属于免费还是高速线路，再选择接口协议。首次保存必须填写密钥，编辑时留空表示沿用原密钥。</p>
+
+        <fieldset class="llm-presets">
+          <legend>快捷填写厂商地址</legend>
+          <div>
+            <button type="button" data-llm-preset="fcc">FCC / NVIDIA</button>
+            <button type="button" data-llm-preset="nvidia">NVIDIA NIM</button>
+            <button type="button" data-llm-preset="deepseek">DeepSeek</button>
+            <button type="button" data-llm-preset="openrouter">OpenRouter</button>
+            <button type="button" data-llm-preset="custom">自定义</button>
+          </div>
+        </fieldset>
+
+        <div class="llm-route-fields">
+          <label class="edit-field">
+            <span>所属线路</span>
+            <select data-llm-channel name="channel">
+              <option value="free">免费线路｜慢一些，不消耗付费额度</option>
+              <option value="paid">高速线路｜稳定优先，可能产生费用</option>
+            </select>
+          </label>
+          <label class="edit-field">
+            <span>接口协议</span>
+            <select data-llm-protocol name="protocol">
+              <option value="openai_chat">OpenAI Chat Completions</option>
+              <option value="anthropic_messages">Anthropic Messages / FCC</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="edit-field">
+          <span>方案备注</span>
+          <input data-llm-label name="label" type="text" maxlength="80" autocomplete="off" placeholder="例如：DeepSeek 常用" required />
+        </label>
+        <label class="edit-field">
+          <span>API 地址</span>
+          <input data-llm-api-base name="api_base" type="url" maxlength="500" autocomplete="off" placeholder="https://api.deepseek.com/v1" required />
+        </label>
+        <label class="edit-field llm-secret-field">
+          <span>API 密钥</span>
+          <input data-llm-api-key name="api_key" type="password" maxlength="2048" autocomplete="new-password" placeholder="首次配置时必须填写" />
+          <button type="button" data-toggle-llm-key>显示</button>
+        </label>
+        <label class="edit-field">
+          <span>模型名称</span>
+          <input data-llm-model name="model" type="text" maxlength="200" autocomplete="off" placeholder="deepseek-v4-pro" required />
+        </label>
+
+        <label class="llm-profile-enabled">
+          <input data-llm-profile-enabled name="enabled" type="checkbox" checked />
+          <span><strong>保存后启用这套 API</strong><small>关闭后仍保留配置与密钥，但不会承接新任务。</small></span>
+        </label>
+
+        <div class="llm-form-note">
+          <span aria-hidden="true">i</span>
+          <p>OpenAI 协议会追加 <code>/chat/completions</code>；Anthropic/FCC 会追加 <code>/v1/messages</code>。只有本机代理允许填写 HTTP 地址。</p>
+        </div>
+        <p class="edit-error" data-llm-error role="alert" hidden></p>
+        <div class="credential-form-actions">
+          <button type="button" data-llm-cancel>取消</button>
+          <button class="save-edit-button" type="submit" data-llm-save>保存配置</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="confirm-dialog llm-enable-dialog" data-llm-enable-dialog aria-labelledby="llm-enable-title">
+      <div class="enable-flag" aria-hidden="true">ON</div>
+      <span class="eyebrow">ENABLE MODEL CALLS // 调用确认</span>
+      <h2 id="llm-enable-title">开启真实笔记生成？</h2>
+      <p data-llm-enable-copy>之后创建的笔记任务会产生真实模型调用。请确认当前线路和默认模型正确。</p>
+      <div class="enable-route-preview">
+        <small>即将启用</small>
+        <strong data-llm-enable-preview>—</strong>
+      </div>
+      <p class="edit-error" data-llm-enable-error role="alert" hidden></p>
+      <div class="confirm-actions">
+        <button type="button" data-llm-enable-cancel>继续保持暂停</button>
+        <button class="enable-button" type="button" data-llm-enable-confirm>确认开启</button>
+      </div>
+    </dialog>
+
+    <dialog class="confirm-dialog" data-llm-delete-dialog aria-labelledby="llm-delete-title">
+      <div class="danger-flag" aria-hidden="true">!</div>
+      <span class="eyebrow">DELETE MODEL ROUTE // 不可恢复</span>
+      <h2 id="llm-delete-title">删除这套 LLM 配置？</h2>
+      <p><strong data-llm-delete-label></strong> 的 API 地址、密钥和模型设置会从服务器删除。若它正在使用，笔记生成会先自动暂停。</p>
+      <p class="edit-error" data-llm-delete-error role="alert" hidden></p>
+      <div class="confirm-actions">
+        <button type="button" data-llm-delete-cancel>暂不删除</button>
+        <button class="danger-button" type="button" data-llm-delete-confirm>确认删除配置</button>
+      </div>
+    </dialog>
+  </body>
+</html>

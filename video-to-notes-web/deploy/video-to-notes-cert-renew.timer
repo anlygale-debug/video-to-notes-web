@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Video to Notes TLS certificate renewal daily
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+Persistent=true
+RandomizedDelaySec=30m
+Unit=video-to-notes-cert-renew.service
+
+[Install]
+WantedBy=timers.target

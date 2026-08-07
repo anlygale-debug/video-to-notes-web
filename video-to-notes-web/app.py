@@ -9,6 +9,11 @@ app = FastAPI(title="Video to Notes")
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(BASE, "static")
 tasks: dict = {}
+app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+# v3 keeps the existing application available while mounting the new persistent workflows.
+from vtn.bootstrap import mount_v3
+v3_repository = mount_v3(app, BASE)
 
 def _parse_duration(dur_str):
     """Parse B站 duration like '1083:13' or '9:42' to seconds."""
@@ -34,11 +39,12 @@ def _extract_xhs_thumbnail(note_card):
 
 def _venv(cmd):
     """Run a command inside the agent-reach venv."""
-    venv_py = os.path.expanduser("~/.agent-reach-venv/bin/python3")
     venv_bin = os.path.expanduser("~/.agent-reach-venv/bin")
     env = os.environ.copy()
     env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True,
+    if not isinstance(cmd, (list, tuple)):
+        raise TypeError("_venv requires an argument list")
+    return subprocess.run(list(cmd), capture_output=True, text=True,
                           timeout=300, env=env, cwd="/tmp")
 
 
@@ -111,11 +117,11 @@ class YtDlpResolver(BaseResolver):
         self._cookie_required = cookie_required
 
     # ── cookie 降级链 ──
-    def _cookie_flags(self) -> list[str]:
+    def _cookie_flags(self) -> list[list[str]]:
         """返回尝试序列。bilibili 先带 Chrome cookie 再裸连；其他平台直接裸连。"""
         if self._cookie_required or self.platform_id == "bilibili":
-            return ["--cookies-from-browser chrome", ""]
-        return [""]
+            return [["--cookies-from-browser", "chrome"], []]
+        return [[]]
 
     # ── yt-dlp JSON → 统一 Meta ──
     def _map_meta(self, d: dict, original_url: str) -> dict:
@@ -149,10 +155,7 @@ class YtDlpResolver(BaseResolver):
             return override(query, task)
 
         # 默认走 yt-dlp 搜索
-        r = _venv(
-            f"yt-dlp --flat-playlist --dump-json "
-            f"\"ytsearch8:{query}\" 2>/dev/null"
-        )
+        r = _venv(["yt-dlp", "--flat-playlist", "--dump-json", f"ytsearch8:{query}"])
         results = []
         for line in r.stdout.strip().split("\n"):
             try:
@@ -173,7 +176,7 @@ class YtDlpResolver(BaseResolver):
     # ── 解析 ──
     def resolve(self, url: str, task: dict, **kwargs) -> dict:
         for flag in self._cookie_flags():
-            cmd = f"yt-dlp {flag} --dump-json '{url}'"
+            cmd = ["yt-dlp", *flag, "--dump-json", url]
             r = _venv(cmd)
             try:
                 d = json.loads(r.stdout)
@@ -191,7 +194,7 @@ class YtDlpResolver(BaseResolver):
     def download(self, meta: dict, output_path: str, task: dict) -> bool:
         url = meta.get("download_url") or meta.get("webpage_url", "")
         for flag in self._cookie_flags():
-            cmd = f"yt-dlp {flag} -x --audio-format mp3 -o '{output_path}' '{url}'"
+            cmd = ["yt-dlp", *flag, "-x", "--audio-format", "mp3", "-o", output_path, url]
             _venv(cmd)
             if os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
                 return True
@@ -207,7 +210,7 @@ class XhsResolver(BaseResolver):
     platform_id = "xhs"
 
     def search(self, query: str, task: dict) -> list[dict]:
-        r = _venv(f"xhs search '{query}' --json")
+        r = _venv(["xhs", "search", query, "--json"])
         try:
             data = json.loads(r.stdout)
             results = []
@@ -256,8 +259,8 @@ class XhsResolver(BaseResolver):
             meta["note_id"] = url
 
         # ── 读取笔记元数据 ──
-        xsec_flag = f"--xsec-token '{meta['xsec_token']}'" if meta["xsec_token"] else ""
-        sr = _venv(f"xhs read '{meta['note_id']}' {xsec_flag} --json")
+        xsec_args = ["--xsec-token", meta["xsec_token"]] if meta["xsec_token"] else []
+        sr = _venv(["xhs", "read", meta["note_id"], *xsec_args, "--json"])
         try:
             resp_data = json.loads(sr.stdout).get("data", {})
 
@@ -326,7 +329,7 @@ class XhsResolver(BaseResolver):
 # ─── 平台注册表：URL 域名 → 解析器 ───
 
 PLATFORM_REGISTRY: list[tuple] = [
-    (r'(xhs|xiaohongshu|xhslink)\.com',   XhsResolver()),
+    (r'(xhs|xiaohongshu|xhslink)\.com|xhslink\.cn', XhsResolver()),
     (r'bilibili\.com|b23\.tv',           YtDlpResolver("bilibili", cookie_required=True)),
     (r'youtube\.com|youtu\.be',          YtDlpResolver("youtube")),
     (r'douyin\.com',                     YtDlpResolver("douyin", cookie_required=True)),
@@ -510,7 +513,7 @@ SETTINGS_PATH = os.path.join(BASE, "data", "settings.json")
 
 def _load_settings():
     """Load settings from data/settings.json. Returns dict with defaults."""
-    defaults = {"api_base": "https://api.deepseek.com/v1", "api_key": "", "model": "deepseek-chat",
+    defaults = {"api_base": "https://api.deepseek.com/v1", "api_key": "", "model": "deepseek-v4-pro",
                 "default_mode": "standard", "default_mermaid": False}
     try:
         with open(SETTINGS_PATH) as f:
@@ -526,6 +529,7 @@ def _save_settings(data):
     os.makedirs(os.path.dirname(SETTINGS_PATH), exist_ok=True)
     with open(SETTINGS_PATH, "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    os.chmod(SETTINGS_PATH, 0o600)
 
 
 def _read_api_config():
@@ -535,7 +539,7 @@ def _read_api_config():
     s = _load_settings()
     api_key = os.environ.get("VTN_API_KEY") or s.get("api_key", "")
     api_base = os.environ.get("VTN_API_BASE") or s.get("api_base", "")
-    model = os.environ.get("VTN_MODEL") or s.get("model", "deepseek-chat")
+    model = os.environ.get("VTN_MODEL") or s.get("model", "deepseek-v4-pro")
     return api_key, api_base, model
 
 
@@ -911,6 +915,22 @@ async def index_v1():
     return HTMLResponse(open(os.path.join(STATIC, "index.html")).read())
 
 
+@app.get("/next")
+async def next_app():
+    return HTMLResponse(open(os.path.join(STATIC, "app.html")).read())
+
+
+@app.get("/video-notes")
+async def video_notes_landing():
+    landing_path = Path(STATIC) / "landing" / "index.html"
+    return HTMLResponse(landing_path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/health")
+async def health():
+    return {"ok": True, "service": "video-to-notes"}
+
+
 @app.post("/api/search")
 async def search(request: Request):
     body = await request.json()
@@ -1111,10 +1131,9 @@ async def download_video(task_id: str):
 
 def _stream_video_ytdlp(url):
     """用 yt-dlp 下载视频并流式输出。"""
-    import select
-    cmd = f"yt-dlp -f 'best[ext=mp4]/best' -o - '{url}'"
+    cmd = ["yt-dlp", "-f", "best[ext=mp4]/best", "-o", "-", url]
     proc = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
         env={**os.environ, "PATH": f"{os.path.expanduser('~/.agent-reach-venv/bin')}:{os.environ.get('PATH', '')}"}
     )
     # 流式读取，每次 64KB
@@ -1282,14 +1301,18 @@ async def download(task_id: str):
 
 @app.get("/api/settings")
 async def get_settings():
-    return JSONResponse(_load_settings())
+    settings = _load_settings()
+    if settings.get("api_key"):
+        settings["api_key"] = "••••••••"
+        settings["api_key_configured"] = True
+    return JSONResponse(settings)
 
 
 @app.post("/api/settings")
 async def save_settings(request: Request):
     body = await request.json()
     s = _load_settings()
-    if "api_key" in body:
+    if "api_key" in body and body["api_key"] and "•" not in body["api_key"]:
         s["api_key"] = body["api_key"]
     for field in ["api_base", "model", "default_mode", "default_mermaid"]:
         if field in body:
@@ -1303,7 +1326,7 @@ async def test_connection(request: Request):
     body = await request.json()
     api_key = body.get("api_key", "")
     api_base = body.get("api_base", "")
-    model = body.get("model", "deepseek-chat")
+    model = body.get("model", "deepseek-v4-pro")
     if not api_key or not api_base:
         return JSONResponse({"ok": False, "error": "Missing API key or base URL"})
     import time as _time
@@ -1335,4 +1358,4 @@ async def startup():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=3000)
+    uvicorn.run(app, host="127.0.0.1", port=3000)
