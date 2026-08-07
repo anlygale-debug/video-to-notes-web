@@ -246,6 +246,15 @@ def create_invite_admin_app(
                 status_code = 404
             raise HTTPException(status_code=status_code, detail=exc.message) from exc
 
+    @app.post("/api/llm-providers/{profile_id}/reveal-key")
+    async def reveal_llm_api_key(profile_id: str, _=Depends(require_csrf)):
+        try:
+            credentials = llm_store.credentials(profile_id)
+            return {"profile_id": profile_id, "api_key": credentials["api_key"]}
+        except DomainError as exc:
+            status_code = 404 if exc.code == "LLM_PROFILE_NOT_FOUND" else 422
+            raise HTTPException(status_code=status_code, detail=exc.message) from exc
+
     @app.put("/api/llm-providers/{profile_id}/model")
     async def select_llm_model(
         profile_id: str,

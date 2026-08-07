@@ -657,6 +657,38 @@ class InviteAdminHttpTests(unittest.TestCase):
         self.assertIsNotNone(tested.json()["profile"]["verified_at"])
         self.assertNotIn(secret, tested.text)
 
+    def test_saved_llm_key_is_only_revealed_by_explicit_local_admin_request(self):
+        store = LLMProviderStore(Path(self.tempdir.name) / "reveal-settings.json")
+        secret = "local-admin-reveal-secret"
+        saved = store.save_profile(
+            label="FCC NVIDIA 免费",
+            api_base="http://127.0.0.1:8082",
+            api_key=secret,
+            model="anthropic/nvidia_nim/nvidia/nemotron-3-super-120b-a12b",
+            channel="free",
+            protocol="anthropic_messages",
+        )
+        admin = TestClient(
+            create_invite_admin_app(
+                self.repository,
+                self.access,
+                csrf_token="known-admin-csrf",
+                llm_store=store,
+            )
+        )
+
+        blocked = admin.post(f"/api/llm-providers/{saved['id']}/reveal-key")
+        status = admin.get("/api/llm-providers", headers=self.headers)
+        revealed = admin.post(
+            f"/api/llm-providers/{saved['id']}/reveal-key",
+            headers=self.headers,
+        )
+
+        self.assertEqual(blocked.status_code, 403)
+        self.assertNotIn(secret, status.text)
+        self.assertEqual(revealed.status_code, 200)
+        self.assertEqual(revealed.json()["api_key"], secret)
+
     def test_fcc_model_catalog_keeps_one_direct_nvidia_entry_per_model(self):
         direct = LLMModelCatalog._catalog_item(
             "anthropic/nvidia_nim/z-ai/glm-5.2",

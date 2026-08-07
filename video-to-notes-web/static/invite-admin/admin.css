@@ -1068,7 +1068,11 @@ dialog::backdrop { background: rgba(14,14,14,.74); backdrop-filter: blur(2px); }
 .llm-safety-strip strong { display: block; }
 .llm-message { margin: 0; padding: 11px 17px; border-top: 3px solid var(--ink); background: var(--green-pale); font-weight: 800; }
 .llm-message[data-tone="error"] { background: var(--red-pale); color: #842b17; }
-.llm-dialog { width: min(680px, calc(100% - 28px)); }
+.llm-dialog { width: min(680px, calc(100% - 28px)); max-height: calc(100dvh - 28px); overflow: auto; }
+.llm-dialog .dialog-topbar { position: sticky; top: 0; z-index: 4; }
+.llm-dialog .credential-form-actions { position: sticky; bottom: -27px; z-index: 3; margin: 20px -28px -27px; padding: 13px 28px; border-top: 3px solid var(--ink); background: var(--ink); }
+.llm-dialog .credential-form-actions button { border-color: var(--paper); box-shadow: none; }
+.llm-dialog .credential-form-actions .save-edit-button { border-color: var(--paper); }
 .llm-form { padding: 25px 28px 27px; }
 .llm-form h2 { margin: 6px 0 8px; font: 900 35px/1 var(--display); }
 .llm-form > p { margin: 0 0 19px; color: var(--muted); font-size: 12px; }
@@ -1085,13 +1089,22 @@ dialog::backdrop { background: rgba(14,14,14,.74); backdrop-filter: blur(2px); }
 .llm-profile-enabled strong, .llm-profile-enabled small { display: block; }
 .llm-profile-enabled strong { font-size: 12px; }
 .llm-profile-enabled small { margin-top: 2px; color: var(--muted); font-size: 10px; }
-.llm-secret-field { position: relative; }
-.llm-secret-field input { padding-right: 78px; }
-.llm-secret-field button { position: absolute; right: 7px; bottom: 7px; min-width: 58px; height: 34px; border: 2px solid var(--ink); background: var(--gold-pale); font: 800 10px/1 var(--mono); }
-.llm-model-picker-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.llm-model-picker select { width: 100%; min-width: 0; height: 48px; padding: 0 10px; border: 2px solid var(--ink); border-radius: 0; background: #fffdf7; box-shadow: 3px 3px 0 #c8bca6; font: 800 10px/1.3 var(--mono); }
-.llm-model-picker button { min-width: 88px; border: 2px solid var(--ink); background: var(--gold-pale); box-shadow: 3px 3px 0 var(--ink); font: 900 10px/1 var(--mono); }
-.llm-model-picker small { display: block; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.llm-secret-control { position: relative; }
+.llm-secret-control input { padding-right: 78px; font-family: var(--mono); -webkit-text-security: disc; }
+.llm-secret-control input.is-secret-visible { -webkit-text-security: none; }
+.llm-secret-control button { position: absolute; right: 7px; top: 7px; min-width: 58px; height: 34px; border: 2px solid var(--ink); background: var(--gold-pale); font: 900 10px/1 var(--mono); }
+.llm-secret-field > small { display: block; margin-top: 7px; color: var(--muted); font-size: 9px; }
+.llm-secret-field > small[data-tone="error"] { color: #842b17; font-weight: 800; }
+.llm-model-picker { padding: 12px; border: 3px solid var(--ink); background: var(--blue-pale); box-shadow: 4px 4px 0 var(--ink); }
+.llm-model-picker-title { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; margin: -12px -12px 11px !important; padding: 8px 10px; background: var(--ink); color: var(--paper); }
+.llm-model-picker-title strong { color: #8eacff; font: 900 9px/1 var(--mono); letter-spacing: .08em; }
+.llm-model-picker-title em { color: var(--paper); font: normal 800 10px/1 var(--mono); }
+.llm-model-picker-row { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 8px; }
+.llm-model-picker select { width: 100%; min-width: 0; height: 50px; padding: 0 10px; border: 3px solid var(--ink); border-radius: 0; background: #fffdf7; box-shadow: 3px 3px 0 #9aaee8; font: 800 10px/1.3 var(--mono); }
+.llm-model-picker button { min-width: 112px; border: 3px solid var(--ink); background: var(--blue); color: #fff; box-shadow: 3px 3px 0 var(--ink); font: 900 9px/1.1 var(--mono); letter-spacing: .03em; }
+.llm-model-picker button:hover:not(:disabled) { transform: translate(-1px, -1px); }
+.llm-model-picker button:disabled { background: #8b8b86; color: #e9e5dc; }
+.llm-model-picker small { display: block; margin-top: 9px; color: #39405a; font-size: 10px; line-height: 1.45; }
 .llm-model-picker small[data-tone="error"] { color: #842b17; font-weight: 800; }
 .llm-form-note { display: grid; grid-template-columns: 38px 1fr; margin-top: 18px; border: 2px solid var(--ink); background: var(--blue-pale); }
 .llm-form-note span { display: grid; place-items: center; background: var(--blue); color: #fff; font: 900 16px/1 var(--mono); }

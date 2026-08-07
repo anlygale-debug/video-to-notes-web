@@ -117,6 +117,12 @@ await page.route("**/api/llm-providers**", async (route) => {
     });
   }
   if (request.method() === "GET") return reply(route, currentState());
+  if (request.method() === "POST" && path.endsWith("/reveal-key")) {
+    return reply(route, {
+      profile_id: path.split("/").at(-2),
+      api_key: "browser-secret-must-stay-hidden",
+    });
+  }
   if (request.method() === "POST" && path === "/api/llm-providers") {
     const body = request.postDataJSON();
     const profile = {
@@ -219,6 +225,22 @@ try {
 
   await freeCard.getByRole("button", { name: "编辑配置" }).click();
   const editDialog = page.getByRole("dialog", { name: "编辑 LLM 配置" });
+  const savedKeyInput = editDialog.locator("[data-llm-api-key]");
+  await page.waitForFunction(() => {
+    const input = document.querySelector("[data-llm-api-key]");
+    return Boolean(input?.value);
+  });
+  if ((await savedKeyInput.inputValue()).length === 0) {
+    throw new Error("编辑配置时应自动填入本地保存的 API 密钥");
+  }
+  if ((await savedKeyInput.evaluate((input) => getComputedStyle(input).webkitTextSecurity)) !== "disc") {
+    throw new Error("已保存 API 密钥默认必须以圆点隐藏");
+  }
+  await editDialog.getByRole("button", { name: "显示" }).click();
+  if ((await savedKeyInput.evaluate((input) => getComputedStyle(input).webkitTextSecurity)) !== "none") {
+    throw new Error("点击显示后应允许本地管理员查看密钥");
+  }
+  await editDialog.getByRole("button", { name: "隐藏" }).click();
   await editDialog.getByLabel("NVIDIA 免费模型").waitFor();
   await editDialog.getByText("已读取 2 个 NVIDIA NIM 直接模型", { exact: false }).waitFor();
   await editDialog.getByLabel("NVIDIA 免费模型").selectOption(
@@ -265,6 +287,8 @@ try {
     connectionTestedExplicitly: true,
     liveModelCatalogDropdown: true,
     selectedModelVerifiedBeforeSwitch: true,
+    savedKeyPrefilledAndMasked: true,
+    browserPasswordAutofillBypassed: true,
   }));
 } finally {
   await browser.close();

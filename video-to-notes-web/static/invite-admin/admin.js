@@ -29,6 +29,7 @@
   let llmState = null;
   let editingLLMProfile = null;
   let deletingLLMProfile = null;
+  let loadedLLMSecret = "";
   let localCodes = readLocalCodes();
 
   function readLocalCodes() {
@@ -572,6 +573,40 @@
     }
   }
 
+  async function loadLLMSecret(profile = editingLLMProfile) {
+    const keyInput = document.querySelector("[data-llm-api-key]");
+    const toggle = document.querySelector("[data-toggle-llm-key]");
+    const status = document.querySelector("[data-llm-key-status]");
+    loadedLLMSecret = "";
+    keyInput.value = "";
+    keyInput.classList.remove("is-secret-visible");
+    toggle.textContent = "显示";
+    delete status.dataset.tone;
+    if (!profile?.api_key_saved) {
+      toggle.disabled = false;
+      status.textContent = "首次配置时请填写密钥；输入内容默认隐藏。";
+      return;
+    }
+    toggle.disabled = true;
+    status.textContent = "正在从这台电脑读取已保存密钥……";
+    try {
+      const payload = await api(
+        `/api/llm-providers/${encodeURIComponent(profile.id)}/reveal-key`,
+        { method: "POST" },
+      );
+      if (editingLLMProfile?.id !== profile.id) return;
+      loadedLLMSecret = payload.api_key;
+      keyInput.value = payload.api_key;
+      status.textContent = "已填入本地保存的密钥；默认以圆点隐藏。";
+    } catch (error) {
+      keyInput.value = "";
+      status.textContent = error.message;
+      status.dataset.tone = "error";
+    } finally {
+      toggle.disabled = false;
+    }
+  }
+
   function openLLMForm(profile = null) {
     editingLLMProfile = profile;
     document.querySelector("[data-llm-dialog-title]");
@@ -585,9 +620,9 @@
     document.querySelector("[data-llm-profile-enabled]").checked = profile?.enabled ?? true;
     const keyInput = document.querySelector("[data-llm-api-key]");
     keyInput.value = "";
-    keyInput.type = "password";
+    keyInput.classList.remove("is-secret-visible");
     keyInput.placeholder = profile?.api_key_saved
-      ? "已保存；留空则不修改"
+      ? "正在读取已保存密钥"
       : "首次配置时必须填写";
     document.querySelector("[data-llm-model]").value = profile?.model || "";
     resetLLMModelPicker();
@@ -595,11 +630,13 @@
     document.querySelector("[data-llm-error]").hidden = true;
     llmDialog.showModal();
     document.querySelector("[data-llm-label]").focus();
+    loadLLMSecret(profile);
     loadFreeLLMModels(profile);
   }
 
   function closeLLMForm() {
     editingLLMProfile = null;
+    loadedLLMSecret = "";
     if (llmDialog.open) llmDialog.close();
     llmForm.reset();
     resetLLMModelPicker();
@@ -1096,8 +1133,8 @@
   });
   document.querySelector("[data-toggle-llm-key]").addEventListener("click", (event) => {
     const input = document.querySelector("[data-llm-api-key]");
-    const willShow = input.type === "password";
-    input.type = willShow ? "text" : "password";
+    const willShow = !input.classList.contains("is-secret-visible");
+    input.classList.toggle("is-secret-visible", willShow);
     event.currentTarget.textContent = willShow ? "隐藏" : "显示";
   });
   document.querySelector("[data-llm-model-select]").addEventListener("change", (event) => {
@@ -1121,6 +1158,9 @@
     saveButton.textContent = "正在安全保存…";
     try {
       const profileId = editingLLMProfile?.id;
+      const keyInput = document.querySelector("[data-llm-api-key]");
+      const enteredKey = keyInput.value.trim();
+      const apiKey = enteredKey === loadedLLMSecret ? "" : enteredKey;
       const selectedModel = document.querySelector("[data-llm-model]").value.trim();
       const channel = document.querySelector("[data-llm-channel]").value;
       let modelVerified = false;
@@ -1150,7 +1190,7 @@
           body: JSON.stringify({
             label: document.querySelector("[data-llm-label]").value.trim(),
             api_base: document.querySelector("[data-llm-api-base]").value.trim(),
-            api_key: document.querySelector("[data-llm-api-key]").value.trim(),
+            api_key: apiKey,
             model: selectedModel,
             channel,
             protocol: document.querySelector("[data-llm-protocol]").value,
