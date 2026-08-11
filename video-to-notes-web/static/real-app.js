@@ -977,13 +977,48 @@
     bindParserRecord();
     const panel = stateHost.querySelector("[data-transcription-error]");
     const message = stateHost.querySelector("[data-transcription-error-message]");
+    const retryButton = stateHost.querySelector("[data-retry-transcription]");
+    const switchButton = stateHost.querySelector("[data-switch-transcription]");
+    const taskFailed = state.parserTask?.state === "failed";
     if (panel) panel.hidden = false;
-    if (message) message.textContent = error.message || "转录没有完成，请重试或切换线路。";
+    if (message) {
+      message.textContent = taskFailed
+        ? (error.message || "转录没有完成，请重试或切换线路。")
+        : "暂时无法读取转录进度，后台任务可能仍在继续。请重新连接任务状态。";
+    }
+    if (retryButton) {
+      retryButton.textContent = taskFailed ? "↻ 重试当前线路" : "↻ 重新连接任务进度";
+    }
+    if (switchButton) switchButton.hidden = !taskFailed;
   }
 
   async function pollTranscription(taskId, pollToken) {
+    let consecutiveStatusFailures = 0;
     while (pollToken === state.parserPollToken) {
-      const payload = await request(`/api/v3/parser/tasks/${taskId}`);
+      let payload;
+      try {
+        payload = await request(`/api/v3/parser/tasks/${taskId}`, {
+          timeoutMs: 8_000,
+          timeoutLabel: "转录状态查询",
+        });
+        consecutiveStatusFailures = 0;
+      } catch (error) {
+        if (pollToken !== state.parserPollToken) return;
+        const transient = error.code === "REQUEST_TIMEOUT"
+          || error instanceof TypeError
+          || (error.status >= 500);
+        consecutiveStatusFailures += 1;
+        if (!transient || consecutiveStatusFailures >= 6) throw error;
+        bindTranscriptionProgress({
+          ...(state.parserTask || {}),
+          progress: {
+            ...(state.parserTask?.progress || {}),
+            label: "连接波动，正在重新查询任务状态",
+          },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 900));
+        continue;
+      }
       if (pollToken !== state.parserPollToken) return;
       state.parserTask = payload.task;
       bindTranscriptionProgress(payload.task);
@@ -2204,29 +2239,59 @@
         if (chooser) chooser.hidden = true;
       } else if (target.dataset.switchTranscription !== undefined) {
         const errorPanel = stateHost.querySelector("[data-transcription-error]");
+        const hasTranscript = Boolean(state.parserRecord?.transcript_text?.trim());
+        const emptyPanel = stateHost.querySelector("[data-transcript-empty]");
+        const chooser = stateHost.querySelector("[data-transcript-regenerate]");
         if (errorPanel) errorPanel.hidden = true;
-        if (state.parserRecord?.transcript_text) {
-          const chooser = stateHost.querySelector("[data-transcript-regenerate]");
-          if (chooser) chooser.hidden = false;
-        }
+        if (chooser) chooser.hidden = !hasTranscript;
+        const routePanel = hasTranscript ? chooser : emptyPanel;
+        routePanel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        routePanel?.querySelector("[data-generate-transcript=local]")?.focus();
+        runtimeMessage("请选择免费转录或高速高质量转录。");
       } else if (target.dataset.retryTranscription !== undefined) {
-        if (!state.parserTask || state.parserTask.state !== "failed") {
-          throw new Error("当前没有可以重试的逐字稿任务");
-        }
+        if (!state.parserTask) throw new Error("当前没有可以恢复的逐字稿任务");
         if (state.parserSubmitting) return;
         const pollToken = ++state.parserPollToken;
         setParserBusy(true);
         try {
-          bindTranscriptionProgress(state.parserTask);
-          const payload = await request(
-            `/api/v3/parser/tasks/${encodeURIComponent(state.parserTask.id)}/commands`,
-            {
-              method: "POST",
-              body: JSON.stringify({ command: "retry" }),
-            },
-          );
-          state.parserTask = payload.task;
-          await pollTranscription(payload.task.id, pollToken);
+          const existingTask = state.parserTask;
+          if (existingTask.state === "failed") {
+            bindTranscriptionProgress(existingTask);
+            try {
+              const payload = await request(
+                `/api/v3/parser/tasks/${encodeURIComponent(existingTask.id)}/commands`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({ command: "retry" }),
+                },
+              );
+              state.parserTask = payload.task;
+            } catch (commandError) {
+              const responseMayBeLost = commandError.code === "REQUEST_TIMEOUT"
+                || commandError instanceof TypeError
+                || (commandError.status >= 500);
+              if (!responseMayBeLost) throw commandError;
+              state.parserTask = {
+                ...existingTask,
+                state: "retrying",
+                error_code: null,
+                error_message: null,
+                progress: {
+                  ...(existingTask.progress || {}),
+                  label: "正在确认服务器是否已接受重试",
+                },
+              };
+            }
+          } else {
+            bindTranscriptionProgress({
+              ...existingTask,
+              progress: {
+                ...(existingTask.progress || {}),
+                label: "正在重新连接任务进度",
+              },
+            });
+          }
+          await pollTranscription(state.parserTask.id, pollToken);
         } catch (error) {
           if (pollToken === state.parserPollToken) showTranscriptionError(error);
           throw error;
