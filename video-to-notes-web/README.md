@@ -116,6 +116,10 @@ required. On a server, point the app to a dedicated Netscape cookie file:
 export VTN_DOUYIN_COOKIES_PATH="/var/lib/video-to-notes/douyin-cookies.txt"
 ```
 
+The macOS helper `scripts/更新服务器抖音解析凭证.command` refreshes the hosted
+credential after Douyin loads successfully in Chrome. It filters the browser export
+down to `douyin.com` cookies before uploading and restarting the parser service.
+
 ### Xiaohongshu Setup
 
 ```bash

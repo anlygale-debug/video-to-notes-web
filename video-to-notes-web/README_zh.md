@@ -95,6 +95,10 @@ curl -L -o ~/.cache/whisper/tiny.pt \
 export VTN_DOUYIN_COOKIES_PATH="/var/lib/video-to-notes/douyin-cookies.txt"
 ```
 
+当前项目提供 `scripts/更新服务器抖音解析凭证.command`。在 Chrome 正常打开抖音
+首页后运行该工具，它只会筛选并上传 `douyin.com` 域名下的 Cookie，然后重启服务器
+解析服务；其他网站 Cookie 不会上传。
+
 ### 小红书额外配置
 
 ```bash

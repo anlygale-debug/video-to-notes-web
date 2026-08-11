@@ -1007,7 +1007,38 @@ class ParserWorkflowTests(unittest.TestCase):
             "https://www.douyin.com/video/7253815894357363979",
         )
 
-    def test_douyin_missing_fresh_cookie_has_clear_retryable_error(self):
+    def test_douyin_server_missing_fresh_cookie_tells_user_to_contact_admin(self):
+        def reject_without_fresh_cookie(args, **_options):
+            raise subprocess.CalledProcessError(
+                1,
+                args,
+                stderr="ERROR: Fresh cookies (not necessarily logged in) are needed",
+            )
+
+        with patch.dict(
+            "os.environ",
+            {"HOME": self.tempdir.name, "VTN_DOUYIN_COOKIES_PATH": ""},
+        ), patch("subprocess.run", reject_without_fresh_cookie):
+            with self.assertRaises(DomainError) as context:
+                YtDlpPlatformMedia().resolve(
+                    "https://www.douyin.com/video/7253815894357363979"
+                )
+
+        self.assertEqual(context.exception.code, "DOUYIN_ACCESS_REQUIRED")
+        self.assertEqual(
+            context.exception.message,
+            "服务器抖音解析凭证暂不可用，请联系管理员更新后再重试。",
+        )
+        self.assertTrue(context.exception.retryable)
+
+    def test_douyin_local_missing_fresh_cookie_still_suggests_opening_chrome(self):
+        chrome_cookie_db = (
+            Path(self.tempdir.name)
+            / "Library/Application Support/Google/Chrome/Default/Network/Cookies"
+        )
+        chrome_cookie_db.parent.mkdir(parents=True)
+        chrome_cookie_db.write_bytes(b"fixture")
+
         def reject_without_fresh_cookie(args, **_options):
             raise subprocess.CalledProcessError(
                 1,

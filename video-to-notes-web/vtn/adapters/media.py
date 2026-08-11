@@ -145,17 +145,20 @@ class YtDlpPlatformMedia(PlatformMedia):
             return self._normalize_douyin_url(url)
         return url
 
-    @staticmethod
-    def _douyin_access_error(last_error):
+    def _douyin_access_error(self, last_error):
         lowered = (last_error or "").lower()
         if not any(
             marker in lowered
             for marker in ("cookie", "verification", "forbidden", "http error 403")
         ):
             return None
+        if self._chrome_cookie_database_exists():
+            message = "抖音解析凭证已失效，请先在 Chrome 打开一次抖音后再重试。"
+        else:
+            message = "服务器抖音解析凭证暂不可用，请联系管理员更新后再重试。"
         return DomainError(
             "DOUYIN_ACCESS_REQUIRED",
-            "抖音解析凭证已失效，请先在 Chrome 打开一次抖音后再重试。",
+            message,
             retryable=True,
         )
 
