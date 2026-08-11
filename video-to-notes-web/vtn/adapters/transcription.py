@@ -3,6 +3,7 @@ import json
 import ssl
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -110,6 +111,11 @@ class CloudflareTranscriber(Transcriber):
         initial_prompt="",
         max_upload_bytes=2 * 1024 * 1024,
         segment_seconds=180,
+        max_attempts=3,
+        retry_backoff_seconds=1,
+        bypass_proxy=False,
+        direct_fallback=False,
+        direct_timeout_seconds=15,
     ):
         self.account_id = account_id
         self.api_token = api_token
@@ -117,6 +123,11 @@ class CloudflareTranscriber(Transcriber):
         self.initial_prompt = initial_prompt
         self.max_upload_bytes = max_upload_bytes
         self.segment_seconds = segment_seconds
+        self.max_attempts = max(1, int(max_attempts))
+        self.retry_backoff_seconds = max(0, float(retry_backoff_seconds))
+        self.bypass_proxy = bool(bypass_proxy)
+        self.direct_fallback = bool(direct_fallback)
+        self.direct_timeout_seconds = max(1, float(direct_timeout_seconds))
 
     @staticmethod
     def _ssl_context():
@@ -161,6 +172,28 @@ class CloudflareTranscriber(Transcriber):
             ) from exc
 
     def _transcribe_bytes(self, audio_bytes):
+        use_direct_connection = self.bypass_proxy
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                return self._transcribe_bytes_once(
+                    audio_bytes,
+                    bypass_proxy=use_direct_connection,
+                )
+            except DomainError as exc:
+                if not exc.retryable or attempt >= self.max_attempts:
+                    raise
+                if self.bypass_proxy:
+                    use_direct_connection = True
+                elif (
+                    self.direct_fallback
+                    and exc.code == "TRANSCRIPTION_UPLOAD_INTERRUPTED"
+                ):
+                    use_direct_connection = not use_direct_connection
+                else:
+                    use_direct_connection = False
+                time.sleep(self.retry_backoff_seconds * (2 ** (attempt - 1)))
+
+    def _transcribe_bytes_once(self, audio_bytes, *, bypass_proxy=False):
         payload = {
             "audio": base64.b64encode(audio_bytes).decode("ascii"),
             "task": "transcribe",
@@ -184,11 +217,22 @@ class CloudflareTranscriber(Transcriber):
             method="POST",
         )
         try:
-            with urllib.request.urlopen(
-                request,
-                timeout=self.timeout_seconds,
-                context=self._ssl_context(),
-            ) as response:
+            if bypass_proxy:
+                opener = urllib.request.build_opener(
+                    urllib.request.ProxyHandler({}),
+                    urllib.request.HTTPSHandler(context=self._ssl_context()),
+                )
+                response_context = opener.open(
+                    request,
+                    timeout=min(self.timeout_seconds, self.direct_timeout_seconds),
+                )
+            else:
+                response_context = urllib.request.urlopen(
+                    request,
+                    timeout=self.timeout_seconds,
+                    context=self._ssl_context(),
+                )
+            with response_context as response:
                 result = json.loads(response.read())
             transcription = result.get("result", {})
             text = (transcription.get("text") or "").strip()
@@ -223,6 +267,12 @@ class CloudflareTranscriber(Transcriber):
                     "Cloudflare 音频上传连接中断，已停止本次解析，请检查网络后重试。",
                     retryable=True,
                 ) from exc
+            if isinstance(exc.reason, (ConnectionError, ssl.SSLError)):
+                raise DomainError(
+                    "TRANSCRIPTION_UPLOAD_INTERRUPTED",
+                    "Cloudflare 音频上传连接中断，系统自动重试后仍未恢复，请稍后再试。",
+                    retryable=True,
+                ) from exc
             raise DomainError(
                 "TRANSCRIPTION_FAILED",
                 f"Cloudflare 转录连接失败：{exc.reason}",
@@ -238,6 +288,18 @@ class CloudflareTranscriber(Transcriber):
             raise DomainError(
                 "TRANSCRIPTION_UPLOAD_INTERRUPTED",
                 "Cloudflare 音频上传连接中断，已停止本次解析，请检查网络后重试。",
+                retryable=True,
+            ) from exc
+        except ConnectionError as exc:
+            raise DomainError(
+                "TRANSCRIPTION_UPLOAD_INTERRUPTED",
+                "Cloudflare 音频上传连接中断，系统自动重试后仍未恢复，请稍后再试。",
+                retryable=True,
+            ) from exc
+        except ssl.SSLError as exc:
+            raise DomainError(
+                "TRANSCRIPTION_UPLOAD_INTERRUPTED",
+                "Cloudflare 音频上传连接中断，系统自动重试后仍未恢复，请稍后再试。",
                 retryable=True,
             ) from exc
         except DomainError:
@@ -284,18 +346,39 @@ class SwitchableTranscriber(Transcriber):
             lambda account_id, api_token: CloudflareTranscriber(
                 account_id,
                 api_token,
+                max_attempts=3,
+                direct_fallback=True,
             )
         )
         self.duration_probe = duration_probe or _probe_audio_duration
 
     def transcribe(self, audio_path):
-        if self.provider_store.status()["active_provider"] != "cloudflare":
+        return self.transcribe_with_provider(
+            audio_path,
+            self.provider_store.status()["active_provider"],
+        )
+
+    def available_providers(self):
+        status = self.provider_store.status()
+        return {
+            "local": True,
+            "cloudflare": bool(status["cloudflare"]["configured"]),
+        }
+
+    def transcribe_with_provider(self, audio_path, provider):
+        if provider not in {"local", "cloudflare"}:
+            raise DomainError(
+                "TRANSCRIPTION_PROVIDER_INVALID",
+                "请选择云端高质量转录或本地免费转录。",
+                retryable=False,
+            )
+        if provider == "local":
             return self.local_transcriber.transcribe(audio_path)
         credentials = self.provider_store.cloudflare_credentials()
         if not credentials:
             raise DomainError(
                 "TRANSCRIPTION_CONFIG_MISSING",
-                "Cloudflare 转录凭证已被删除，请切换回本地转录。",
+                "云端高质量转录暂未配置，请改用本地免费转录。",
                 retryable=False,
             )
         transcriber = self.cloudflare_factory(*credentials)

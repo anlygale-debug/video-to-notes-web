@@ -10,6 +10,24 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
 const errors = [];
 let submittedSource = null;
 
+await page.route("**/api/v3/parser/records/stale-video-record", async (route) => {
+  await route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      record: {
+        id: "stale-video-record",
+        source_url: "https://example.test/stale-video",
+        platform: "bilibili",
+        title: "上一次的视频标题",
+        creator: "旧作者",
+        duration_seconds: 120,
+        transcript_text: "上一次视频的逐字稿",
+      },
+    }),
+  });
+});
+
 page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
 page.on("console", (message) => {
   if (message.type() === "error" && !message.text().includes("favicon.ico")) {
@@ -58,7 +76,7 @@ try {
   await page.addInitScript(() => {
     localStorage.setItem("vtn-welcome-version", "beta-2026-07-31-v1");
   });
-  await page.goto(`${baseURL}/next?uploaded-transcript-ready=1`, { waitUntil: "networkidle" });
+  await page.goto(`${baseURL}/next?record=stale-video-record&uploaded-transcript-ready=1`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "笔记生成", exact: true }).click();
 
   const chooserPromise = page.waitForEvent("filechooser");
@@ -88,7 +106,23 @@ try {
   }
   await page.screenshot({ path: `${output}/real-upload-metadata.png`, fullPage: true });
 
-  await page.getByRole("button", { name: /分析逐字稿/ }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载 MD", exact: true }).click();
+  const download = await downloadPromise;
+  if (download.suggestedFilename() !== "我的真实访谈记录.md") {
+    throw new Error(`下载文件名与当前上传文件不一致：${download.suggestedFilename()}`);
+  }
+  const downloadedPath = await download.path();
+  const downloadedContent = await fs.readFile(downloadedPath, "utf8");
+  if (!downloadedContent.includes(transcript) || downloadedContent.includes("上一次视频的逐字稿")) {
+    throw new Error("下载文件内容没有对应当前上传的 MD 文件");
+  }
+  if (!downloadedContent.includes("# 我的真实访谈记录 — 逐字稿")) {
+    throw new Error("下载文件标题没有对应当前上传文件名");
+  }
+
+  await page.locator('[data-select-note-route="free"]').click();
+  await page.locator("[data-confirm-note-route]").click();
   await page.locator(".notes-analysis-failure").waitFor({ state: "visible" });
   if (submittedSource?.type !== "file" || submittedSource?.name !== "我的真实访谈记录.md") {
     throw new Error(`上传来源提交错误：${JSON.stringify(submittedSource)}`);

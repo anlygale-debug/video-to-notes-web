@@ -15,6 +15,9 @@
     candidate: null,
     inputTranscript: "",
     uploadedTranscript: null,
+    noteRequestText: "",
+    selectedGenerationRoute: null,
+    noteGeneration: { enabled: false, routes: {} },
     sourceMode: "independent",
     saveTimer: null,
     pendingTitle: "",
@@ -31,8 +34,14 @@
     integrityRecheckAvailable: false,
     accessControlEnabled: false,
     access: null,
+    transcriptionProviders: { local: true, cloudflare: true },
   };
   localStorage.setItem("vtn-device-id", state.deviceId);
+
+  function withDeviceId(path) {
+    const separator = path.includes("?") ? "&" : "?";
+    return `${path}${separator}device_id=${encodeURIComponent(state.deviceId)}`;
+  }
 
   function transcriptCharacterCount(value) {
     return Array.from(String(value || "").trim()).length;
@@ -53,25 +62,98 @@
       const chip = notice.querySelector("[data-free-capacity-chip]");
       if (title) title.textContent = assessment.title;
       if (copy) copy.textContent = assessment.copy;
-      if (facts) facts.textContent = assessment.facts ? `本次内容：${assessment.facts}` : "";
+      if (facts) facts.textContent = assessment.facts
+        ? `本次：${assessment.facts}｜免费线路较稳定范围：30 分钟且约 9,000 字以内`
+        : "";
       if (chip) chip.textContent = assessment.chip;
     });
     return assessment;
   }
 
-  function bindUploadedTranscriptReady() {
-    if (!state.uploadedTranscript) return;
+  function bindTranscriptReady() {
     const characterCount = transcriptCharacterCount(state.inputTranscript).toLocaleString("zh-CN");
-    const typeLabel = state.uploadedTranscript.extension.toUpperCase();
     const summary = notesStateHost.querySelector("[data-ready-source-summary]");
     const fileType = notesStateHost.querySelector("[data-ready-file-type]");
     const fileName = notesStateHost.querySelector("[data-ready-file-name]");
     const fileMeta = notesStateHost.querySelector("[data-ready-file-meta]");
-    if (summary) summary.textContent = `来源 / 文件上传 // ${characterCount} 字`;
+    const requestInput = notesStateHost.querySelector("#ready-request-input");
+    let sourceLabel = "直接粘贴";
+    let typeLabel = "TXT";
+    let displayName = "粘贴的逐字稿.txt";
+    if (state.sourceMode === "linked" && state.parserRecord) {
+      sourceLabel = `${state.parserRecord.platform || "视频"}解析`;
+      displayName = `${state.parserRecord.title || "视频"} — 逐字稿.md`;
+      typeLabel = "VIDEO";
+    } else if (state.uploadedTranscript) {
+      sourceLabel = "文件上传";
+      displayName = state.uploadedTranscript.name;
+      typeLabel = state.uploadedTranscript.extension.toUpperCase();
+    }
+    if (summary) summary.textContent = `来源 / ${sourceLabel} // ${characterCount} 字`;
     if (fileType) fileType.textContent = `${typeLabel} / 01`;
-    if (fileName) fileName.textContent = state.uploadedTranscript.name;
+    if (fileName) fileName.textContent = displayName;
     if (fileMeta) fileMeta.textContent = `${characterCount} 字 · UTF-8 · 已读取`;
+    if (requestInput) requestInput.value = state.noteRequestText;
     bindFreeCapacityNotices({ host: notesStateHost, transcript: state.inputTranscript });
+    bindNoteGenerationChooser();
+  }
+
+  function highSpeedRemaining() {
+    return state.access?.remaining_high_speed_generations
+      ?? state.access?.remaining_note_generations
+      ?? null;
+  }
+
+  function bindNoteGenerationChooser() {
+    const host = notesStateHost.querySelector("[data-note-route-host]");
+    if (!host) return;
+    const routes = state.noteGeneration?.routes || {};
+    const remaining = highSpeedRemaining();
+    ["free", "paid"].forEach((routeId) => {
+      const button = host.querySelector(`[data-select-note-route="${routeId}"]`);
+      const status = host.querySelector(`[data-route-status="${routeId}"]`);
+      if (!button || !status) return;
+      const route = routes[routeId] || {};
+      const needsAccess = routeId === "paid" && state.accessControlEnabled && !state.access;
+      const exhausted = routeId === "paid" && remaining !== null && remaining <= 0;
+      const available = route.available === true && !exhausted;
+      button.disabled = !available;
+      button.classList.toggle("is-selected", state.selectedGenerationRoute === routeId);
+      if (needsAccess) status.textContent = "输入内测码后可使用";
+      else if (exhausted) status.textContent = "高速体验次数已用完";
+      else if (route.available === true) status.textContent = route.description || "当前可用";
+      else status.textContent = route.description || "当前线路未开放";
+    });
+    const remainingNode = host.querySelector("[data-high-speed-remaining]");
+    if (remainingNode) {
+      remainingNode.textContent = remaining === null ? "" : ` · 剩余 ${remaining} 次`;
+    }
+    const contact = host.querySelector("[data-route-contact-note]");
+    if (contact) contact.hidden = !(remaining !== null && remaining <= 0);
+    bindRouteConfirmation();
+  }
+
+  function bindRouteConfirmation() {
+    const panel = notesStateHost.querySelector("[data-note-route-confirmation]");
+    if (!panel) return;
+    const routeId = state.selectedGenerationRoute;
+    panel.hidden = !routeId;
+    if (!routeId) return;
+    const label = panel.querySelector("[data-route-confirmation-label]");
+    const title = panel.querySelector("[data-route-confirmation-title]");
+    const copy = panel.querySelector("[data-route-confirmation-copy]");
+    const confirm = panel.querySelector("[data-confirm-note-route]");
+    if (routeId === "free") {
+      if (label) label.textContent = "FREE LINE // 已选择";
+      if (title) title.textContent = "使用免费线路，不消耗高速次数";
+      if (copy) copy.textContent = "生成可能需要数分钟或更久，也可能因免费服务波动失败。任务创建后可以离开页面，稍后从“恢复任务”继续。";
+      if (confirm) confirm.textContent = "确认使用免费线路 →";
+    } else {
+      if (label) label.textContent = "HIGH SPEED // 已选择";
+      if (title) title.textContent = "使用 1 次高速体验";
+      if (copy) copy.textContent = "创建任务会占用 1 次高速体验；若模型调用失败，系统会自动退回本次额度。";
+      if (confirm) confirm.textContent = "确认使用高速体验线路 →";
+    }
   }
 
   async function request(path, options = {}) {
@@ -86,7 +168,11 @@
       const response = await fetch(path, {
         ...fetchOptions,
         signal: controller.signal,
-        headers: { "Content-Type": "application/json", ...(fetchOptions.headers || {}) },
+        headers: {
+          "Content-Type": "application/json",
+          "X-VTN-Device-ID": state.deviceId,
+          ...(fetchOptions.headers || {}),
+        },
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
@@ -123,10 +209,12 @@
     if (!button || !state.accessControlEnabled) return;
     button.hidden = false;
     button.classList.toggle("is-authenticated", Boolean(access));
-    label.textContent = access?.label || "公开展示";
+    label.textContent = access?.label || "免费使用";
     quota.textContent = access
-      ? `转录 ${formatMinutes(access.remaining_transcription_seconds)} · 笔记 ${access.remaining_note_generations ?? "不限"} 次`
-      : "输入内测码，解锁真实体验";
+      ? `转录 ${formatMinutes(access.remaining_transcription_seconds)} · 高速 ${access.remaining_high_speed_generations ?? access.remaining_note_generations ?? "不限"} 次`
+      : "输入内测码，解锁高速线路";
+    bindNoteGenerationChooser();
+    if (state.parserRecord) bindParserRecord();
   }
 
   function showAccessDialog(message = "") {
@@ -257,6 +345,7 @@
     bilibili: "Bilibili",
     xiaohongshu: "小红书",
     youtube: "YouTube",
+    douyin: "抖音",
     other: "其他平台",
   };
   const platformLabel = (platform) => platformLabels[platform] || platform || "其他平台";
@@ -291,9 +380,18 @@
     if (!response.ok) return;
     const capabilities = await response.json();
     state.integrityRecheckAvailable = capabilities.integrity_recheck === true;
+    state.noteGeneration = capabilities.note_generation || { enabled: false, routes: {} };
+    if (capabilities.transcription_providers) {
+      state.transcriptionProviders = {
+        local: capabilities.transcription_providers.local !== false,
+        cloudflare: capabilities.transcription_providers.cloudflare === true,
+      };
+      if (state.parserRecord) bindParserRecord();
+    }
     if (notesStateHost.querySelector(".generation-complete-stack") && state.noteTask) {
       bindGenerationComplete(state.noteTask);
     }
+    bindNoteGenerationChooser();
   }
 
   function runtimeMessage(message, danger = false) {
@@ -323,6 +421,70 @@
       button.classList.remove("is-copied");
       button.textContent = "复制全文";
     }, 1_600);
+  }
+
+  const toNotesInstallCommand = "npx skills add anlygale-debug/to-notes --skill to-notes -g -y";
+
+  async function copyOpenNoteResource(button, kind) {
+    const originalLabel = button.textContent;
+    let value;
+    if (kind === "skill") {
+      value = toNotesInstallCommand;
+    } else {
+      const response = await fetch("/static/resources/to-notes-universal-zh.md", { cache: "no-store" });
+      if (!response.ok) throw new Error("通用提示词暂时无法读取，请使用下载或 GitHub 入口。");
+      value = await response.text();
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      throw new Error("复制失败，请检查浏览器剪贴板权限后重试。");
+    }
+    button.classList.add("is-copied");
+    button.textContent = "✓ 已复制";
+    runtimeMessage(kind === "skill" ? "Skill 安装命令已复制" : "To Notes 完整提示词已复制");
+    window.setTimeout(() => {
+      if (!button.isConnected) return;
+      button.classList.remove("is-copied");
+      button.textContent = originalLabel;
+    }, 1_600);
+  }
+
+  async function copyReadyTranscript(button) {
+    if (!state.inputTranscript.trim()) throw new Error("当前没有可复制的逐字稿");
+    const originalLabel = button.textContent;
+    await navigator.clipboard.writeText(state.inputTranscript);
+    button.textContent = "✓ 已复制全文";
+    runtimeMessage("逐字稿全文已复制，可以直接粘贴到你的 AI 中");
+    window.setTimeout(() => {
+      if (button.isConnected) button.textContent = originalLabel;
+    }, 1_600);
+  }
+
+  function downloadReadyTranscript(format) {
+    if (!state.inputTranscript.trim()) throw new Error("当前没有可下载的逐字稿");
+    const linkedParserTitle = state.sourceMode === "linked"
+      ? state.parserRecord?.title
+      : "";
+    const rawTitle = linkedParserTitle
+      || state.uploadedTranscript?.name?.replace(/\.(txt|md)$/i, "")
+      || "逐字稿";
+    const downloadTitle = linkedParserTitle ? `${rawTitle}-逐字稿` : rawTitle;
+    const safeTitle = downloadTitle.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "逐字稿";
+    const markdown = format === "md";
+    const content = markdown
+      ? `# ${rawTitle} — 逐字稿\n\n${state.inputTranscript.trim()}\n`
+      : `${state.inputTranscript.trim()}\n`;
+    const blob = new Blob([content], { type: markdown ? "text/markdown;charset=utf-8" : "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${safeTitle}.${markdown ? "md" : "txt"}`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    runtimeMessage(`逐字稿 ${markdown ? "MD" : "TXT"} 已开始下载`);
   }
 
   function startParserMediaDownload(kind, button) {
@@ -385,8 +547,10 @@
       () => reportFailure(`${label}准备超时，请检查网络后重试。`),
       30 * 60 * 1000,
     );
-    frame.src = `/api/v3/parser/records/${state.parserRecord.id}/${extension}` +
-      `?download_token=${encodeURIComponent(token)}`;
+    frame.src = withDeviceId(
+      `/api/v3/parser/records/${state.parserRecord.id}/${extension}` +
+      `?download_token=${encodeURIComponent(token)}`,
+    );
   }
 
   function markdownToEditorHtml(markdown) {
@@ -711,6 +875,7 @@
       ? Math.max(0, Math.min(99, task.progress.percent)) : fallbackPercent;
     const panel = stateHost.querySelector(".progress-panel");
     if (!panel) return;
+    const metadataOnly = task?.operation === "metadata";
     panel.dataset.parserStage = stage;
     const taskLabel = panel.querySelector("[data-parser-task-label]");
     if (taskLabel) taskLabel.textContent = task?.id ? `TASK #${task.id.slice(0, 8).toUpperCase()}` : "TASK / 正在创建";
@@ -726,9 +891,13 @@
     if (bar) bar.style.width = `${percent}%`;
     const live = panel.querySelector("[data-parser-progress-live]");
     if (live) live.textContent = `当前：${task?.progress?.label || title.replace(/^正在/, "")}`;
-    const order = ["resolve", "download", "transcribe", "save"];
+    const order = metadataOnly ? ["resolve", "save"] : ["resolve", "download", "transcribe", "save"];
     const currentIndex = order.indexOf(stage);
-    panel.querySelectorAll("[data-parser-stage-item]").forEach((item, index) => {
+    panel.querySelectorAll("[data-parser-stage-item]").forEach((item) => {
+      const itemStage = item.dataset.parserStageItem;
+      item.hidden = metadataOnly && ["download", "transcribe"].includes(itemStage);
+      const index = order.indexOf(itemStage);
+      if (index < 0) return;
       item.classList.toggle("is-complete", index < currentIndex);
       item.classList.toggle("is-current", index === currentIndex);
       const status = item.querySelector("em");
@@ -781,6 +950,62 @@
     }
   }
 
+  function bindTranscriptionProgress(task) {
+    const panel = stateHost.querySelector(".transcript-panel");
+    const status = stateHost.querySelector("[data-transcription-status]");
+    if (!panel || !status) return;
+    panel.classList.add("is-generating");
+    panel.querySelectorAll("[data-generate-transcript]").forEach((button) => {
+      button.disabled = true;
+    });
+    const providerLabel = task?.transcription_provider === "cloudflare"
+      ? "高速高质量转录" : "免费转录";
+    const label = task?.progress?.label || "正在创建逐字稿任务";
+    const percent = Number.isFinite(task?.progress?.percent) ? task.progress.percent : 5;
+    status.textContent = `${providerLabel} · ${label} · ${percent}%`;
+    const running = stateHost.querySelector("[data-transcription-running]");
+    const runningCopy = stateHost.querySelector("[data-transcription-running-copy]");
+    const errorPanel = stateHost.querySelector("[data-transcription-error]");
+    const regeneratePanel = stateHost.querySelector("[data-transcript-regenerate]");
+    if (running) running.hidden = false;
+    if (runningCopy) runningCopy.textContent = `${providerLabel} · ${label} · ${percent}%`;
+    if (errorPanel) errorPanel.hidden = true;
+    if (regeneratePanel) regeneratePanel.hidden = true;
+  }
+
+  function showTranscriptionError(error) {
+    bindParserRecord();
+    const panel = stateHost.querySelector("[data-transcription-error]");
+    const message = stateHost.querySelector("[data-transcription-error-message]");
+    if (panel) panel.hidden = false;
+    if (message) message.textContent = error.message || "转录没有完成，请重试或切换线路。";
+  }
+
+  async function pollTranscription(taskId, pollToken) {
+    while (pollToken === state.parserPollToken) {
+      const payload = await request(`/api/v3/parser/tasks/${taskId}`);
+      if (pollToken !== state.parserPollToken) return;
+      state.parserTask = payload.task;
+      bindTranscriptionProgress(payload.task);
+      if (payload.task.state === "completed") {
+        const recordPayload = await request(
+          `/api/v3/parser/records/${encodeURIComponent(state.parserRecord.id)}`
+        );
+        if (pollToken !== state.parserPollToken) return;
+        state.parserRecord = recordPayload.record;
+        bindParserRecord();
+        runtimeMessage("逐字稿已经生成，可以复制、下载或继续生成笔记。");
+        return;
+      }
+      if (payload.task.state === "failed") {
+        const error = new Error(payload.task.error_message || "逐字稿生成失败");
+        error.code = payload.task.error_code || "TRANSCRIPTION_FAILED";
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+  }
+
   function bindParserRecord() {
     const record = state.parserRecord;
     if (!record) return;
@@ -823,18 +1048,59 @@
         coverImage.removeAttribute("src");
       };
       if (record.thumbnail_url) {
-        coverImage.src =
-          `/api/v3/parser/records/${encodeURIComponent(record.id)}/thumbnail`;
+        coverImage.src = withDeviceId(
+          `/api/v3/parser/records/${encodeURIComponent(record.id)}/thumbnail`,
+        );
       } else {
         coverImage.removeAttribute("src");
       }
     }
+    const transcriptText = String(record.transcript_text || "").trim();
+    const hasTranscript = Boolean(transcriptText);
+    const transcriptPanel = stateHost.querySelector(".transcript-panel");
+    const transcriptEmpty = stateHost.querySelector("[data-transcript-empty]");
+    const transcriptReady = stateHost.querySelector("[data-transcript-ready]");
+    if (transcriptEmpty) transcriptEmpty.hidden = hasTranscript;
+    if (transcriptReady) transcriptReady.hidden = !hasTranscript;
+    stateHost.querySelectorAll("[data-transcript-dependent]").forEach((node) => {
+      node.hidden = !hasTranscript;
+    });
+    transcriptPanel?.classList.remove("is-generating");
+    const transcriptionRunning = stateHost.querySelector("[data-transcription-running]");
+    const transcriptionError = stateHost.querySelector("[data-transcription-error]");
+    const transcriptRegenerate = stateHost.querySelector("[data-transcript-regenerate]");
+    if (transcriptionRunning) transcriptionRunning.hidden = true;
+    if (transcriptionError) transcriptionError.hidden = true;
+    if (transcriptRegenerate) transcriptRegenerate.hidden = true;
+    const transcriptionStatus = stateHost.querySelector("[data-transcription-status]");
+    if (transcriptionStatus && !hasTranscript) {
+      transcriptionStatus.textContent = state.transcriptionProviders.cloudflare
+        ? "免费线路可直接使用；高速线路需要内测码。"
+        : "高速线路暂未开放；当前可以使用免费转录。";
+    }
+    stateHost.querySelectorAll("[data-generate-transcript]").forEach((button) => {
+      const provider = button.dataset.generateTranscript;
+      const needsAccess = provider === "cloudflare" && state.accessControlEnabled && !state.access;
+      const available = state.transcriptionProviders[provider] !== false;
+      button.disabled = !available;
+      if (!available && provider === "cloudflare") {
+        button.title = "高速高质量转录暂未配置";
+        const detail = button.querySelector("small");
+        if (detail) detail.textContent = "暂未配置 · 请先在管理后台开启";
+      } else {
+        if (needsAccess) button.title = "输入内测码后可使用高速转录";
+        else button.removeAttribute("title");
+        const detail = button.querySelector("small");
+        if (detail && provider === "cloudflare") {
+          detail.textContent = needsAccess ? "需内测码 · 更快、更稳定" : "高速 · 更快、更稳定";
+        }
+      }
+    });
     const transcript = stateHost.querySelector(".transcript-preview");
     const transcriptToggle = stateHost.querySelector("[data-toggle-transcript]");
     const transcriptTitle = stateHost.querySelector("[data-transcript-character-count]");
-    if (!transcript) return;
+    if (!hasTranscript || !transcript) return;
 
-    const transcriptText = record.transcript_text || "";
     const transcriptCharacterCount = Array.from(transcriptText).length;
     transcript.textContent = transcriptText;
     transcript.classList.remove("is-collapsed");
@@ -847,8 +1113,8 @@
     const previewHeight = lineHeight * 7 + verticalPadding;
     const shouldCollapse = transcript.scrollHeight > previewHeight + 1;
     transcript.classList.toggle("is-collapsed", shouldCollapse);
+    transcriptToggle.hidden = !shouldCollapse;
     if (!shouldCollapse) {
-      transcriptToggle.remove();
       return;
     }
     transcriptToggle.setAttribute("aria-expanded", "false");
@@ -1348,13 +1614,16 @@
     }
   }
 
-  async function createNoteAnalysis() {
+  async function createNoteAnalysis(generationRoute = state.selectedGenerationRoute) {
     if (state.noteTask && currentNotesState === "stale") {
       setNotesState("analyzing");
       await noteCommand({ type: "update_transcript", transcript: state.inputTranscript });
       await noteCommand({ type: "retry_analysis" });
       await pollNote(state.noteTask.id);
       return;
+    }
+    if (!["free", "paid"].includes(generationRoute)) {
+      throw new Error("请先选择免费线路或高速体验线路");
     }
     if (currentNotesState === "analysis-failure" && state.noteTask?.state === "analysis_failed") {
       setNotesState("analyzing");
@@ -1391,17 +1660,23 @@
         ? { type: "file", name: state.uploadedTranscript.name, transcript: state.inputTranscript }
         : { type: "paste", name: "粘贴文本", transcript: state.inputTranscript };
     }
-    const requestText = notesStateHost.querySelector(".notes-request")?.value || "";
+    const requestText = notesStateHost.querySelector(".notes-request")?.value || state.noteRequestText || "";
+    state.noteRequestText = requestText;
+    state.selectedGenerationRoute = generationRoute;
     const workspaceToken = state.noteWorkspaceToken;
     setNotesState("analyzing");
     const payload = await request("/api/v3/note-tasks", {
       method: "POST",
       body: JSON.stringify({
-        device_id: state.deviceId, source, request_text: requestText,
+        device_id: state.deviceId,
+        source,
+        request_text: requestText,
+        generation_route: generationRoute,
       }),
     });
     if (workspaceToken !== state.noteWorkspaceToken) return;
     state.noteTask = payload.task;
+    refreshAccessStatus().catch(() => {});
     await pollNote(payload.task.id);
   }
 
@@ -1468,12 +1743,17 @@
     if (count) {
       count.textContent = `${Array.from(original.basis_transcript || "").length.toLocaleString()} 字 ＋`;
     }
+    bindNoteGenerationChooser();
   }
 
   async function startNoteRegeneration() {
     const original = state.regenerateFromNote || state.note;
     if (!original) throw new Error("当前没有可重新生成的成品笔记");
     const requestText = notesStateHost.querySelector("#regenerate-note-request")?.value.trim() || "";
+    const generationRoute = state.selectedGenerationRoute;
+    if (!["free", "paid"].includes(generationRoute)) {
+      throw new Error("请先为这次重新生成选择免费线路或高速体验线路");
+    }
     const workspaceToken = state.noteWorkspaceToken;
     try {
       const payload = await request("/api/v3/note-tasks", {
@@ -1482,10 +1762,12 @@
           device_id: state.deviceId,
           source: { type: "note", note_id: original.id },
           request_text: requestText,
+          generation_route: generationRoute,
         }),
       });
       if (workspaceToken !== state.noteWorkspaceToken) return;
       state.noteTask = payload.task;
+      refreshAccessStatus().catch(() => {});
       state.sourceMode = "regenerated";
       setNotesState("analyzing");
       await pollNote(payload.task.id);
@@ -1602,20 +1884,25 @@
     if (!list) return;
     const items = payload.items.filter((record) => !state.parserHistoryIds.has(record.id));
     if (!items.length && reset) {
-      list.innerHTML = '<div class="empty-state framed-panel"><div><h3>还没有解析记录。</h3><p>完成一次视频解析后，会在这里保留来源和逐字稿。</p></div></div>';
+      list.innerHTML = '<div class="empty-state framed-panel"><div><h3>还没有解析记录。</h3><p>完成一次视频解析后，会在这里保留来源和处理状态。</p></div></div>';
     } else if (reset) {
       list.innerHTML = "";
     }
     items.forEach((record) => state.parserHistoryIds.add(record.id));
-    list.insertAdjacentHTML("beforeend", items.map((record) => `
+    list.insertAdjacentHTML("beforeend", items.map((record) => {
+      const hasTranscript = Boolean(String(record.transcript_text || "").trim());
+      const statusLabel = record.note_id ? "已生成笔记" : hasTranscript ? "逐字稿已生成" : "待生成逐字稿";
+      const statusCopy = hasTranscript ? "逐字稿已保存" : "尚未生成逐字稿";
+      return `
       <article class="history-item ${record.note_id ? "is-linked" : ""}" data-real-record="${record.id}">
         <div class="history-thumb"></div><div class="history-copy"><div class="history-line">
-        <span class="chip ${record.note_id ? "chip-green" : "chip-blue"}">${record.note_id ? "已生成笔记" : "已解析"}</span>
+        <span class="chip ${record.note_id ? "chip-green" : "chip-blue"}">${statusLabel}</span>
         <span class="meta">${escapeHtml(platformLabel(record.platform))}</span></div>
-        <h3>${escapeHtml(record.title)}</h3><p>${escapeHtml(record.creator || "未知作者")} · ${Math.floor((record.duration_seconds || 0) / 60)} 分钟 · 逐字稿已保存</p></div>
+        <h3>${escapeHtml(record.title)}</h3><p>${escapeHtml(record.creator || "未知作者")} · ${Math.floor((record.duration_seconds || 0) / 60)} 分钟 · ${statusCopy}</p></div>
         <div class="history-actions">${record.note_id ? `<button class="text-action" type="button" data-real-open-linked-note="${record.note_id}">查看已生成笔记 →</button>` : `<button class="text-action" type="button" data-real-use-record="${record.id}">查看记录 →</button>`}
         <button class="text-action" type="button" data-real-delete-record="${record.id}">删除</button></div>
-      </article>`).join(""));
+      </article>`;
+    }).join(""));
     state.parserHistoryCursor = payload.next_cursor;
     const section = list.closest(".history-section");
     let loadMore = section?.querySelector("[data-load-more-parser]");
@@ -1726,6 +2013,8 @@
     state.candidate = null;
     state.inputTranscript = "";
     state.uploadedTranscript = null;
+    state.noteRequestText = "";
+    state.selectedGenerationRoute = null;
     state.sourceMode = "independent";
     state.pendingTitle = "";
     switchView("notes");
@@ -1757,10 +2046,14 @@
     setParserBusy(true);
     try {
       setParserState("loading");
-      bindParserProgress({ id: "", progress: { stage: "resolve", label: "创建解析任务", percent: 5 } });
+      bindParserProgress({ id: "", operation: "metadata", progress: { stage: "resolve", label: "创建解析任务", percent: 5 } });
       const payload = await request("/api/v3/parser/tasks", {
         method: "POST",
-        body: JSON.stringify({ device_id: state.deviceId, source_url: videoLink.value.trim() }),
+        body: JSON.stringify({
+          device_id: state.deviceId,
+          source_url: videoLink.value.trim(),
+          include_transcript: false,
+        }),
       });
       state.parserTask = payload.task;
       videoLink.value = payload.task.source_url;
@@ -1786,10 +2079,17 @@
     if (!target) return;
     if (
       document.body.classList.contains("public-demo-active") &&
-      target.dataset.copyTranscript === undefined
+      target.dataset.copyTranscript === undefined &&
+      target.dataset.copyReadyTranscript === undefined &&
+      target.dataset.copySkillInstall === undefined &&
+      target.dataset.copyUniversalPrompt === undefined
     ) return;
     const realAction = target.dataset.openNotes !== undefined ||
-      target.dataset.startAnalysis !== undefined || target.dataset.phase3 !== undefined ||
+      target.dataset.startAnalysis !== undefined || target.dataset.prepareNotes !== undefined ||
+      target.dataset.copyReadyTranscript !== undefined ||
+      target.dataset.downloadReadyTranscript !== undefined ||
+      target.dataset.selectNoteRoute !== undefined ||
+      target.dataset.confirmNoteRoute !== undefined || target.dataset.phase3 !== undefined ||
       target.dataset.confirmOutline !== undefined || target.dataset.regenerateOutline !== undefined ||
       target.dataset.continueChapter !== undefined || target.dataset.phase4 !== undefined ||
       target.dataset.recheckIntegrity !== undefined ||
@@ -1798,6 +2098,13 @@
       target.dataset.openNoteHistory !== undefined || target.dataset.openParserHistory !== undefined ||
       target.dataset.openTaskRecovery !== undefined || target.dataset.fakeUpload !== undefined ||
       target.dataset.download !== undefined || target.dataset.copyTranscript !== undefined ||
+      target.dataset.copySkillInstall !== undefined || target.dataset.copyUniversalPrompt !== undefined ||
+      target.dataset.generateTranscript !== undefined ||
+      target.dataset.regenerateTranscript !== undefined ||
+      target.dataset.cancelTranscriptRegeneration !== undefined ||
+      target.dataset.retryTranscription !== undefined ||
+      target.dataset.switchTranscription !== undefined ||
+      target.dataset.dismissTranscriptionError !== undefined ||
       target.dataset.toggleTranscript !== undefined || target.dataset.retry !== undefined ||
       target.dataset.resumeLater !== undefined || target.dataset.restartGeneration !== undefined ||
       target.dataset.confirmRestore !== undefined || target.dataset.realOpenNote ||
@@ -1820,7 +2127,113 @@
     event.preventDefault();
     event.stopImmediatePropagation();
     try {
-      if (target.dataset.copyTranscript !== undefined) {
+      if (target.dataset.copySkillInstall !== undefined) {
+        await copyOpenNoteResource(target, "skill");
+      } else if (target.dataset.copyUniversalPrompt !== undefined) {
+        await copyOpenNoteResource(target, "prompt");
+      } else if (target.dataset.copyReadyTranscript !== undefined) {
+        await copyReadyTranscript(target);
+      } else if (target.dataset.downloadReadyTranscript !== undefined) {
+        downloadReadyTranscript(target.dataset.downloadReadyTranscript);
+      } else if (target.dataset.selectNoteRoute !== undefined) {
+        if (
+          target.dataset.selectNoteRoute === "paid"
+          && state.accessControlEnabled
+          && !state.access
+        ) {
+          showAccessDialog("高速笔记线路目前仅对内测用户开放，请输入内测码后继续。");
+          return;
+        }
+        state.selectedGenerationRoute = target.dataset.selectNoteRoute;
+        bindNoteGenerationChooser();
+      } else if (target.dataset.confirmNoteRoute !== undefined) {
+        await createNoteAnalysis(state.selectedGenerationRoute);
+      } else if (target.dataset.generateTranscript !== undefined) {
+        if (!state.parserRecord) throw new Error("当前没有可生成逐字稿的视频记录");
+        const replaceExisting = target.dataset.replaceExisting !== undefined;
+        if (state.parserRecord.transcript_text && !replaceExisting) {
+          throw new Error("这条视频已经生成过逐字稿");
+        }
+        if (state.parserSubmitting) return;
+        const provider = target.dataset.generateTranscript;
+        if (provider === "cloudflare" && state.accessControlEnabled && !state.access) {
+          showAccessDialog("高速转录目前仅对内测用户开放，请输入内测码后继续。");
+          return;
+        }
+        const pollToken = ++state.parserPollToken;
+        setParserBusy(true);
+        try {
+          bindTranscriptionProgress({
+            transcription_provider: provider,
+            progress: { label: "创建逐字稿任务", percent: 5 },
+          });
+          const payload = await request(
+            `/api/v3/parser/records/${encodeURIComponent(state.parserRecord.id)}/transcription-tasks`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                device_id: state.deviceId,
+                provider,
+                replace_existing: replaceExisting,
+              }),
+            },
+          );
+          state.parserTask = payload.task;
+          await pollTranscription(payload.task.id, pollToken);
+        } catch (error) {
+          if (pollToken === state.parserPollToken) {
+            showTranscriptionError(error);
+          }
+          throw error;
+        } finally {
+          if (pollToken === state.parserPollToken) setParserBusy(false);
+        }
+      } else if (target.dataset.regenerateTranscript !== undefined) {
+        const chooser = stateHost.querySelector("[data-transcript-regenerate]");
+        const errorPanel = stateHost.querySelector("[data-transcription-error]");
+        if (chooser) chooser.hidden = false;
+        if (errorPanel) errorPanel.hidden = true;
+        chooser?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } else if (target.dataset.cancelTranscriptRegeneration !== undefined) {
+        const chooser = stateHost.querySelector("[data-transcript-regenerate]");
+        if (chooser) chooser.hidden = true;
+      } else if (target.dataset.dismissTranscriptionError !== undefined) {
+        const errorPanel = stateHost.querySelector("[data-transcription-error]");
+        const chooser = stateHost.querySelector("[data-transcript-regenerate]");
+        if (errorPanel) errorPanel.hidden = true;
+        if (chooser) chooser.hidden = true;
+      } else if (target.dataset.switchTranscription !== undefined) {
+        const errorPanel = stateHost.querySelector("[data-transcription-error]");
+        if (errorPanel) errorPanel.hidden = true;
+        if (state.parserRecord?.transcript_text) {
+          const chooser = stateHost.querySelector("[data-transcript-regenerate]");
+          if (chooser) chooser.hidden = false;
+        }
+      } else if (target.dataset.retryTranscription !== undefined) {
+        if (!state.parserTask || state.parserTask.state !== "failed") {
+          throw new Error("当前没有可以重试的逐字稿任务");
+        }
+        if (state.parserSubmitting) return;
+        const pollToken = ++state.parserPollToken;
+        setParserBusy(true);
+        try {
+          bindTranscriptionProgress(state.parserTask);
+          const payload = await request(
+            `/api/v3/parser/tasks/${encodeURIComponent(state.parserTask.id)}/commands`,
+            {
+              method: "POST",
+              body: JSON.stringify({ command: "retry" }),
+            },
+          );
+          state.parserTask = payload.task;
+          await pollTranscription(payload.task.id, pollToken);
+        } catch (error) {
+          if (pollToken === state.parserPollToken) showTranscriptionError(error);
+          throw error;
+        } finally {
+          if (pollToken === state.parserPollToken) setParserBusy(false);
+        }
+      } else if (target.dataset.copyTranscript !== undefined) {
         await copyParserTranscript(target);
       } else if (target.dataset.toggleTranscript !== undefined) {
         const transcript = target.closest(".transcript-panel")?.querySelector(".transcript-preview");
@@ -1852,14 +2265,24 @@
           if (state.parserRecord) bindParserRecord();
         }
       } else if (target.dataset.openNotes !== undefined) {
+        if (!state.parserRecord?.transcript_text) {
+          throw new Error("请先生成逐字稿，再继续生成笔记");
+        }
         state.sourceMode = "linked";
+        state.inputTranscript = state.parserRecord.transcript_text.trim();
+        state.uploadedTranscript = null;
+        state.noteRequestText = "";
+        state.selectedGenerationRoute = null;
         switchView("notes");
-        await createNoteAnalysis();
+        setNotesState("ready");
+        bindTranscriptReady();
       } else if (target.dataset.notesStateJump !== undefined) {
         const nextState = target.dataset.notesStateJump;
         if (nextState === "input") {
           state.inputTranscript = "";
           state.uploadedTranscript = null;
+          state.noteRequestText = "";
+          state.selectedGenerationRoute = null;
         }
         setNotesState(nextState);
         if (nextState === "input") {
@@ -1870,6 +2293,7 @@
       } else if (target.dataset.regenerateNote !== undefined) {
         if (!state.note) throw new Error("请先打开一份成品笔记");
         state.regenerateFromNote = state.note;
+        state.selectedGenerationRoute = null;
         setNotesState("regenerate");
         bindNoteRegeneration();
       } else if (target.dataset.regeneratePrompt !== undefined) {
@@ -1899,10 +2323,22 @@
           state.inputTranscript = await file.text();
           state.uploadedTranscript = { name: file.name, extension };
           state.sourceMode = "independent";
+          state.noteRequestText = "";
+          state.selectedGenerationRoute = null;
           setNotesState("ready");
-          bindUploadedTranscriptReady();
+          bindTranscriptReady();
         };
         fileInput.click();
+      } else if (target.dataset.prepareNotes !== undefined) {
+        const transcript = notesStateHost.querySelector("#notes-transcript-input")?.value.trim() || "";
+        if (!transcript) throw new Error("请先粘贴逐字稿");
+        state.inputTranscript = transcript;
+        state.noteRequestText = notesStateHost.querySelector("#notes-request-input")?.value.trim() || "";
+        state.uploadedTranscript = null;
+        state.sourceMode = "independent";
+        state.selectedGenerationRoute = null;
+        setNotesState("ready");
+        bindTranscriptReady();
       } else if (target.dataset.startAnalysis !== undefined) {
         await createNoteAnalysis();
       } else if (target.dataset.phase3 !== undefined) {
@@ -2058,7 +2494,7 @@
         const format = notesStateHost.querySelector('input[name="export-format"]:checked')?.value || "md";
         const content = notesStateHost.querySelector('input[name="export-content"]:checked')?.value === "transcript" ? "note_transcript" : "note";
         const source = notesStateHost.querySelector(".source-toggle input")?.checked ? "include" : "exclude";
-        const url = `/api/v3/notes/${state.note.id}/export?format=${format === "copy" ? "md" : format}&content=${content}&source=${source}`;
+        const url = withDeviceId(`/api/v3/notes/${state.note.id}/export?format=${format === "copy" ? "md" : format}&content=${content}&source=${source}`);
         if (format === "copy") {
           const response = await fetch(url);
           await navigator.clipboard.writeText(await response.text());
@@ -2075,7 +2511,9 @@
         const suffix = {
           "transcript-txt": "transcript.txt", "transcript-md": "transcript.md",
         }[target.dataset.download];
-        location.href = `/api/v3/parser/records/${state.parserRecord.id}/${suffix}`;
+        location.href = withDeviceId(
+          `/api/v3/parser/records/${state.parserRecord.id}/${suffix}`,
+        );
       } else if (target.dataset.retry !== undefined) {
         if (state.parserSubmitting) return;
         const pollToken = ++state.parserPollToken;

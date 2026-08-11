@@ -156,7 +156,7 @@
           <div>
             <span class="eyebrow">NOTE INTELLIGENCE ROUTER // 笔记模型</span>
             <h2 id="llm-console-title">控制免费与高速笔记线路</h2>
-            <p>两条线路各自管理 API、启停状态和默认模型；新任务只会进入当前选中的线路。</p>
+            <p>两条线路各自管理 API、启停状态和默认模型；用户只会看到后台已开放的线路，不会看到密钥或模型配置。</p>
           </div>
           <div class="llm-master" data-llm-master>
             <span class="llm-master-light" aria-hidden="true"></span>
@@ -174,7 +174,7 @@
         <div class="llm-toolbar">
           <div class="llm-current">
             <span class="route-glyph" aria-hidden="true">↳</span>
-            <span><small>下一项笔记任务将使用</small><strong data-llm-current>尚未选择模型</strong></span>
+            <span><small>兼容旧任务的默认线路</small><strong data-llm-current>尚未选择模型</strong></span>
           </div>
           <button class="llm-add-button" type="button" data-add-llm>
             <span aria-hidden="true">＋</span> 新增 LLM 配置
@@ -229,8 +229,8 @@
                 <input name="transcription_minutes" type="number" min="1" max="1440" value="30" required />
               </label>
               <label class="field">
-                <span>笔记生成次数</span>
-                <input name="note_generations" type="number" min="1" max="500" value="5" required />
+                <span>高速生成次数</span>
+                <input name="note_generations" type="number" min="1" max="500" value="1" required />
               </label>
               <label class="field field-wide">
                 <span>单个视频最长分钟</span>
@@ -351,7 +351,7 @@
             <input data-edit-transcription type="number" min="0" max="10080" step="0.1" />
           </label>
           <label class="edit-field">
-            <span>剩余笔记次数</span>
+            <span>剩余高速次数</span>
             <input data-edit-notes type="number" min="0" max="5000" step="1" />
           </label>
           <label class="edit-field edit-field-wide">
@@ -362,7 +362,7 @@
 
         <div class="change-preview" aria-label="修改前后对比">
           <div><small>剩余转录</small><strong data-preview-transcription>—</strong></div>
-          <div><small>剩余笔记</small><strong data-preview-notes>—</strong></div>
+          <div><small>剩余高速</small><strong data-preview-notes>—</strong></div>
           <div><small>单条上限</small><strong data-preview-max-video>—</strong></div>
         </div>
         <p class="edit-warning" data-edit-warning role="status" hidden>

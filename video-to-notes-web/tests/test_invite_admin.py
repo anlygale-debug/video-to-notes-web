@@ -174,7 +174,7 @@ class InviteAdminHttpTests(unittest.TestCase):
         parser = ParserWorkflow(
             self.repository,
             FakePlatformMedia(),
-            FakeTranscriber(),
+            FakeTranscriber("完整逐字稿。" * 120),
             run_in_background=False,
             access_manager=self.access,
         )
@@ -189,9 +189,16 @@ class InviteAdminHttpTests(unittest.TestCase):
         install_access_middleware(user_app, self.access)
         user = TestClient(user_app)
         user.post("/api/v3/access/login", json={"code": invite_code})
-        user.post(
+        first_parse = user.post(
             "/api/v3/parser/tasks",
-            json={"source_url": "https://example.test/first-video"},
+            json={
+                "source_url": "https://example.test/first-video",
+                "include_transcript": False,
+            },
+        ).json()["task"]
+        user.post(
+            f"/api/v3/parser/records/{first_parse['record_id']}/transcription-tasks",
+            json={"provider": "cloudflare"},
         )
         before = user.get("/api/v3/access/status").json()["access"]
         self.assertEqual(before["remaining_transcription_seconds"], 3000)
@@ -221,9 +228,16 @@ class InviteAdminHttpTests(unittest.TestCase):
         self.assertEqual(after["remaining_note_generations"], 12)
         self.assertEqual(after["max_video_seconds"], 3600)
 
-        user.post(
+        second_parse = user.post(
             "/api/v3/parser/tasks",
-            json={"source_url": "https://example.test/second-video"},
+            json={
+                "source_url": "https://example.test/second-video",
+                "include_transcript": False,
+            },
+        ).json()["task"]
+        user.post(
+            f"/api/v3/parser/records/{second_parse['record_id']}/transcription-tasks",
+            json={"provider": "cloudflare"},
         )
         self.assertEqual(
             user.get("/api/v3/access/status").json()["access"][
@@ -903,6 +917,7 @@ class InviteAdminHttpTests(unittest.TestCase):
         user = TestClient(user_app)
         user.post("/api/v3/access/login", json={"code": grant["invite_code"]})
         note_request = {
+            "generation_route": "paid",
             "source": {"type": "paste", "transcript": "这是一段可生成笔记的测试逐字稿。"},
             "request_text": "",
         }

@@ -3,8 +3,11 @@ import types
 import unittest
 import json
 import base64
+import http.client
 import io
+import ssl
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -12,7 +15,7 @@ import wave
 from pathlib import Path
 from unittest.mock import patch
 
-from vtn.adapters.media import FakePlatformMedia, YtDlpPlatformMedia
+from vtn.adapters.media import FakePlatformMedia, YtDlpPlatformMedia, detect_platform
 from vtn.adapters.llm import FakeLLM, OpenAICompatibleLLM
 from vtn.adapters.transcription import (
     CloudflareTranscriber,
@@ -258,6 +261,100 @@ class ParserWorkflowTests(unittest.TestCase):
         self.assertEqual(context.exception.code, "TRANSCRIPTION_UPLOAD_TIMEOUT")
         self.assertTrue(context.exception.retryable)
 
+    def test_cloudflare_transcription_recovers_from_temporary_remote_disconnect(self):
+        audio_path = Path(self.tempdir.name) / "audio.wav"
+        audio_path.write_bytes(b"test audio")
+        attempts = 0
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(
+                    {"success": True, "result": {"text": "自动重试后生成的逐字稿。"}}
+                ).encode()
+
+        def temporary_disconnect(_request, timeout=None, context=None):
+            nonlocal attempts
+            attempts += 1
+            if attempts < 3:
+                raise http.client.RemoteDisconnected(
+                    "Remote end closed connection without response"
+                )
+            return Response()
+
+        with patch("urllib.request.urlopen", temporary_disconnect), patch(
+            "vtn.adapters.transcription.time.sleep"
+        ):
+            transcript = CloudflareTranscriber(
+                "account-id", "api-token"
+            ).transcribe(audio_path)
+
+        self.assertEqual(transcript, "自动重试后生成的逐字稿。")
+
+    def test_cloudflare_transcription_fails_clearly_after_retries_are_exhausted(self):
+        audio_path = Path(self.tempdir.name) / "audio.wav"
+        audio_path.write_bytes(b"test audio")
+        attempts = 0
+
+        def always_disconnect(_request, timeout=None, context=None):
+            nonlocal attempts
+            attempts += 1
+            raise http.client.RemoteDisconnected(
+                "Remote end closed connection without response"
+            )
+
+        with patch("urllib.request.urlopen", always_disconnect), patch(
+            "vtn.adapters.transcription.time.sleep"
+        ), self.assertRaises(DomainError) as context:
+            CloudflareTranscriber("account-id", "api-token").transcribe(audio_path)
+
+        self.assertEqual(attempts, 3)
+        self.assertEqual(context.exception.code, "TRANSCRIPTION_UPLOAD_INTERRUPTED")
+        self.assertIn("连接中断", context.exception.message)
+        self.assertNotIn("Remote end closed", context.exception.message)
+
+    def test_cloudflare_ssl_disconnect_fails_clearly_after_retries_are_exhausted(self):
+        audio_path = Path(self.tempdir.name) / "audio.wav"
+        audio_path.write_bytes(b"test audio")
+
+        def ssl_disconnect(_request, timeout=None, context=None):
+            raise ssl.SSLEOFError(
+                8,
+                "EOF occurred in violation of protocol",
+            )
+
+        with patch("urllib.request.urlopen", ssl_disconnect), patch(
+            "vtn.adapters.transcription.time.sleep"
+        ), self.assertRaises(DomainError) as context:
+            CloudflareTranscriber("account-id", "api-token").transcribe(audio_path)
+
+        self.assertEqual(context.exception.code, "TRANSCRIPTION_UPLOAD_INTERRUPTED")
+        self.assertIn("连接中断", context.exception.message)
+        self.assertNotIn("SSL", context.exception.message)
+
+    def test_cloudflare_wrapped_ssl_disconnect_uses_stable_retryable_error(self):
+        audio_path = Path(self.tempdir.name) / "audio.wav"
+        audio_path.write_bytes(b"test audio")
+
+        def wrapped_ssl_disconnect(_request, timeout=None, context=None):
+            raise urllib.error.URLError(
+                ssl.SSLEOFError(8, "EOF occurred in violation of protocol")
+            )
+
+        with patch("urllib.request.urlopen", wrapped_ssl_disconnect), patch(
+            "vtn.adapters.transcription.time.sleep"
+        ), self.assertRaises(DomainError) as context:
+            CloudflareTranscriber("account-id", "api-token").transcribe(audio_path)
+
+        self.assertEqual(context.exception.code, "TRANSCRIPTION_UPLOAD_INTERRUPTED")
+        self.assertIn("连接中断", context.exception.message)
+        self.assertNotIn("SSL", context.exception.message)
+
     def test_transcriber_configuration_uses_lightweight_local_default_and_allows_cloudflare(self):
         local = build_transcriber({})
         cloud = build_transcriber(
@@ -273,6 +370,104 @@ class ParserWorkflowTests(unittest.TestCase):
         self.assertEqual(local.model_name, "tiny")
         self.assertIsInstance(cloud, CloudflareTranscriber)
         self.assertEqual(cloud.initial_prompt, "心理学专有名词")
+        self.assertFalse(cloud.bypass_proxy)
+        self.assertTrue(cloud.direct_fallback)
+        self.assertEqual(cloud.max_attempts, 3)
+
+    def test_configured_cloudflare_transcriber_falls_back_to_direct_connection(self):
+        audio_path = Path(self.tempdir.name) / "audio.wav"
+        audio_path.write_bytes(b"test audio")
+        cloud = build_transcriber(
+            {
+                "VTN_TRANSCRIBER": "cloudflare",
+                "CLOUDFLARE_ACCOUNT_ID": "account-id",
+                "CLOUDFLARE_API_TOKEN": "api-token",
+            }
+        )
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(
+                    {"success": True, "result": {"text": "直连生成的逐字稿。"}}
+                ).encode()
+
+        class DirectOpener:
+            def open(self, _request, timeout=None):
+                return Response()
+
+        proxy_attempts = 0
+
+        def proxy_disconnect(_request, timeout=None, context=None):
+            nonlocal proxy_attempts
+            proxy_attempts += 1
+            raise http.client.RemoteDisconnected(
+                "Remote end closed connection without response"
+            )
+
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=proxy_disconnect,
+        ), patch("urllib.request.build_opener", return_value=DirectOpener()):
+            transcript = cloud.transcribe(audio_path)
+
+        self.assertEqual(proxy_attempts, 1)
+        self.assertEqual(transcript, "直连生成的逐字稿。")
+
+    def test_configured_cloudflare_transcriber_returns_to_proxy_after_direct_timeout(self):
+        audio_path = Path(self.tempdir.name) / "audio.wav"
+        audio_path.write_bytes(b"test audio")
+        cloud = build_transcriber(
+            {
+                "VTN_TRANSCRIBER": "cloudflare",
+                "CLOUDFLARE_ACCOUNT_ID": "account-id",
+                "CLOUDFLARE_API_TOKEN": "api-token",
+            }
+        )
+        proxy_attempts = 0
+        direct_attempts = 0
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(
+                    {"success": True, "result": {"text": "切回代理后生成的逐字稿。"}}
+                ).encode()
+
+        def proxy_recovers(_request, timeout=None, context=None):
+            nonlocal proxy_attempts
+            proxy_attempts += 1
+            if proxy_attempts == 1:
+                raise http.client.RemoteDisconnected(
+                    "Remote end closed connection without response"
+                )
+            return Response()
+
+        class TimedOutDirectOpener:
+            def open(self, _request, timeout=None):
+                nonlocal direct_attempts
+                direct_attempts += 1
+                raise TimeoutError("direct connection timed out")
+
+        with patch("urllib.request.urlopen", side_effect=proxy_recovers), patch(
+            "urllib.request.build_opener",
+            return_value=TimedOutDirectOpener(),
+        ), patch("vtn.adapters.transcription.time.sleep"):
+            transcript = cloud.transcribe(audio_path)
+
+        self.assertEqual(proxy_attempts, 2)
+        self.assertEqual(direct_attempts, 1)
+        self.assertEqual(transcript, "切回代理后生成的逐字稿。")
 
     def test_switchable_transcriber_changes_provider_without_restart(self):
         provider_store = TranscriptionProviderStore(
@@ -374,6 +569,43 @@ class ParserWorkflowTests(unittest.TestCase):
         self.assertEqual(len(uploads), 2)
         self.assertTrue(all(len(upload) <= 2 * 1024 * 1024 for upload in uploads))
 
+    def test_cloudflare_keeps_small_compressed_audio_in_one_request(self):
+        audio_path = Path(self.tempdir.name) / "compressed-long.mp3"
+        audio_path.write_bytes(b"small compressed audio")
+        uploads = []
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(
+                    {"success": True, "result": {"text": "整段完整文字。"}}
+                ).encode()
+
+        def open_request(request, timeout, context=None):
+            uploads.append(base64.b64decode(json.loads(request.data)["audio"]))
+            return Response()
+
+        with patch(
+            "vtn.adapters.transcription._probe_audio_duration",
+            return_value=75,
+        ), patch(
+            "subprocess.run",
+            side_effect=AssertionError("small audio must not be segmented"),
+        ), patch(
+            "urllib.request.urlopen", open_request
+        ):
+            transcript = CloudflareTranscriber(
+                "account-id", "api-token"
+            ).transcribe(audio_path)
+
+        self.assertEqual(len(uploads), 1)
+        self.assertEqual(transcript, "整段完整文字。")
+
     def test_parser_completes_without_llm_configuration(self):
         workflow = ParserWorkflow(
             self.repo,
@@ -388,6 +620,109 @@ class ParserWorkflowTests(unittest.TestCase):
         self.assertEqual(record["transcript_text"], "完整逐字稿")
         self.assertEqual(record["transcript_format_version"], 2)
         self.assertEqual([event.seq for event in workflow.subscribe(task["id"], 0)], [1, 2, 3, 4, 5, 6])
+
+    def test_metadata_only_parse_does_not_download_or_transcribe(self):
+        class MetadataOnlyMedia(FakePlatformMedia):
+            def download_audio(self, _url, _directory):
+                raise AssertionError("metadata-only parsing must not download audio")
+
+        class MetadataOnlyTranscriber(FakeTranscriber):
+            def transcribe(self, _audio_path):
+                raise AssertionError("metadata-only parsing must not transcribe")
+
+        workflow = ParserWorkflow(
+            self.repo,
+            MetadataOnlyMedia(),
+            MetadataOnlyTranscriber(),
+            run_in_background=False,
+        )
+
+        task = workflow.start_parse(
+            "browser-1",
+            "https://www.bilibili.com/video/BV1TEST",
+            include_transcript=False,
+        )
+        record = self.repo.get_parser_record(task["record_id"])
+
+        self.assertEqual(task["state"], "completed")
+        self.assertEqual(task["operation"], "metadata")
+        self.assertEqual(record["transcript_text"], "")
+        stages = [
+            event.payload.get("stage")
+            for event in workflow.subscribe(task["id"], 0)
+            if event.payload.get("stage")
+        ]
+        self.assertEqual(stages, ["resolve", "save"])
+
+    def test_transcription_task_uses_selected_provider_and_updates_record(self):
+        providers = []
+        expected_transcript = "云端生成的高质量逐字稿。" * 60
+
+        class SelectableTranscriber(FakeTranscriber):
+            def transcribe_with_provider(self, _audio_path, provider):
+                providers.append(provider)
+                return expected_transcript
+
+        workflow = ParserWorkflow(
+            self.repo,
+            FakePlatformMedia(),
+            SelectableTranscriber(),
+            run_in_background=False,
+        )
+        parse_task = workflow.start_parse(
+            "browser-1",
+            "https://www.bilibili.com/video/BV1TEST",
+            include_transcript=False,
+        )
+
+        task = workflow.start_transcription(
+            "browser-1", parse_task["record_id"], "cloudflare"
+        )
+        record = self.repo.get_parser_record(parse_task["record_id"])
+
+        self.assertEqual(task["state"], "completed")
+        self.assertEqual(task["operation"], "transcription")
+        self.assertEqual(task["transcription_provider"], "cloudflare")
+        self.assertEqual(providers, ["cloudflare"])
+        self.assertEqual(record["transcript_text"], expected_transcript)
+
+    def test_incomplete_cloud_regeneration_keeps_existing_transcript(self):
+        original_transcript = "这是原本完整的逐字稿。" * 80
+
+        class TruncatedCloudTranscriber(FakeTranscriber):
+            def transcribe_with_provider(self, _audio_path, provider):
+                self.assertEqual(provider, "cloudflare")
+                return "只返回了开头的一小段文字。"
+
+        transcriber = TruncatedCloudTranscriber()
+        transcriber.assertEqual = self.assertEqual
+        workflow = ParserWorkflow(
+            self.repo,
+            FakePlatformMedia(),
+            transcriber,
+            run_in_background=False,
+        )
+        parsed = workflow.start_parse(
+            "browser-1",
+            "https://www.bilibili.com/video/BV1TEST",
+            include_transcript=False,
+        )
+        self.repo.update_parser_record(
+            parsed["record_id"], transcript_text=original_transcript
+        )
+
+        task = workflow.start_transcription(
+            "browser-1",
+            parsed["record_id"],
+            "cloudflare",
+            replace_existing=True,
+        )
+        record = self.repo.get_parser_record(parsed["record_id"])
+
+        self.assertEqual(task["state"], "failed")
+        self.assertEqual(task["error_code"], "TRANSCRIPTION_INCOMPLETE")
+        self.assertTrue(task["error_retryable"])
+        self.assertEqual(record["transcript_text"], original_transcript)
 
     def test_failed_parser_can_retry_and_preserves_stable_error(self):
         media = FakePlatformMedia(fail_once=True)
@@ -540,6 +875,161 @@ class ParserWorkflowTests(unittest.TestCase):
             "视频解析失败：视频平台暂时拒绝解析，可能需要登录凭证或链接已失效",
         )
         self.assertNotIn("/opt/", context.exception.message)
+
+    def test_douyin_link_formats_are_detected(self):
+        urls = (
+            "https://www.douyin.com/video/7253815894357363979",
+            "https://v.douyin.com/ieYvXhHW",
+            "https://www.iesdouyin.com/share/video/7267477691337624895/",
+            "https://jx.douyin.com/iLxdnwwN",
+            "https://www.douyin.com/discover?modal_id=7255485257351269644",
+        )
+
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(detect_platform(url), "douyin")
+
+    def test_media_adapter_prefers_project_virtualenv_tools(self):
+        media = YtDlpPlatformMedia()
+
+        self.assertEqual(
+            media.env["PATH"].split(":", 1)[0],
+            str(Path(sys.executable).parent),
+        )
+
+    def test_douyin_desktop_and_share_urls_are_normalized_to_video_url(self):
+        media = YtDlpPlatformMedia()
+
+        self.assertEqual(
+            media._normalize_source_url(
+                "https://www.douyin.com/discover?modal_id=7255485257351269644"
+            ),
+            "https://www.douyin.com/video/7255485257351269644",
+        )
+        self.assertEqual(
+            media._normalize_source_url(
+                "https://www.iesdouyin.com/share/video/7267477691337624895/"
+            ),
+            "https://www.douyin.com/video/7267477691337624895",
+        )
+
+    def test_douyin_short_url_is_resolved_before_ytdlp(self):
+        class RedirectResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def geturl(self):
+                return "https://www.douyin.com/video/7253815894357363979"
+
+        media = YtDlpPlatformMedia()
+        with patch("urllib.request.urlopen", return_value=RedirectResponse()) as open_url:
+            normalized = media._normalize_source_url(
+                "https://v.douyin.com/ieYvXhHW"
+            )
+
+        self.assertEqual(
+            normalized,
+            "https://www.douyin.com/video/7253815894357363979",
+        )
+        self.assertEqual(open_url.call_args.kwargs["timeout"], 20)
+
+    def test_douyin_cookie_attempts_prefer_configured_file_then_browser(self):
+        cookie_file = Path(self.tempdir.name) / "douyin-cookies.txt"
+        cookie_file.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+        chrome_cookie_db = (
+            Path(self.tempdir.name)
+            / "Library/Application Support/Google/Chrome/Default/Network/Cookies"
+        )
+        chrome_cookie_db.parent.mkdir(parents=True)
+        chrome_cookie_db.write_bytes(b"fixture")
+
+        with patch.dict(
+            "os.environ",
+            {
+                "HOME": self.tempdir.name,
+                "VTN_DOUYIN_COOKIES_PATH": str(cookie_file),
+            },
+        ):
+            attempts = YtDlpPlatformMedia()._cookie_attempts(
+                "https://www.douyin.com/video/7253815894357363979"
+            )
+
+        self.assertEqual(
+            attempts,
+            [
+                ["--cookies", str(cookie_file)],
+                ["--cookies-from-browser", "chrome"],
+                [],
+            ],
+        )
+
+    def test_douyin_resolve_uses_normalized_url_and_configured_cookie_file(self):
+        cookie_file = Path(self.tempdir.name) / "douyin-cookies.txt"
+        cookie_file.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+        calls = []
+
+        def resolve_video(args, **_options):
+            calls.append(args)
+            return types.SimpleNamespace(
+                stdout=json.dumps(
+                    {
+                        "title": "遇见好看的晚霞",
+                        "uploader": "79106552719",
+                        "channel": "测试作者",
+                        "description": "抖音公开作品",
+                        "duration": 19,
+                        "thumbnail": "https://example.test/douyin.jpg",
+                    },
+                    ensure_ascii=False,
+                )
+            )
+
+        with patch.dict(
+            "os.environ",
+            {
+                "HOME": self.tempdir.name,
+                "VTN_DOUYIN_COOKIES_PATH": str(cookie_file),
+            },
+        ), patch("subprocess.run", resolve_video):
+            metadata = YtDlpPlatformMedia().resolve(
+                "https://www.douyin.com/discover?modal_id=7253815894357363979"
+            )
+
+        self.assertEqual(metadata["platform"], "douyin")
+        self.assertEqual(metadata["creator"], "测试作者")
+        self.assertEqual(metadata["source_url"], "https://www.douyin.com/discover?modal_id=7253815894357363979")
+        self.assertIn("--cookies", calls[0])
+        self.assertEqual(
+            calls[0][-1],
+            "https://www.douyin.com/video/7253815894357363979",
+        )
+
+    def test_douyin_missing_fresh_cookie_has_clear_retryable_error(self):
+        def reject_without_fresh_cookie(args, **_options):
+            raise subprocess.CalledProcessError(
+                1,
+                args,
+                stderr="ERROR: Fresh cookies (not necessarily logged in) are needed",
+            )
+
+        with patch.dict(
+            "os.environ",
+            {"HOME": self.tempdir.name, "VTN_DOUYIN_COOKIES_PATH": ""},
+        ), patch("subprocess.run", reject_without_fresh_cookie):
+            with self.assertRaises(DomainError) as context:
+                YtDlpPlatformMedia().resolve(
+                    "https://www.douyin.com/video/7253815894357363979"
+                )
+
+        self.assertEqual(context.exception.code, "DOUYIN_ACCESS_REQUIRED")
+        self.assertEqual(
+            context.exception.message,
+            "抖音解析凭证已失效，请先在 Chrome 打开一次抖音后再重试。",
+        )
+        self.assertTrue(context.exception.retryable)
 
     def test_bilibili_resolve_uses_public_api_when_webpage_is_blocked(self):
         def blocked_webpage(args, **_options):
@@ -778,6 +1268,41 @@ class ParserWorkflowTests(unittest.TestCase):
 
         self.assertIn("任务模型：deepseek-profile", note["current_markdown"])
         self.assertNotIn("任务模型：openrouter-profile", note["current_markdown"])
+
+    def test_note_task_binds_the_profile_for_the_user_selected_route(self):
+        class BoundLLM(FakeLLM):
+            def __init__(self, profile_id):
+                super().__init__()
+                self.profile_id = profile_id
+
+            def generate_direct(self, task):
+                result = super().generate_direct(task)
+                result["chapters"][0]["content_markdown"] += f"\n\n任务模型：{self.profile_id}"
+                return result
+
+        class RoutedLLM(FakeLLM):
+            def profile_id_for_channel(self, channel):
+                return f"{channel}-profile"
+
+            def for_profile(self, profile_id):
+                return BoundLLM(profile_id)
+
+        workflow = NoteWorkflow(self.repo, RoutedLLM(), run_in_background=False)
+        task = workflow.start_analysis(
+            {
+                "generation_route": "free",
+                "source": {
+                    "type": "paste",
+                    "transcript": "这是一段用于验证用户选择免费线路的逐字稿。",
+                },
+            }
+        )
+
+        self.assertEqual(task["generation_route"], "free")
+        self.assertEqual(task["llm_profile_id"], "free-profile")
+        completed = workflow.command(task["id"], {"type": "start_generation"})
+        note = self.repo.get_note(completed["note_id"])
+        self.assertIn("任务模型：free-profile", note["current_markdown"])
 
     def test_xiaohongshu_short_link_enriches_creator_after_redirect(self):
         short_url = "http://xhslink.cn/o/4W5MlG9aJai"

@@ -3,6 +3,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 from fastapi import FastAPI
@@ -46,6 +47,62 @@ class ParserHttpTests(unittest.TestCase):
         transcript = self.client.get(f"/api/v3/parser/records/{record_id}/transcript.txt")
         self.assertEqual(transcript.status_code, 200)
         self.assertIn("固定逐字稿", transcript.text)
+        expected_stem = "心理学：亲密关系中的控制欲破解路径"
+        self.assertIn(
+            quote(f"{expected_stem}-逐字稿.txt"),
+            transcript.headers["content-disposition"],
+        )
+        markdown = self.client.get(
+            f"/api/v3/parser/records/{record_id}/transcript.md"
+        )
+        self.assertIn(
+            quote(f"{expected_stem}-逐字稿.md"),
+            markdown.headers["content-disposition"],
+        )
+
+    def test_metadata_parse_and_transcription_are_separate_http_actions(self):
+        parsed = self.client.post(
+            "/api/v3/parser/tasks",
+            json={
+                "device_id": "browser",
+                "source_url": "https://www.bilibili.com/video/BV1TEST",
+                "include_transcript": False,
+            },
+        )
+
+        self.assertEqual(parsed.status_code, 202)
+        parse_task = parsed.json()["task"]
+        record_id = parse_task["record_id"]
+        before = self.client.get(
+            f"/api/v3/parser/records/{record_id}"
+        ).json()["record"]
+        self.assertEqual(parse_task["operation"], "metadata")
+        self.assertEqual(before["transcript_text"], "")
+
+        generated = self.client.post(
+            f"/api/v3/parser/records/{record_id}/transcription-tasks",
+            json={"device_id": "browser", "provider": "local"},
+        )
+
+        self.assertEqual(generated.status_code, 202)
+        transcription_task = generated.json()["task"]
+        after = self.client.get(
+            f"/api/v3/parser/records/{record_id}"
+        ).json()["record"]
+        self.assertEqual(transcription_task["operation"], "transcription")
+        self.assertEqual(transcription_task["transcription_provider"], "local")
+        self.assertIn("固定逐字稿", after["transcript_text"])
+
+        regenerated = self.client.post(
+            f"/api/v3/parser/records/{record_id}/transcription-tasks",
+            json={
+                "device_id": "browser",
+                "provider": "local",
+                "replace_existing": True,
+            },
+        )
+        self.assertEqual(regenerated.status_code, 202)
+        self.assertEqual(regenerated.json()["task"]["operation"], "transcription")
 
     def test_xhslink_cn_task_and_record_are_identified_as_xiaohongshu(self):
         response = self.client.post(
@@ -64,6 +121,26 @@ class ParserHttpTests(unittest.TestCase):
 
         self.assertEqual(task["platform_hint"], "xiaohongshu")
         self.assertEqual(record["platform"], "xiaohongshu")
+
+    def test_douyin_share_text_is_extracted_and_identified(self):
+        douyin_url = "https://v.douyin.com/ieYvXhHW"
+        response = self.client.post(
+            "/api/v3/parser/tasks",
+            json={
+                "device_id": "browser",
+                "source_url": f"复制此链接，打开抖音查看作品 {douyin_url} 2@3.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 202)
+        task = response.json()["task"]
+        record = self.client.get(
+            f"/api/v3/parser/records/{task['record_id']}"
+        ).json()["record"]
+
+        self.assertEqual(task["source_url"], douyin_url)
+        self.assertEqual(task["platform_hint"], "douyin")
+        self.assertEqual(record["platform"], "douyin")
 
     def test_existing_xhslink_cn_record_with_other_platform_is_presented_as_xiaohongshu(self):
         self.repo.create_parser_record(
@@ -114,7 +191,10 @@ class ParserHttpTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"video-fixture")
         self.assertIn("attachment", response.headers["content-disposition"])
-        self.assertTrue(response.headers["content-disposition"].endswith('.mp4"'))
+        self.assertIn(
+            quote("心理学：亲密关系中的控制欲破解路径-视频.mp4"),
+            response.headers["content-disposition"],
+        )
         self.assertIn("vtn_download=ready-123", response.headers["set-cookie"])
 
     def test_video_download_reports_a_stable_error_when_the_stream_cannot_start(self):
@@ -251,6 +331,10 @@ class AsyncDownloadHttpTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(audio_response.status_code, 200)
         self.assertEqual(audio_response.content, b"fixture")
         self.assertIn("attachment", audio_response.headers["content-disposition"])
+        self.assertIn(
+            quote("心理学：亲密关系中的控制欲破解路径-音频.mp3"),
+            audio_response.headers["content-disposition"],
+        )
         self.assertIn("vtn_download=ready-456", audio_response.headers["set-cookie"])
 
 

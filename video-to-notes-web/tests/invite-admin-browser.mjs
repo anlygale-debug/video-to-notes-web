@@ -29,7 +29,7 @@ try {
         const editDialog = page.getByRole("dialog", { name: "编辑测试资格" });
         await editDialog.waitFor({ state: "visible" });
         await editDialog.getByLabel("剩余转录分钟").waitFor();
-        await editDialog.getByLabel("剩余笔记次数").waitFor();
+        await editDialog.getByLabel("剩余高速次数").waitFor();
         await editDialog.getByLabel("单个视频最长分钟").waitFor();
         await editDialog.getByRole("button", { name: "取消" }).click();
       }
@@ -62,7 +62,7 @@ try {
     await grant.waitFor();
     await grant.getByText("可使用", { exact: true }).waitFor();
     await grant.getByText("120 分钟", { exact: true }).waitFor();
-    await grant.getByText("20 次", { exact: true }).waitFor();
+    await grant.getByText("3 次", { exact: true }).waitFor();
     await grant.getByText(code, { exact: true }).waitFor();
     await grant.getByRole("button", { name: "复制此内测码" }).click();
     await grant.getByText("已复制", { exact: true }).waitFor();
@@ -100,9 +100,9 @@ try {
       { exact: true }
     ).waitFor();
     await editDialog.getByLabel("剩余转录分钟").fill("200");
-    await editDialog.getByLabel("剩余笔记次数").fill("30");
+    await editDialog.getByLabel("剩余高速次数").fill("30");
     await editDialog.getByText("120 → 200", { exact: true }).waitFor();
-    await editDialog.getByText("20 → 30", { exact: true }).waitFor();
+    await editDialog.getByText("3 → 30", { exact: true }).waitFor();
     await editDialog.getByText("20 → 60", { exact: true }).waitFor();
     if (process.env.VTN_E2E_EDIT_SCREENSHOT) {
       await page.screenshot({ path: process.env.VTN_E2E_EDIT_SCREENSHOT, fullPage: false });

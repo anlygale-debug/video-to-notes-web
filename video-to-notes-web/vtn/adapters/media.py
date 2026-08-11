@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -19,6 +20,13 @@ def detect_platform(url: str) -> str:
         return "youtube"
     if "xiaohongshu.com" in host or "xhslink.com" in host or "xhslink.cn" in host:
         return "xiaohongshu"
+    if (
+        host == "douyin.com"
+        or host.endswith(".douyin.com")
+        or host == "iesdouyin.com"
+        or host.endswith(".iesdouyin.com")
+    ):
+        return "douyin"
     return "other"
 
 
@@ -42,9 +50,13 @@ class PlatformMedia:
 class YtDlpPlatformMedia(PlatformMedia):
     def __init__(self, executable="yt-dlp"):
         self.executable = executable
+        runtime_bin = Path(sys.executable).parent
         self.env = {
             **os.environ,
-            "PATH": f"{Path.home() / '.agent-reach-venv/bin'}:{os.environ.get('PATH', '')}",
+            "PATH": (
+                f"{runtime_bin}:{Path.home() / '.agent-reach-venv/bin'}:"
+                f"{os.environ.get('PATH', '')}"
+            ),
         }
 
     def _run(self, args, timeout):
@@ -77,9 +89,75 @@ class YtDlpPlatformMedia(PlatformMedia):
         return False
 
     def _cookie_attempts(self, url):
-        if detect_platform(url) == "bilibili" and self._chrome_cookie_database_exists():
+        platform = detect_platform(url)
+        if platform == "douyin":
+            attempts = []
+            cookie_path = str(
+                self.env.get("VTN_DOUYIN_COOKIES_PATH") or ""
+            ).strip()
+            if cookie_path:
+                expanded_path = Path(cookie_path).expanduser()
+                if expanded_path.is_file():
+                    attempts.append(["--cookies", str(expanded_path)])
+            if self._chrome_cookie_database_exists():
+                attempts.append(["--cookies-from-browser", "chrome"])
+            attempts.append([])
+            return attempts
+        if platform == "bilibili" and self._chrome_cookie_database_exists():
             return [[], ["--cookies-from-browser", "chrome"]]
         return [[]]
+
+    @staticmethod
+    def _douyin_video_id(url):
+        parsed = urlparse(url)
+        modal_id = (parse_qs(parsed.query).get("modal_id") or [""])[0]
+        if re.fullmatch(r"\d{10,24}", modal_id):
+            return modal_id
+        match = re.search(
+            r"/(?:video|share/video|shipin)/(\d{10,24})(?:/|$)",
+            parsed.path,
+        )
+        return match.group(1) if match else ""
+
+    def _normalize_douyin_url(self, url):
+        video_id = self._douyin_video_id(url)
+        if video_id:
+            return f"https://www.douyin.com/video/{video_id}"
+        host = (urlparse(url).hostname or "").lower()
+        if host not in {"v.douyin.com", "jx.douyin.com"}:
+            return url
+        try:
+            request = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            with urllib.request.urlopen(request, timeout=20) as response:
+                redirected_url = response.geturl()
+        except (OSError, urllib.error.URLError):
+            return url
+        redirected_video_id = self._douyin_video_id(redirected_url)
+        if redirected_video_id:
+            return f"https://www.douyin.com/video/{redirected_video_id}"
+        return redirected_url
+
+    def _normalize_source_url(self, url):
+        if detect_platform(url) == "douyin":
+            return self._normalize_douyin_url(url)
+        return url
+
+    @staticmethod
+    def _douyin_access_error(last_error):
+        lowered = (last_error or "").lower()
+        if not any(
+            marker in lowered
+            for marker in ("cookie", "verification", "forbidden", "http error 403")
+        ):
+            return None
+        return DomainError(
+            "DOUYIN_ACCESS_REQUIRED",
+            "抖音解析凭证已失效，请先在 Chrome 打开一次抖音后再重试。",
+            retryable=True,
+        )
 
     @staticmethod
     def _xiaohongshu_creator_from_page(page_html, uploader_id):
@@ -511,10 +589,14 @@ class YtDlpPlatformMedia(PlatformMedia):
     def resolve(self, url: str) -> dict:
         result = None
         last_error = ""
+        normalized_url = self._normalize_source_url(url)
         for cookie_args in self._cookie_attempts(url):
             try:
                 result = subprocess.run(
-                    [self.executable, *cookie_args, "--no-playlist", "--dump-single-json", url],
+                    [
+                        self.executable, *cookie_args, "--no-playlist",
+                        "--dump-single-json", normalized_url,
+                    ],
                     capture_output=True, text=True, timeout=120, env=self.env, check=True,
                 )
                 break
@@ -527,6 +609,10 @@ class YtDlpPlatformMedia(PlatformMedia):
                 fallback = self._resolve_bilibili_api(url)
                 if fallback is not None:
                     return fallback
+            if detect_platform(url) == "douyin":
+                access_error = self._douyin_access_error(last_error)
+                if access_error is not None:
+                    raise access_error
             raise DomainError(
                 "MEDIA_RESOLVE_FAILED",
                 "视频解析失败：视频平台暂时拒绝解析，可能需要登录凭证或链接已失效",
@@ -536,12 +622,23 @@ class YtDlpPlatformMedia(PlatformMedia):
             data = json.loads(result.stdout)
         except json.JSONDecodeError as exc:
             raise DomainError("MEDIA_RESOLVE_FAILED", "视频平台返回了无法识别的信息", retryable=True) from exc
-        creator = data.get("uploader") or data.get("channel") or ""
-        if not creator and detect_platform(url) == "xiaohongshu":
+        platform = detect_platform(url)
+        if platform == "douyin":
+            # Douyin exposes the public nickname as ``channel``/``artist``.
+            # ``uploader`` is often only a numeric account handle.
+            creator = (
+                data.get("channel")
+                or data.get("artist")
+                or data.get("uploader")
+                or ""
+            )
+        else:
+            creator = data.get("uploader") or data.get("channel") or ""
+        if not creator and platform == "xiaohongshu":
             creator = self._resolve_xiaohongshu_creator(data, url)
         return {
             "source_url": url,
-            "platform": detect_platform(url),
+            "platform": platform,
             "title": data.get("title") or "未命名视频",
             "creator": creator,
             "description": data.get("description") or "",
@@ -552,12 +649,13 @@ class YtDlpPlatformMedia(PlatformMedia):
     def download_audio(self, url: str, directory: Path) -> Path:
         output = directory / "audio.%(ext)s"
         last_error = ""
+        normalized_url = self._normalize_source_url(url)
         for cookie_args in self._cookie_attempts(url):
             try:
                 subprocess.run(
                     [
                         self.executable, *cookie_args, "--no-playlist", "-x",
-                        "--audio-format", "mp3", "-o", str(output), url,
+                        "--audio-format", "mp3", "-o", str(output), normalized_url,
                     ],
                     capture_output=True, text=True, timeout=1800, env=self.env, check=True,
                 )
@@ -572,6 +670,10 @@ class YtDlpPlatformMedia(PlatformMedia):
             if fallback is not None:
                 return fallback
         if not matches:
+            if detect_platform(url) == "douyin":
+                access_error = self._douyin_access_error(last_error)
+                if access_error is not None:
+                    raise access_error
             raise DomainError(
                 "MEDIA_DOWNLOAD_FAILED", f"没有生成可转录音频：{last_error}", retryable=True
             )
@@ -580,6 +682,7 @@ class YtDlpPlatformMedia(PlatformMedia):
     def download_video(self, url: str, directory: Path) -> Path:
         output = directory / "video.%(ext)s"
         last_error = ""
+        normalized_url = self._normalize_source_url(url)
         for cookie_args in self._cookie_attempts(url):
             try:
                 subprocess.run(
@@ -587,7 +690,7 @@ class YtDlpPlatformMedia(PlatformMedia):
                         self.executable, *cookie_args, "--no-playlist", "-f",
                         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                         "--merge-output-format", "mp4", "--remux-video", "mp4",
-                        "-o", str(output), url,
+                        "-o", str(output), normalized_url,
                     ],
                     capture_output=True, text=True, timeout=1800,
                     env=self.env, check=True,
@@ -606,6 +709,10 @@ class YtDlpPlatformMedia(PlatformMedia):
             if fallback is not None:
                 return fallback
         if not matches:
+            if detect_platform(url) == "douyin":
+                access_error = self._douyin_access_error(last_error)
+                if access_error is not None:
+                    raise access_error
             raise DomainError(
                 "MEDIA_DOWNLOAD_FAILED",
                 f"没有生成可下载视频：{last_error or '平台未返回有效视频'}",
@@ -615,10 +722,14 @@ class YtDlpPlatformMedia(PlatformMedia):
 
     def video_stream_command(self, url: str):
         attempts = self._cookie_attempts(url)
-        cookie_args = attempts[-1] if len(attempts) > 1 else []
+        cookie_args = (
+            attempts[0]
+            if detect_platform(url) == "douyin" and attempts
+            else attempts[-1] if len(attempts) > 1 else []
+        )
         return [
             self.executable, *cookie_args, "--no-playlist", "-f",
-            "best[ext=mp4]/best", "-o", "-", url,
+            "best[ext=mp4]/best", "-o", "-", self._normalize_source_url(url),
         ]
 
 

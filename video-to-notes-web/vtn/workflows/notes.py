@@ -124,22 +124,66 @@ class NoteWorkflow:
         bind = getattr(self.llm, "for_profile", None)
         return bind(task.get("llm_profile_id")) if bind else self.llm
 
-    def _reserve_usage(self, task_id, access_id=None):
+    def generation_routes(self):
+        describe = getattr(self.llm, "generation_routes", None)
+        if describe:
+            return describe()
+        return {
+            "enabled": True,
+            "routes": {
+                "free": {
+                    "id": "free", "label": "免费线路", "available": True,
+                    "enabled": True, "description": "不消耗高速次数；速度可能较慢。",
+                },
+                "paid": {
+                    "id": "paid", "label": "高速体验线路", "available": True,
+                    "enabled": True,
+                    "description": "每次开始会消耗一次高速体验额度。",
+                },
+            },
+        }
+
+    def _profile_for_route(self, route):
+        select = getattr(self.llm, "profile_id_for_channel", None)
+        if select:
+            return select(route)
+        active = getattr(self.llm, "active_profile_id", None)
+        return active() if active else None
+
+    @staticmethod
+    def _uses_high_speed_quota(route):
+        return route != "free"
+
+    def _reserve_usage(self, task_id, access_id=None, generation_route=None):
         if self.access_manager is None:
             return
-        owner = access_id or self.get_task(task_id)["device_id"]
+        task = self.get_task(task_id) if access_id is None or generation_route is None else None
+        route = generation_route or (task or {}).get("generation_route", "paid")
+        if not self._uses_high_speed_quota(route):
+            return
+        owner = access_id or (task or {}).get("quota_access_id")
+        if not owner:
+            raise DomainError(
+                "ACCESS_REQUIRED",
+                "高速笔记线路目前仅对内测用户开放，请输入内测码后继续。",
+                retryable=False,
+            )
         self.access_manager.consume(owner, "note_generation", task_id, 1)
 
     def _release_usage(self, task_id):
         if self.access_manager is None:
             return
         task = self.repository.get_note_task(task_id)
-        if task:
+        if (
+            task
+            and task.get("quota_access_id")
+            and self._uses_high_speed_quota(task.get("generation_route", "paid"))
+        ):
             self.access_manager.release(
-                task["device_id"], "note_generation", task_id
+                task["quota_access_id"], "note_generation", task_id
             )
 
-    def start_analysis(self, note_input, *, task_id=None):
+    def start_analysis(self, note_input, *, task_id=None, quota_access_id=None):
         source = note_input.get("source")
         if not isinstance(source, dict) or source.get("type") not in {
             "parser", "paste", "file", "note",
@@ -180,27 +224,38 @@ class NoteWorkflow:
             }
         if not transcript:
             raise DomainError("EMPTY_TRANSCRIPT", "逐字稿不能为空")
+        generation_route = str(note_input.get("generation_route") or "free").strip()
+        if generation_route not in {"free", "paid"}:
+            raise DomainError("LLM_CHANNEL_INVALID", "请选择有效的笔记线路。")
+        profile_id = self._profile_for_route(generation_route)
         task_id = task_id or str(uuid.uuid4())
         owner = note_input.get("device_id") or "local-browser"
-        self._reserve_usage(task_id, owner)
+        self._reserve_usage(task_id, quota_access_id, generation_route)
         try:
-            active_profile = getattr(self.llm, "active_profile_id", None)
             self.repository.create_note_task(
                 {
                     "id": task_id,
                     "device_id": owner,
+                    "quota_access_id": quota_access_id,
                     "state": "analyzing",
                     "source_type": source_type,
                     "source_name": source_name or snapshot.get("title", ""),
                     "source_snapshot": snapshot,
                     "basis_transcript": transcript,
                     "request_text": note_input.get("request_text", ""),
-                    "llm_profile_id": active_profile() if active_profile else None,
+                    "llm_profile_id": profile_id,
+                    "generation_route": generation_route,
                 }
             )
         except Exception:
-            if self.access_manager is not None:
-                self.access_manager.release(owner, "note_generation", task_id)
+            if (
+                self.access_manager is not None
+                and quota_access_id
+                and self._uses_high_speed_quota(generation_route)
+            ):
+                self.access_manager.release(
+                    quota_access_id, "note_generation", task_id
+                )
             raise
         if snapshot.get("parser_record_id"):
             self.repository.link_parser_note(snapshot["parser_record_id"], task_id)

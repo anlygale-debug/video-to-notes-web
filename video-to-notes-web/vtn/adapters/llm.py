@@ -344,6 +344,12 @@ class OpenAICompatibleLLM(LLM):
     def active_profile_id(self):
         return self.settings_store.active_profile_id()
 
+    def profile_id_for_channel(self, channel):
+        return self.settings_store.profile_id_for_channel(channel)
+
+    def generation_routes(self):
+        return self.settings_store.generation_routes()
+
     def _analysis_timeout_seconds(self):
         try:
             channel = self._settings().get("channel")

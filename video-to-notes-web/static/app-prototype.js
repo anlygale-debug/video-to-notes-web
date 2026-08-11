@@ -90,7 +90,8 @@ const platformProfiles = {
   bilibili: { label: "BILIBILI", name: "Bilibili", creator: "UP 主", message: "已识别为 Bilibili 视频链接。" },
   xiaohongshu: { label: "小红书", name: "小红书", creator: "作者", message: "已识别为小红书视频链接。" },
   youtube: { label: "YOUTUBE", name: "YouTube", creator: "频道", message: "已识别为 YouTube 视频链接。" },
-  other: { label: "其他平台", name: "其他平台", creator: "作者", message: "未匹配三类主要平台，将尝试通用解析。" },
+  douyin: { label: "抖音", name: "抖音", creator: "作者", message: "已识别为抖音视频链接。" },
+  other: { label: "其他平台", name: "其他平台", creator: "作者", message: "未匹配主要平台，将尝试通用解析。" },
   waiting: { label: "等待链接", name: "", creator: "作者", message: "输入链接后，这里会显示识别到的视频平台。" },
 };
 
@@ -139,6 +140,7 @@ function detectPlatform(value) {
   if (normalized.includes("bilibili.com") || normalized.includes("b23.tv")) return platformProfiles.bilibili;
   if (normalized.includes("xiaohongshu.com") || normalized.includes("xhslink.com") || normalized.includes("xhslink.cn") || normalized.includes("rednote.com")) return platformProfiles.xiaohongshu;
   if (normalized.includes("youtube.com") || normalized.includes("youtu.be")) return platformProfiles.youtube;
+  if (normalized.includes("douyin.com") || normalized.includes("iesdouyin.com")) return platformProfiles.douyin;
   return platformProfiles.other;
 }
 
@@ -493,7 +495,32 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.dataset.openNotes !== undefined) {
-    runAnalysis("linked");
+    notesSourceMode = "linked";
+    setNotesState("ready");
+    return;
+  }
+  if (target.dataset.prepareNotes !== undefined) {
+    notesSourceMode = "independent";
+    setNotesState("ready");
+    return;
+  }
+  if (target.dataset.selectNoteRoute !== undefined) {
+    const routeId = target.dataset.selectNoteRoute;
+    notesStateHost.querySelectorAll("[data-select-note-route]").forEach((button) => {
+      button.classList.toggle("is-selected", button.dataset.selectNoteRoute === routeId);
+    });
+    const confirmation = notesStateHost.querySelector("[data-note-route-confirmation]");
+    if (confirmation) confirmation.hidden = false;
+    const title = confirmation?.querySelector("[data-route-confirmation-title]");
+    const copy = confirmation?.querySelector("[data-route-confirmation-copy]");
+    const confirm = confirmation?.querySelector("[data-confirm-note-route]");
+    if (title) title.textContent = routeId === "free" ? "使用免费线路，不消耗高速次数" : "使用 1 次高速体验";
+    if (copy) copy.textContent = routeId === "free" ? "生成可能需要更久，任务可以稍后恢复。" : "调用失败会自动退回本次额度。";
+    if (confirm) confirm.textContent = routeId === "free" ? "确认使用免费线路 →" : "确认使用高速体验线路 →";
+    return;
+  }
+  if (target.dataset.confirmNoteRoute !== undefined) {
+    runAnalysis(notesSourceMode);
     return;
   }
   if (target.dataset.regenerateNote !== undefined) {

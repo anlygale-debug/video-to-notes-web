@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="本地视频解析与自适应笔记生成工具" />
+    <meta name="description" content="支持多平台视频解析、逐字稿提取与自适应笔记生成" />
     <meta name="theme-color" content="#eee6d6" />
     <title>VIDE0 / NOTES｜视频内容知识化工具</title>
     <link rel="icon" href="/static/favicon.svg?v=1" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=1" sizes="180x180" />
-    <link rel="stylesheet" href="/static/app.css?v=28" />
+    <link rel="stylesheet" href="/static/app.css?v=35" />
   </head>
   <body>
     <div class="scanlines" aria-hidden="true"></div>
@@ -27,7 +27,7 @@
           <button class="guide-trigger" type="button" data-open-welcome aria-label="使用说明"><span aria-hidden="true">?</span> 使用说明</button>
           <button class="access-status" type="button" data-open-access hidden>
             <span class="status-dot"></span>
-            <span><strong data-access-label>公开展示</strong><small data-access-quota>输入内测码，解锁真实体验</small></span>
+            <span><strong data-access-label>免费使用</strong><small data-access-quota>输入内测码，解锁高速线路</small></span>
           </button>
           <div class="header-status meta"><span class="status-dot"></span>WEB APP // V4</div>
         </div>
@@ -98,13 +98,13 @@
             <span class="eyebrow">LINK INTAKE // INPUT 001</span>
             <h2>视频链接</h2>
           </div>
-          <p class="meta">支持：小红书 / Bilibili / YouTube<br />其他公开链接将尝试解析</p>
+          <p class="meta">支持：抖音 / 小红书 / Bilibili / YouTube<br />其他公开链接将尝试解析</p>
         </div>
 
         <form id="parser-form" class="link-form">
           <label for="video-link">粘贴视频链接或平台分享文案</label>
           <div class="link-form__row">
-            <input id="video-link" name="video-link" type="text" inputmode="url" placeholder="可直接粘贴 B站 / 小红书的整段分享文案" autocomplete="url" />
+            <input id="video-link" name="video-link" type="text" inputmode="url" placeholder="可直接粘贴抖音 / B站 / 小红书的整段分享文案" autocomplete="url" />
             <button class="button button-primary" type="submit"><span>→</span>开始解析</button>
           </div>
           <div id="platform-detection" class="platform-detection is-waiting" aria-live="polite">
@@ -163,14 +163,13 @@
           </div>
         </section>
 
-        <section id="notes" class="page-intro notes-intro">
-          <div class="intro-rule meta"><span class="square green"></span> 模块 02 / 自适应笔记生成器 <span class="slash">//</span> 先理解内容，再决定笔记形态</div>
-          <div class="intro-grid">
-            <div>
-              <h1>不是套模板，<br /><span>而是先读懂。</span></h1>
-              <p class="intro-copy">提供逐字稿和本次用途，AI 会先预读内容，再推荐结构、详细程度、生成方式与附加模块。</p>
-            </div>
-            <div class="issue-stamp meta">桌面网页 / 第四阶段<br /><strong id="notes-state-stamp">状态 01 — 输入</strong><br />BUILD / 2026.07</div>
+        <section id="notes" class="page-intro notes-intro notes-intro--guide">
+          <div class="intro-rule meta"><span class="square green"></span> 笔记生成 <span class="slash">//</span> 按下面两步操作</div>
+          <div class="notes-quick-guide" aria-label="笔记生成步骤">
+            <div><span>01</span><strong>导入逐字稿</strong><small>粘贴文字，或上传 TXT / MD 文件</small></div>
+            <i aria-hidden="true">→</i>
+            <div><span>02</span><strong>选择生成方式</strong><small>使用本站、常用 AI 或 Agent 工具</small></div>
+            <div class="issue-stamp meta">桌面网页<br /><strong id="notes-state-stamp">状态 01 — 输入</strong></div>
           </div>
         </section>
 
@@ -224,14 +223,14 @@
           <div class="welcome-ticket" aria-hidden="true"><span>START</span><strong>01</strong><small>完整体验入口</small></div>
         </section>
         <ol class="welcome-steps" aria-label="产品使用流程" data-welcome-reveal>
-          <li><span class="welcome-step-number">01</span><div><strong>粘贴视频链接</strong><p>支持 Bilibili、小红书、YouTube 等公开视频来源。</p></div></li>
+          <li><span class="welcome-step-number">01</span><div><strong>粘贴视频链接</strong><p>支持抖音、Bilibili、小红书、YouTube 等公开视频来源。</p></div></li>
           <li><span class="welcome-step-number">02</span><div><strong>AI 预读并推荐</strong><p>根据内容与用途推荐结构、详细程度和生成方式。</p></div></li>
           <li><span class="welcome-step-number">03</span><div><strong>阅读、编辑与导出</strong><p>得到完整成品笔记，并继续修改、复习或下载。</p></div></li>
         </ol>
         <section class="welcome-beta-note" data-welcome-reveal>
           <div class="welcome-beta-mark"><span>!</span><small>BETA<br />STATUS</small></div>
-          <div><span class="eyebrow">当前开放状态</span><strong>公开案例可以完整体验</strong><p>无需内测码，也不会消耗额度或发起真实 AI 请求。</p></div>
-          <div class="welcome-beta-access"><strong>当前公网真实调用暂未开放</strong><p>后续开放时，内测码将用于解锁个人额度内的真实解析与笔记生成。</p></div>
+          <div><span class="eyebrow">当前开放状态</span><strong>免费线路无需内测码</strong><p>可以直接解析链接、下载视频与音频，并使用免费转录和免费笔记线路。</p></div>
+          <div class="welcome-beta-access"><strong>内测码用于解锁高速线路</strong><p>高速转录按分钟使用额度，高速笔记按次数使用额度；额度用完后仍可继续使用免费线路。</p></div>
         </section>
         <footer class="welcome-actions" data-welcome-reveal>
           <div><span class="eyebrow">推荐从这里开始</span><strong>先用 2 分钟走完整个产品流程。</strong></div>
@@ -245,15 +244,15 @@
 
     <dialog id="access-dialog" class="modal access-dialog">
       <form method="dialog" data-access-form>
-        <div class="modal__label meta"><span class="square blue"></span> PRIVATE BETA // 真实体验授权</div>
-        <h2>输入内测码，开始真实体验。</h2>
-        <p>页面和示例结果可以公开查看；只有解析真实视频和生成真实笔记会消耗内测额度。</p>
+        <div class="modal__label meta"><span class="square blue"></span> PRIVATE BETA // 高速线路授权</div>
+        <h2>输入内测码，解锁高速线路。</h2>
+        <p>免费解析、下载、转录和笔记功能可以直接使用；内测码只用于解锁高速转录和高速笔记额度。</p>
         <label class="field-label" for="access-code">内测码</label>
         <input id="access-code" name="access-code" type="password" autocomplete="one-time-code" placeholder="VTN-••••••••" required />
         <p class="access-error" data-access-error hidden></p>
         <div class="modal__actions">
-          <button class="button button-primary" type="submit">进入真实体验 →</button>
-          <button class="button button-secondary" type="button" data-close-access>继续查看公开示例</button>
+          <button class="button button-primary" type="submit">解锁高速线路 →</button>
+          <button class="button button-secondary" type="button" data-close-access>继续使用免费线路</button>
         </div>
       </form>
     </dialog>
@@ -357,14 +356,40 @@
         </article>
         <div class="asset-grid">
           <section class="transcript-panel framed-panel">
-            <div class="panel-title"><div><span class="eyebrow">MATERIAL 03 / TRANSCRIPT</span><h3 data-transcript-character-count>逐字稿</h3></div><span class="chip chip-green">已就绪</span></div>
-            <p id="transcript-preview" class="transcript-preview">“以前我学习新东西，总是先收藏二十篇文章，再等一个完美的周末。后来我换了一个顺序：先明确自己要解决什么问题，再用 AI 把零散材料变成可以执行的一页笔记……”</p>
-            <div class="transcript-actions">
-              <button class="button button-secondary transcript-button" type="button" data-toggle-transcript aria-controls="transcript-preview" aria-expanded="false">展开完整逐字稿 ↓</button>
-              <button class="button button-secondary transcript-button" type="button" data-copy-transcript>复制全文</button>
-              <button class="button button-secondary transcript-button" type="button" data-download="transcript-txt">↓ 下载 TXT</button>
-              <button class="button button-secondary transcript-button" type="button" data-download="transcript-md">↓ 下载 MD</button>
+            <div data-transcript-empty hidden>
+              <div class="panel-title"><div><span class="eyebrow">MATERIAL 03 / TRANSCRIPT</span><h3>生成逐字稿</h3></div><span class="chip chip-blue">按需生成</span></div>
+              <div class="transcript-empty-copy">
+                <strong>视频信息已经准备好，逐字稿尚未生成。</strong>
+                <p>选择转录方式后，系统才会获取音频并转换成文字。</p>
+              </div>
+              <div class="transcription-route-list">
+                <button class="button button-primary transcription-route" type="button" data-generate-transcript="cloudflare"><span>高速高质量转录</span><small>需内测码 · 更快、更稳定</small></button>
+                <button class="button button-secondary transcription-route" type="button" data-generate-transcript="local"><span>免费转录</span><small>无需内测码 · 速度可能较慢</small></button>
+              </div>
+              <p class="transcription-status meta" data-transcription-status aria-live="polite">尚未调用任何转录模型。</p>
             </div>
+            <div data-transcript-ready>
+              <div class="panel-title"><div><span class="eyebrow">MATERIAL 03 / TRANSCRIPT</span><h3 data-transcript-character-count>逐字稿</h3></div><span class="chip chip-green">已就绪</span></div>
+              <p id="transcript-preview" class="transcript-preview">“以前我学习新东西，总是先收藏二十篇文章，再等一个完美的周末。后来我换了一个顺序：先明确自己要解决什么问题，再用 AI 把零散材料变成可以执行的一页笔记……”</p>
+              <div class="transcript-actions">
+                <button class="button button-secondary transcript-button" type="button" data-toggle-transcript aria-controls="transcript-preview" aria-expanded="false">展开完整逐字稿 ↓</button>
+                <button class="button button-secondary transcript-button" type="button" data-copy-transcript>复制全文</button>
+                <button class="button button-secondary transcript-button" type="button" data-download="transcript-txt">↓ 下载 TXT</button>
+                <button class="button button-secondary transcript-button" type="button" data-download="transcript-md">↓ 下载 MD</button>
+                <button class="button button-secondary transcript-button" type="button" data-regenerate-transcript>↻ 重新生成 / 切换线路</button>
+              </div>
+              <div class="transcript-regenerate" data-transcript-regenerate hidden>
+                <strong>选择这次重新生成使用的线路</strong>
+                <p>新结果完整生成前会保留当前逐字稿；失败不会覆盖已有内容。</p>
+                <div class="transcription-route-list">
+                  <button class="button button-primary transcription-route" type="button" data-generate-transcript="cloudflare" data-replace-existing><span>高速高质量转录</span><small>需内测码 · 更快、更稳定</small></button>
+                  <button class="button button-secondary transcription-route" type="button" data-generate-transcript="local" data-replace-existing><span>免费转录</span><small>无需内测码 · 速度可能较慢</small></button>
+                </div>
+                <button class="text-action" type="button" data-cancel-transcript-regeneration>暂不重新生成</button>
+              </div>
+            </div>
+            <div class="transcription-running" data-transcription-running hidden aria-live="polite"><strong>正在重新获取完整逐字稿</strong><p data-transcription-running-copy>正在准备音频……</p></div>
+            <div class="transcription-error" data-transcription-error hidden role="alert"><strong>逐字稿没有生成完成</strong><p data-transcription-error-message></p><div><button class="button button-primary" type="button" data-retry-transcription>↻ 重试当前线路</button><button class="button button-secondary" type="button" data-switch-transcription>切换转录线路</button><button class="text-action" type="button" data-dismiss-transcription-error>返回当前结果</button></div></div>
           </section>
           <section class="downloads-panel framed-panel">
             <span class="eyebrow">MATERIALS / ON-DEMAND</span>
@@ -373,14 +398,15 @@
             <div class="download-buttons"><button class="button button-secondary" type="button" data-download="video">↓ 视频 MP4</button><button class="button button-secondary" type="button" data-download="audio">↓ 音频 MP3</button></div>
           </section>
         </div>
-        <aside class="free-capacity-notice framed-panel" data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
-          <div><span class="eyebrow">FREE LINE // LENGTH CHECK</span><strong data-free-capacity-title>正在判断免费线路适配度</strong></div>
+        <aside class="free-capacity-notice framed-panel" data-transcript-dependent data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
+          <div><span class="eyebrow">本次笔记评估 / 免费线路</span><strong data-free-capacity-title>正在判断是否适合免费线路</strong></div>
           <p><span data-free-capacity-copy>系统会同时参考视频时长和逐字稿字量。</span><small data-free-capacity-facts></small></p>
           <span class="chip" data-free-capacity-chip>等待内容</span>
         </aside>
-        <section class="next-module framed-panel">
-          <div><span class="eyebrow"><span class="square green"></span> 已关联的下一步</span><h3>准备把这份逐字稿变成笔记？</h3><p>进入笔记生成器后，AI 会先预读内容，再给出本次笔记的推荐设置。</p></div>
-          <button class="button button-primary" type="button" data-open-notes>用此逐字稿生成笔记 <span>→</span></button>
+        <section class="next-module framed-panel" data-transcript-dependent>
+          <div><span class="eyebrow"><span class="square green"></span> 下一步</span><h3>用这份逐字稿生成笔记</h3><p>进入后选择一种生成方式，不会立即调用 AI。</p></div>
+          <button class="button button-primary" type="button" data-open-notes>选择笔记生成方式 <span>→</span></button>
+          <small class="meta">进入笔记页只加载逐字稿，不会立即调用 AI。</small>
         </section>
       </div>
     </template>
@@ -414,28 +440,28 @@
     <template id="notes-input-template">
       <section class="notes-input-layout">
         <div class="stage-heading notes-section-head">
-          <div><span class="eyebrow">TRANSCRIPT INTAKE // INPUT 001</span><h2>提供逐字稿</h2></div>
+          <div><span class="eyebrow">STEP 01 // 导入内容</span><h2>第一步：导入逐字稿</h2></div>
           <div class="notes-history-entry"><p class="meta">粘贴文本或上传 TXT / MD<br />不会自动调用 AI</p><div><button class="text-action" type="button" data-open-task-recovery>恢复任务</button><button class="text-action" type="button" data-open-note-history>笔记历史</button></div></div>
         </div>
         <div class="notes-source-grid">
           <form class="notes-paste-card framed-panel" data-notes-form>
-            <div class="panel-title"><div><span class="eyebrow">方式 01 / 直接粘贴</span><h3>粘贴逐字稿</h3></div><span class="chip chip-blue">推荐</span></div>
+            <div class="panel-title"><div><span class="eyebrow">输入方式 A / 直接粘贴</span><h3>粘贴逐字稿</h3></div><span class="chip chip-blue">推荐</span></div>
             <label class="field-label" for="notes-transcript-input">逐字稿正文</label>
             <textarea id="notes-transcript-input" class="notes-textarea" rows="10" placeholder="把已有的逐字稿粘贴到这里……"></textarea>
             <aside class="free-capacity-notice free-capacity-notice--compact" data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
-              <div><span class="eyebrow">免费线路长度评估</span><strong data-free-capacity-title>粘贴后自动判断免费线路适配度</strong></div>
+              <div><span class="eyebrow">本次笔记评估 / 免费线路</span><strong data-free-capacity-title>导入后显示评估结果</strong></div>
               <p><span data-free-capacity-copy>系统会同时参考视频时长和逐字稿字量。</span><small data-free-capacity-facts></small></p>
               <span class="chip" data-free-capacity-chip>等待内容</span>
             </aside>
             <label class="field-label" for="notes-request-input">本次笔记需求 <span>选填</span></label>
             <textarea id="notes-request-input" class="notes-request" rows="3" placeholder="例如：用于面试准备，重点保留方法步骤和案例。"></textarea>
-            <button class="button button-primary notes-analyze-button" type="button" data-start-analysis>分析逐字稿 <span>→</span></button>
+            <button class="button button-primary notes-analyze-button" type="button" data-prepare-notes>继续选择生成方式 <span>→</span></button>
           </form>
           <aside class="notes-upload-card framed-panel">
-            <span class="eyebrow">方式 02 / 文件上传</span>
+            <span class="eyebrow">输入方式 B / 文件上传</span>
             <div class="upload-glyph" aria-hidden="true">TXT<br /><span>+</span> MD</div>
             <h3>上传文本文件</h3>
-            <p>支持 <strong>.txt</strong> 与 <strong>.md</strong>。选择文件后仍由你点击“分析逐字稿”，不会自动预读。</p>
+            <p>支持 <strong>.txt</strong> 与 <strong>.md</strong>。选择文件后进入方式选择页，不会自动预读或调用 AI。</p>
             <button class="button button-secondary" type="button" data-fake-upload>选择 TXT / MD 文件</button>
             <div class="upload-spec meta">MAX / 5 MB<br />LOCAL FILE / TXT OR MD</div>
           </aside>
@@ -446,16 +472,11 @@
     <template id="notes-ready-template">
       <section class="notes-ready-stack">
         <div class="source-ready-banner"><span class="chip chip-green">✓ 内容已就绪</span><span class="meta" data-ready-source-summary>来源 / 文件上传 // 3,842 字</span></div>
-        <aside class="free-capacity-notice framed-panel" data-free-capacity data-free-capacity-level="unknown" aria-live="polite">
-          <div><span class="eyebrow">FREE LINE // LENGTH CHECK</span><strong data-free-capacity-title>正在判断免费线路适配度</strong></div>
-          <p><span data-free-capacity-copy>系统会同时参考视频时长和逐字稿字量。</span><small data-free-capacity-facts></small></p>
-          <span class="chip" data-free-capacity-chip>等待内容</span>
-        </aside>
         <div class="notes-ready-card framed-panel">
           <div>
-            <span class="eyebrow">TRANSCRIPT READY // WAITING FOR ACTION</span>
-            <h2>逐字稿已经准备好。</h2>
-            <p>系统只保存了本次输入；尚未调用 AI。点击分析后，AI 才会预读内容并生成推荐设置。</p>
+            <span class="eyebrow">STEP 02 // 选择方式</span>
+            <h2>第二步：选择一种方式生成笔记</h2>
+            <p>下面三种方式任选一种。</p>
           </div>
           <div class="ready-file">
             <span class="file-corner meta" data-ready-file-type>MD / 01</span>
@@ -463,14 +484,42 @@
             <span data-ready-file-meta>3,842 字 · UTF-8 · 已读取</span>
           </div>
         </div>
-        <div class="notes-request-card framed-panel">
-          <label class="field-label" for="ready-request-input">本次笔记需求 <span>选填</span></label>
-          <textarea id="ready-request-input" class="notes-request" rows="3">用于快速复习，重点保留学习步骤、具体案例和可以立刻执行的方法。</textarea>
-          <div class="ready-actions">
-            <button class="button button-primary" type="button" data-start-analysis>分析逐字稿 <span>→</span></button>
-            <button class="button button-secondary" type="button" data-notes-state-jump="input">重新选择内容</button>
-          </div>
+        <div class="ready-transcript-actions framed-panel">
+          <div><span class="eyebrow">TAKE YOUR TRANSCRIPT // 随时带走</span><strong>复制或下载后，可粘贴到任意 AI。</strong></div>
+          <div class="ready-actions"><button class="button button-primary" type="button" data-copy-ready-transcript>复制逐字稿</button><button class="button button-secondary" type="button" data-download-ready-transcript="txt">下载 TXT</button><button class="button button-secondary" type="button" data-download-ready-transcript="md">下载 MD</button><button class="text-action" type="button" data-notes-state-jump="input">重新选择内容</button></div>
         </div>
+        <section class="ready-methods" aria-label="笔记生成方式">
+          <div class="ready-methods__grid">
+            <article class="open-note-card open-note-card--website ready-method-card" data-note-route-host>
+              <header><span class="note-method-number">01</span><div><span class="eyebrow">留在当前页面</span><h4>直接在本站生成</h4></div></header>
+              <p>填写你的笔记要求，再选择免费线路或高速体验线路。确认后才会开始生成。</p>
+              <label class="field-label" for="ready-request-input">本次笔记需求 <span>选填</span></label>
+              <textarea id="ready-request-input" class="notes-request" rows="3" placeholder="例如：用于复习，重点保留方法、案例和行动步骤。"></textarea>
+              <aside class="free-capacity-notice free-capacity-notice--compact" data-free-capacity data-free-capacity-level="unknown" aria-live="polite"><div><span class="eyebrow">本次笔记评估 / 免费线路</span><strong data-free-capacity-title>正在判断是否适合免费线路</strong></div><p><span data-free-capacity-copy>系统会告诉你是否适合、预计等待多久，以及内容过长时应该换哪种方式。</span><small data-free-capacity-facts></small></p><span class="chip" data-free-capacity-chip>等待内容</span></aside>
+              <div class="note-route-list" role="group" aria-label="本站生成线路">
+                <button class="note-route-choice note-route-choice--free" type="button" data-select-note-route="free"><span class="chip chip-green">免费线路</span><strong>较慢，可能需要等待</strong><small data-route-status="free">正在读取线路状态…</small></button>
+                <button class="note-route-choice note-route-choice--paid" type="button" data-select-note-route="paid"><span class="chip chip-blue">高速体验线路</span><strong>更快、更稳定</strong><small><span data-route-status="paid">正在读取线路状态…</span><span data-high-speed-remaining></span></small></button>
+              </div>
+              <div class="note-route-confirmation" data-note-route-confirmation hidden><span class="eyebrow" data-route-confirmation-label>线路确认</span><strong data-route-confirmation-title>请先选择线路</strong><p data-route-confirmation-copy></p><button class="button button-primary" type="button" data-confirm-note-route>确认并开始分析 <span>→</span></button></div>
+              <p class="route-contact-note" data-route-contact-note hidden>高速体验次数已用完。你仍可使用免费线路，或联系作者补充体验次数。</p>
+            </article>
+            <article class="open-note-card open-note-card--prompt ready-method-card">
+              <header><span class="note-method-number">02</span><div><span class="eyebrow">使用自己的 AI</span><h4>用你常用的 AI 生成</h4></div></header>
+              <div class="open-note-fit open-note-fit--caution"><strong>无需安装</strong><span>豆包、DeepSeek、ChatGPT 等都可以</span></div>
+              <p>复制逐字稿和通用提示词，发送给你常用的 AI。长短内容都能处理，实际效果取决于所用 AI 对文本长度的支持。</p>
+              <ul><li>四个问题随内容动态生成</li><li>时间戳和附加模块按需判断</li><li>长稿先确认大纲，减少遗漏</li></ul>
+              <div class="open-note-actions"><button class="button button-primary" type="button" data-copy-universal-prompt>复制提示词</button><a class="button button-secondary" href="/static/resources/to-notes-universal-zh.md" download>下载 MD</a></div>
+            </article>
+            <article class="open-note-card open-note-card--skill ready-method-card">
+              <header><span class="note-method-number">03</span><div><span class="eyebrow">给 Agent 工具使用</span><h4>To Notes Skill</h4></div></header>
+              <div class="open-note-fit open-note-fit--long"><strong>长短内容都适合</strong><span>处理长内容时优势更明显</span></div>
+              <p>这是一个安装在 Agent 工具里的 Skill。Agent 是能读取文件、按步骤完成任务的 AI 工具，例如 Codex、Claude Code、WorkBuddy。安装后，它会先理解全文，再按你的要求生成笔记。</p>
+              <code class="open-note-command">npx skills add anlygale-debug/to-notes --skill to-notes -g -y</code>
+              <div class="open-note-actions"><button class="button button-primary" type="button" data-copy-skill-install>复制安装命令</button><a class="button button-secondary" href="https://github.com/anlygale-debug/to-notes" target="_blank" rel="noreferrer">查看使用说明</a><a class="text-action" href="/static/resources/to-notes-skill.zip" download>下载 ZIP ↓</a></div>
+              <small>安装后，把逐字稿交给 Agent，并告诉它你希望生成什么样的笔记。</small>
+            </article>
+          </div>
+        </section>
       </section>
     </template>
 
@@ -876,6 +925,15 @@
               <summary><span><span class="eyebrow">生成依据逐字稿</span><strong>已自动带入，无需重新粘贴</strong></span><span class="meta" data-regenerate-character-count>0 字 ＋</span></summary>
               <div class="regenerate-source-body"><textarea class="notes-textarea" rows="8" readonly data-regenerate-transcript></textarea></div>
             </details>
+            <div class="regenerate-route-picker" data-note-route-host>
+              <span class="eyebrow">GENERATION LINE // 这次使用哪条线路</span>
+              <div class="note-route-list" role="group" aria-label="重新生成线路">
+                <button class="note-route-choice note-route-choice--free" type="button" data-select-note-route="free"><span class="chip chip-green">免费线路</span><strong>较慢，不扣高速次数</strong><small data-route-status="free">正在读取线路状态…</small></button>
+                <button class="note-route-choice note-route-choice--paid" type="button" data-select-note-route="paid"><span class="chip chip-blue">高速体验线路</span><strong>更快，使用 1 次</strong><small><span data-route-status="paid">正在读取线路状态…</span><span data-high-speed-remaining></span></small></button>
+              </div>
+              <div class="note-route-confirmation" data-note-route-confirmation hidden><span class="eyebrow" data-route-confirmation-label>线路确认</span><strong data-route-confirmation-title>请先选择线路</strong><p data-route-confirmation-copy></p></div>
+              <p class="route-contact-note" data-route-contact-note hidden>高速体验次数已用完。你仍可使用免费线路，或联系作者补充体验次数。</p>
+            </div>
             <div class="regenerate-actions">
               <button class="button button-primary" type="submit" data-confirm-regenerate>重新分析并生成新笔记 <span>→</span></button>
               <button class="button button-secondary" type="button" data-cancel-regenerate>返回当前笔记</button>
@@ -976,9 +1034,9 @@
 
     <script src="/static/vendor/gsap/gsap.min.js"></script>
     <script src="/static/vendor/gsap/ScrollTrigger.min.js"></script>
-    <script src="/static/free-capacity.js?v=1"></script>
-    <script src="/static/app-prototype.js?v=18"></script>
-    <script src="/static/real-app.js?v=33"></script>
+    <script src="/static/free-capacity.js?v=2"></script>
+    <script src="/static/app-prototype.js?v=20"></script>
+    <script src="/static/real-app.js?v=41"></script>
     <script src="/static/motion.js?v=5"></script>
   </body>
 </html>

@@ -128,7 +128,7 @@
       `${formatNumber(grant.remaining_transcription_minutes)} 分钟`
     );
     const notes = metric(
-      "剩余笔记",
+      "剩余高速",
       `${formatNumber(grant.remaining_note_generations)} 次`
     );
     const maxVideo = metric(
@@ -451,7 +451,7 @@
     const choose = document.createElement("button");
     choose.type = "button";
     choose.className = "llm-channel-choose";
-    choose.textContent = active ? "新任务正在走此线路" : "切换新任务到此线路";
+    choose.textContent = active ? "当前兼容默认线路" : "设为兼容默认线路";
     choose.disabled = active || !ready;
     choose.addEventListener("click", () => switchLLMChannel(channel, choose));
     const toggle = document.createElement("button");
@@ -662,11 +662,11 @@
         body: JSON.stringify({ channel }),
       });
       renderLLM(payload);
-      setLLMMessage(`已切换到${llmChannelLabels[channel]}。之后的新任务会使用该线路的默认模型。`);
+      setLLMMessage(`已将${llmChannelLabels[channel]}设为兼容旧任务的默认线路。用户主动选择线路时仍以用户选择为准。`);
     } catch (error) {
       setLLMMessage(error.message, "error");
       button.disabled = false;
-      button.textContent = "切换新任务到此线路";
+      button.textContent = "设为兼容默认线路";
     }
   }
 
@@ -930,8 +930,8 @@
         item.classList.toggle("is-selected", item === button);
       });
       const presets = {
-        light: [30, 5, 20],
-        deep: [120, 20, 20],
+        light: [30, 1, 20],
+        deep: [120, 3, 20],
       };
       const values = presets[button.dataset.preset];
       if (!values) {
@@ -966,7 +966,7 @@
       resultDialog.showModal();
       form.reset();
       form.elements.transcription_minutes.value = 30;
-      form.elements.note_generations.value = 5;
+      form.elements.note_generations.value = 1;
       form.elements.max_video_minutes.value = 20;
       document.querySelectorAll("[data-preset]").forEach((item) => item.classList.remove("is-selected"));
       await loadGrants();
@@ -1237,8 +1237,8 @@
       `${llmChannelLabels[llmState.active_channel]} / ${active.label} / ${llmModelDisplayName(active.model)}`;
     document.querySelector("[data-llm-enable-copy]").textContent =
       llmState.active_channel === "free"
-        ? "之后的新任务会调用免费线路。长内容可能等待更久，但不会消耗已配置的付费线路额度。"
-        : "之后的新任务会调用高速线路，并可能消耗当前模型服务商的账户额度。";
+        ? "已设为兼容旧任务的默认线路。用户主动选择免费线路时，长内容可能等待更久，但不消耗高速次数。"
+        : "已设为兼容旧任务的默认线路。用户主动选择高速线路时，会消耗邀请码的高速体验次数。";
     document.querySelector("[data-llm-enable-error]").hidden = true;
     llmEnableDialog.showModal();
   });

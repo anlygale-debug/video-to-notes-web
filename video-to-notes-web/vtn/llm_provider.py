@@ -468,6 +468,55 @@ class LLMProviderStore:
     def is_enabled(self):
         return self.status()["notes_enabled"]
 
+    def is_master_enabled(self):
+        return self.status()["notes_master_enabled"]
+
+    def generation_routes(self):
+        """Return public route availability without exposing providers or credentials."""
+        status = self.status()
+        routes = {}
+        for channel in LLM_CHANNELS:
+            config = status["channels"][channel]
+            profile = config.get("default_profile")
+            available = bool(
+                status["notes_master_enabled"]
+                and config["enabled"]
+                and profile
+                and profile["enabled"]
+                and profile["api_key_saved"]
+            )
+            routes[channel] = {
+                "id": channel,
+                "label": "免费线路" if channel == "free" else "高速体验线路",
+                "available": available,
+                "enabled": bool(config["enabled"]),
+                "description": (
+                    "不消耗高速次数；速度受免费服务容量影响，可能需要等待。"
+                    if channel == "free"
+                    else "优先使用稳定高速模型；每次开始会消耗一次高速体验额度。"
+                ),
+            }
+        return {"enabled": bool(status["notes_master_enabled"]), "routes": routes}
+
+    def profile_id_for_channel(self, channel):
+        if channel not in LLM_CHANNELS:
+            raise DomainError("LLM_CHANNEL_INVALID", "请选择有效的笔记线路。")
+        status = self.status()
+        if not status["notes_master_enabled"]:
+            raise DomainError(
+                "NOTE_GENERATION_PAUSED", "本站 AI 笔记生成暂时暂停。", retryable=True
+            )
+        route = status["channels"][channel]
+        profile = route.get("default_profile")
+        if not route["enabled"] or not profile or not profile["enabled"]:
+            label = "免费线路" if channel == "free" else "高速体验线路"
+            raise DomainError(
+                "LLM_ROUTE_UNAVAILABLE", f"{label}当前不可用，请选择其他生成方式。",
+                retryable=True,
+            )
+        self.credentials(profile["id"])
+        return profile["id"]
+
     def active_profile_id(self):
         status = self.status()
         return status["active_profile_id"] if status["route_ready"] else None

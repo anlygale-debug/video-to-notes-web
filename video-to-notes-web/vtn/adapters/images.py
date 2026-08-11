@@ -12,6 +12,7 @@ ALLOWED_THUMBNAIL_HOST_SUFFIXES = (
     "hdslb.com",
     "biliimg.com",
     "xhscdn.com",
+    "douyinpic.com",
 )
 
 
@@ -101,11 +102,12 @@ class SafeThumbnailFetcher:
             url = urlunparse(parsed)
         safe_url = _validate_thumbnail_url(url)
         hostname = urlparse(safe_url).hostname or ""
-        referer = (
-            "https://www.xiaohongshu.com/"
-            if hostname.endswith(".xhscdn.com")
-            else "https://www.bilibili.com/"
-        )
+        if hostname == "xhscdn.com" or hostname.endswith(".xhscdn.com"):
+            referer = "https://www.xiaohongshu.com/"
+        elif hostname == "douyinpic.com" or hostname.endswith(".douyinpic.com"):
+            referer = "https://www.douyin.com/"
+        else:
+            referer = "https://www.bilibili.com/"
         request = urllib.request.Request(
             safe_url,
             headers={

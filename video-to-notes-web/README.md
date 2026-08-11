@@ -1,6 +1,6 @@
 # Video to Notes
 
-Paste a video link → get structured study notes. Supports Xiaohongshu, Bilibili, and YouTube.
+Paste a video link → get structured study notes. Supports Douyin, Xiaohongshu, Bilibili, and YouTube.
 
 ## Quick Start (macOS)
 
@@ -84,6 +84,19 @@ Without this, notes will be plain transcripts.
 产品介绍页：http://127.0.0.1:4176/video-notes
 应用页：http://127.0.0.1:4176/next
 
+## Public Access and High-speed Routes
+
+The hosted app is open without an invite code. Anonymous visitors can parse a
+supported video link, download video/audio, use free transcription, and use the
+free note-generation route. An invite code only unlocks the high-speed routes:
+
+- high-speed transcription consumes the invite's remaining audio minutes;
+- high-speed note generation consumes one generation at a time;
+- when high-speed quota is exhausted, all free features remain available.
+
+The browser device ID owns history records independently from the invite code,
+so entering a code does not hide work created before activation.
+
 ## Platform Support
 
 | Platform | Search | Download | Notes |
@@ -91,6 +104,17 @@ Without this, notes will be plain transcripts.
 | Bilibili | ✅ Official API | ✅ yt-dlp | |
 | YouTube | ✅ yt-dlp | ✅ yt-dlp | |
 | Xiaohongshu | ✅ xhs CLI | ✅ CDN direct | Requires `xhs login` |
+| Douyin | — | ✅ yt-dlp | Requires fresh anonymous browser cookies |
+
+### Douyin Setup
+
+The local app first tries the current Chrome browser's Douyin cookies. Open
+`https://www.douyin.com/` once in Chrome before retrying; login is not always
+required. On a server, point the app to a dedicated Netscape cookie file:
+
+```bash
+export VTN_DOUYIN_COOKIES_PATH="/var/lib/video-to-notes/douyin-cookies.txt"
+```
 
 ### Xiaohongshu Setup
 

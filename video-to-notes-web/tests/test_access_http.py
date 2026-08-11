@@ -29,7 +29,7 @@ class AccessHttpTests(unittest.TestCase):
             max_video_seconds=1200,
         )["code"]
         parser = ParserWorkflow(
-            self.repo, FakePlatformMedia(), FakeTranscriber(), run_in_background=False,
+            self.repo, FakePlatformMedia(), FakeTranscriber("完整逐字稿。" * 120), run_in_background=False,
             access_manager=self.access,
         )
         notes = NoteWorkflow(
@@ -52,16 +52,17 @@ class AccessHttpTests(unittest.TestCase):
         self.repo.close()
         self.tempdir.cleanup()
 
-    def test_public_status_and_login_unlock_protected_api(self):
-        blocked = self.client.get("/api/v3/parser/records")
-        self.assertEqual(blocked.status_code, 401)
-        self.assertEqual(blocked.json()["error"]["code"], "ACCESS_REQUIRED")
+    def test_public_api_is_open_and_login_unlocks_high_speed_quota(self):
+        public = self.client.get("/api/v3/parser/records")
+        self.assertEqual(public.status_code, 200)
+        self.assertEqual(public.json()["items"], [])
 
         login = self.client.post("/api/v3/access/login", json={"code": self.code})
         self.assertEqual(login.status_code, 200)
         self.assertEqual(login.json()["access"]["label"], "朋友 A")
         self.assertEqual(login.json()["access"]["remaining_transcription_seconds"], 1800)
         self.assertEqual(login.json()["access"]["remaining_note_generations"], 5)
+        self.assertEqual(login.json()["access"]["remaining_high_speed_generations"], 5)
 
         unlocked = self.client.get("/api/v3/parser/records")
         self.assertEqual(unlocked.status_code, 200)
@@ -132,10 +133,19 @@ class AccessHttpTests(unittest.TestCase):
         self.client.post("/api/v3/access/login", json={"code": self.code})
         created = self.client.post(
             "/api/v3/parser/tasks",
-            json={"source_url": "https://example.test/friend-a", "device_id": "spoofed"},
+            json={
+                "source_url": "https://example.test/friend-a",
+                "device_id": "spoofed",
+                "include_transcript": False,
+            },
         ).json()["task"]
         self.assertEqual(created["state"], "completed")
         record_id = created["record_id"]
+        transcription = self.client.post(
+            f"/api/v3/parser/records/{record_id}/transcription-tasks",
+            json={"provider": "cloudflare"},
+        ).json()["task"]
+        self.assertEqual(transcription["state"], "completed")
         status = self.client.get("/api/v3/access/status").json()["access"]
         self.assertEqual(status["remaining_transcription_seconds"], 1200)
 
@@ -161,10 +171,15 @@ class AccessHttpTests(unittest.TestCase):
         limited = TestClient(self.client.app)
         limited.post("/api/v3/access/login", json={"code": limited_code})
         task = limited.post(
-            "/api/v3/parser/tasks", json={"source_url": "https://example.test/long"}
+            "/api/v3/parser/tasks",
+            json={"source_url": "https://example.test/long", "include_transcript": False},
         ).json()["task"]
-        self.assertEqual(task["state"], "failed")
-        self.assertEqual(task["error_code"], "TRANSCRIPTION_QUOTA_EXCEEDED")
+        transcription = limited.post(
+            f"/api/v3/parser/records/{task['record_id']}/transcription-tasks",
+            json={"provider": "cloudflare"},
+        ).json()["task"]
+        self.assertEqual(transcription["state"], "failed")
+        self.assertEqual(transcription["error_code"], "TRANSCRIPTION_QUOTA_EXCEEDED")
         self.assertEqual(
             limited.get("/api/v3/access/status").json()["access"]["remaining_transcription_seconds"],
             500,
@@ -249,9 +264,10 @@ class AccessHttpTests(unittest.TestCase):
             "/api/v3/parser/tasks",
             json={"source_url": "https://www.bilibili.com/video/BV1TEST"},
         ).json()["task"]
-        note_response = client.post(
+        free_note_response = client.post(
             "/api/v3/note-tasks",
             json={
+                "generation_route": "free",
                 "source": {
                     "type": "paste",
                     "name": "测试逐字稿",
@@ -259,11 +275,23 @@ class AccessHttpTests(unittest.TestCase):
                 }
             },
         )
+        paid_note_response = client.post(
+            "/api/v3/note-tasks",
+            json={
+                "generation_route": "paid",
+                "source": {
+                    "type": "paste",
+                    "name": "高速测试逐字稿",
+                    "transcript": "此处不会调用真实 LLM",
+                },
+            },
+        )
 
         self.assertEqual(parser_task["state"], "completed")
-        self.assertEqual(note_response.status_code, 429)
+        self.assertEqual(free_note_response.status_code, 202)
+        self.assertEqual(paid_note_response.status_code, 429)
         self.assertEqual(
-            note_response.json()["error"]["code"],
+            paid_note_response.json()["error"]["code"],
             "PAID_CALLS_PAUSED",
         )
 
@@ -273,6 +301,7 @@ class AccessHttpTests(unittest.TestCase):
             "/api/v3/note-tasks",
             json={
                 "device_id": "spoofed",
+                "generation_route": "paid",
                 "source": {"type": "paste", "name": "输入", "transcript": "内测逐字稿"},
             },
         ).json()["task"]
@@ -296,6 +325,51 @@ class AccessHttpTests(unittest.TestCase):
         self.assertEqual(friend_b.get("/api/v3/notes").json()["items"], [])
         self.assertEqual(friend_b.get(f"/api/v3/note-tasks/{task['id']}").status_code, 404)
         self.assertEqual(friend_b.get(f"/api/v3/notes/{note_id}").status_code, 404)
+
+    def test_free_note_route_does_not_consume_high_speed_quota(self):
+        self.client.post("/api/v3/access/login", json={"code": self.code})
+
+        response = self.client.post(
+            "/api/v3/note-tasks",
+            json={
+                "generation_route": "free",
+                "source": {
+                    "type": "paste", "name": "免费线路输入", "transcript": "内测逐字稿",
+                },
+            },
+        )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.json()["task"]["generation_route"], "free")
+        status = self.client.get("/api/v3/access/status").json()["access"]
+        self.assertEqual(status["remaining_note_generations"], 5)
+        self.assertEqual(status["remaining_high_speed_generations"], 5)
+
+    def test_invalid_generation_route_is_rejected_without_consuming_quota(self):
+        self.client.post("/api/v3/access/login", json={"code": self.code})
+
+        response = self.client.post(
+            "/api/v3/note-tasks",
+            json={
+                "generation_route": "mystery",
+                "source": {"type": "paste", "name": "输入", "transcript": "逐字稿"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["error"]["code"], "LLM_CHANNEL_INVALID")
+        status = self.client.get("/api/v3/access/status").json()["access"]
+        self.assertEqual(status["remaining_high_speed_generations"], 5)
+
+    def test_capabilities_publish_safe_note_route_availability(self):
+        response = self.client.get("/api/v3/capabilities")
+
+        self.assertEqual(response.status_code, 200)
+        note_generation = response.json()["note_generation"]
+        self.assertTrue(note_generation["enabled"])
+        self.assertEqual(set(note_generation["routes"]), {"free", "paid"})
+        self.assertNotIn("api_key", str(note_generation))
+        self.assertNotIn("model", str(note_generation))
 
     def test_invalid_note_input_is_rejected_before_reserving_quota(self):
         self.client.post("/api/v3/access/login", json={"code": self.code})

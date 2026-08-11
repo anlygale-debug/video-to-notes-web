@@ -50,6 +50,20 @@ class SQLiteRepository:
                 self._connection.execute(
                     "ALTER TABLE parser_tasks ADD COLUMN error_retryable INTEGER"
                 )
+            if "operation" not in parser_task_columns:
+                self._connection.execute(
+                    "ALTER TABLE parser_tasks ADD COLUMN operation TEXT NOT NULL "
+                    "DEFAULT 'full_parse'"
+                )
+            if "transcription_provider" not in parser_task_columns:
+                self._connection.execute(
+                    "ALTER TABLE parser_tasks ADD COLUMN transcription_provider TEXT"
+                )
+            if "quota_access_id" not in parser_task_columns:
+                self._connection.execute(
+                    "ALTER TABLE parser_tasks ADD COLUMN quota_access_id TEXT "
+                    "REFERENCES access_grants(id) ON DELETE SET NULL"
+                )
             parser_record_columns = {
                 row["name"]
                 for row in self._connection.execute("PRAGMA table_info(parser_records)")
@@ -59,6 +73,19 @@ class SQLiteRepository:
                     "ALTER TABLE parser_records ADD COLUMN access_id TEXT "
                     "REFERENCES access_grants(id) ON DELETE SET NULL"
                 )
+            if "device_id" not in parser_record_columns:
+                self._connection.execute(
+                    "ALTER TABLE parser_records ADD COLUMN device_id TEXT NOT NULL "
+                    "DEFAULT ''"
+                )
+                self._connection.execute(
+                    "UPDATE parser_records SET device_id=COALESCE(access_id, '') "
+                    "WHERE device_id=''"
+                )
+            self._connection.execute(
+                "CREATE INDEX IF NOT EXISTS parser_records_device_cursor "
+                "ON parser_records(device_id, created_at DESC, id DESC)"
+            )
             note_task_columns = {
                 row["name"]
                 for row in self._connection.execute("PRAGMA table_info(note_tasks)")
@@ -66,6 +93,16 @@ class SQLiteRepository:
             if "llm_profile_id" not in note_task_columns:
                 self._connection.execute(
                     "ALTER TABLE note_tasks ADD COLUMN llm_profile_id TEXT"
+                )
+            if "generation_route" not in note_task_columns:
+                self._connection.execute(
+                    "ALTER TABLE note_tasks ADD COLUMN generation_route TEXT NOT NULL "
+                    "DEFAULT 'paid'"
+                )
+            if "quota_access_id" not in note_task_columns:
+                self._connection.execute(
+                    "ALTER TABLE note_tasks ADD COLUMN quota_access_id TEXT "
+                    "REFERENCES access_grants(id) ON DELETE SET NULL"
                 )
             self._connection.execute(
                 "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(1, ?)",
@@ -85,6 +122,22 @@ class SQLiteRepository:
             )
             self._connection.execute(
                 "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(5, ?)",
+                (utc_now(),),
+            )
+            self._connection.execute(
+                "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(6, ?)",
+                (utc_now(),),
+            )
+            self._connection.execute(
+                "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(7, ?)",
+                (utc_now(),),
+            )
+            self._connection.execute(
+                "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(8, ?)",
+                (utc_now(),),
+            )
+            self._connection.execute(
+                "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(9, ?)",
                 (utc_now(),),
             )
 
@@ -130,11 +183,12 @@ class SQLiteRepository:
         with self.transaction() as connection:
             connection.execute(
                 """INSERT INTO parser_records(
-                   id,access_id,source_url,platform,title,creator,description,duration_seconds,
+                   id,device_id,access_id,source_url,platform,title,creator,description,duration_seconds,
                    thumbnail_url,transcript_text,transcript_format_version,created_at,updated_at
-                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    record["id"], record.get("access_id"), record["source_url"],
+                    record["id"], record.get("device_id", ""), record.get("access_id"),
+                    record["source_url"],
                     record["platform"], record["title"],
                     record.get("creator", ""), record.get("description", ""),
                     record.get("duration_seconds", 0), record.get("thumbnail_url", ""),
@@ -149,14 +203,17 @@ class SQLiteRepository:
         with self.transaction() as connection:
             connection.execute(
                 """INSERT INTO parser_tasks(
-                   id,device_id,source_url,platform_hint,state,progress_json,
-                   retry_count,created_at,updated_at
-                ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                   id,device_id,quota_access_id,source_url,platform_hint,state,progress_json,
+                   retry_count,record_id,operation,transcription_provider,created_at,updated_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    task["id"], task["device_id"], task["source_url"],
+                    task["id"], task["device_id"], task.get("quota_access_id"),
+                    task["source_url"],
                     task.get("platform_hint", "other"), task.get("state", "created"),
                     json.dumps(task.get("progress", {}), ensure_ascii=False),
-                    task.get("retry_count", 0), now, now,
+                    task.get("retry_count", 0), task.get("record_id"),
+                    task.get("operation", "full_parse"),
+                    task.get("transcription_provider"), now, now,
                 ),
             )
         return self.get_parser_task(task["id"])
@@ -175,6 +232,7 @@ class SQLiteRepository:
             "state": "state", "error_code": "error_code", "error_message": "error_message",
             "error_retryable": "error_retryable",
             "retry_count": "retry_count", "record_id": "record_id",
+            "operation": "operation", "transcription_provider": "transcription_provider",
             "progress": "progress_json",
         }
         assignments, values = [], []
@@ -197,18 +255,42 @@ class SQLiteRepository:
         sql = "SELECT * FROM parser_records WHERE id=?"
         parameters = [record_id]
         if access_id is not None:
-            sql += " AND access_id=?"
-            parameters.append(access_id)
+            owners = list(access_id) if isinstance(access_id, (list, tuple, set)) else [access_id]
+            sql += f" AND device_id IN ({','.join('?' for _ in owners)})"
+            parameters.extend(owners)
         row = self._fetchone(sql, parameters)
         return dict(row) if row else None
+
+    def update_parser_record(self, record_id, **changes):
+        mapping = {
+            "transcript_text": "transcript_text",
+            "transcript_format_version": "transcript_format_version",
+        }
+        assignments, values = [], []
+        for key, value in changes.items():
+            if key not in mapping:
+                continue
+            assignments.append(f"{mapping[key]}=?")
+            values.append(value)
+        if not assignments:
+            return self.get_parser_record(record_id)
+        assignments.append("updated_at=?")
+        values.extend([utc_now(), record_id])
+        with self.transaction() as connection:
+            connection.execute(
+                f"UPDATE parser_records SET {', '.join(assignments)} WHERE id=?",
+                values,
+            )
+        return self.get_parser_record(record_id)
 
     def list_parser_records(self, limit=30, cursor=None, access_id=None):
         cursor_clause = ""
         parameters = []
         clauses = []
         if access_id is not None:
-            clauses.append("r.access_id=?")
-            parameters.append(access_id)
+            owners = list(access_id) if isinstance(access_id, (list, tuple, set)) else [access_id]
+            clauses.append(f"r.device_id IN ({','.join('?' for _ in owners)})")
+            parameters.extend(owners)
         if cursor:
             clauses.append("(r.created_at < ? OR (r.created_at = ? AND r.id < ?))")
             parameters.extend([cursor[0], cursor[0], cursor[1]])
@@ -238,16 +320,18 @@ class SQLiteRepository:
         with self.transaction() as connection:
             connection.execute(
                 """INSERT INTO note_tasks(
-                   id,device_id,state,source_type,source_name,source_snapshot_json,
-                   basis_transcript,transcript_revision,request_text,llm_profile_id,
+                   id,device_id,quota_access_id,state,source_type,source_name,source_snapshot_json,
+                   basis_transcript,transcript_revision,request_text,llm_profile_id,generation_route,
                    proposed_title,progress_json,created_at,updated_at
-                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    task["id"], task["device_id"], task["state"], task["source_type"],
+                    task["id"], task["device_id"], task.get("quota_access_id"),
+                    task["state"], task["source_type"],
                     task.get("source_name", ""),
                     json.dumps(task.get("source_snapshot", {}), ensure_ascii=False),
                     task["basis_transcript"], task.get("transcript_revision", 1),
                     task.get("request_text", ""), task.get("llm_profile_id"),
+                    task.get("generation_route", "paid"),
                     task.get("proposed_title", ""),
                     json.dumps(task.get("progress", {}), ensure_ascii=False), now, now,
                 ),
@@ -295,13 +379,14 @@ class SQLiteRepository:
             cursor_clause = "(created_at < ? OR (created_at = ? AND id < ?))"
             cursor_parameters.extend([cursor[0], cursor[0], cursor[1]])
         if device_id:
-            where_clause = "WHERE device_id=?"
+            owners = list(device_id) if isinstance(device_id, (list, tuple, set)) else [device_id]
+            where_clause = f"WHERE device_id IN ({','.join('?' for _ in owners)})"
             if cursor_clause:
                 where_clause += f" AND {cursor_clause}"
             rows = self._fetchall(
                 f"SELECT * FROM note_tasks {where_clause} "
                 "ORDER BY created_at DESC,id DESC LIMIT ?",
-                (device_id, *cursor_parameters, limit),
+                (*owners, *cursor_parameters, limit),
             )
         else:
             where_clause = f"WHERE {cursor_clause}" if cursor_clause else ""
@@ -391,8 +476,9 @@ class SQLiteRepository:
         parameters = []
         clauses = []
         if access_id is not None:
-            clauses.append("t.device_id=?")
-            parameters.append(access_id)
+            owners = list(access_id) if isinstance(access_id, (list, tuple, set)) else [access_id]
+            clauses.append(f"t.device_id IN ({','.join('?' for _ in owners)})")
+            parameters.extend(owners)
         if cursor:
             clauses.append("(n.created_at < ? OR (n.created_at = ? AND n.id < ?))")
             parameters.extend([cursor[0], cursor[0], cursor[1]])

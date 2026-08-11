@@ -175,6 +175,9 @@ class AccessManager:
             "remaining_note_generations": (
                 None if note_limit is None else max(0, note_limit - generated)
             ),
+            "remaining_high_speed_generations": (
+                None if note_limit is None else max(0, note_limit - generated)
+            ),
         }
 
     def ensure_paid_calls_enabled(self):
@@ -344,13 +347,11 @@ class AccessMiddleware(BaseHTTPMiddleware):
                 {"error": {"code": "LEGACY_API_DISABLED", "message": "该旧接口未在公网版本开放"}},
                 status_code=404,
             )
-        access_id = self.manager.access_id_from_session(request.cookies.get(SESSION_COOKIE, ""))
-        if not access_id:
-            return JSONResponse(
-                {"error": {"code": "ACCESS_REQUIRED", "message": "请输入有效内测码后继续"}},
-                status_code=401,
-            )
-        request.state.vtn_access_id = access_id
+        access_id = self.manager.access_id_from_session(
+            request.cookies.get(SESSION_COOKIE, "")
+        )
+        if access_id:
+            request.state.vtn_access_id = access_id
         return await call_next(request)
 
 

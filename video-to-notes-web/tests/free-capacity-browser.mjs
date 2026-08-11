@@ -52,7 +52,7 @@ try {
   if ((await notice.getAttribute("data-free-capacity-level")) !== "high_risk") {
     throw new Error("长内容没有进入高风险档");
   }
-  if (!(await notice.innerText()).includes("当前不建议用免费线路直接生成")) {
+  if (!(await notice.innerText()).includes("本次笔记不建议使用免费线路")) {
     throw new Error("高风险提示文案未显示");
   }
 

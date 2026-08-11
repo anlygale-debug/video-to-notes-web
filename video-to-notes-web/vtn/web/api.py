@@ -76,6 +76,22 @@ def _signal_download(response, token):
     return response
 
 
+def _safe_download_stem(title, fallback="视频"):
+    safe = re.sub(r'[/\\:*?"<>|\x00-\x1f]', "", str(title or "")).strip(" .")
+    return (safe or fallback)[:80].rstrip(" .") or fallback
+
+
+def _record_download_filename(record, label, extension):
+    return f"{_safe_download_stem(record.get('title'))}-{label}.{extension}"
+
+
+def _attachment_disposition(filename, ascii_fallback):
+    return (
+        f'attachment; filename="{ascii_fallback}"; '
+        f"filename*=UTF-8''{quote(filename)}"
+    )
+
+
 def _present_parser_record(record):
     if not record or record.get("platform") != "other":
         return record
@@ -97,20 +113,42 @@ def create_v3_router(
             return None
         return getattr(request.state, "vtn_access_id", None)
 
+    def request_device_id(request, fallback=None):
+        value = (
+            request.headers.get("X-VTN-Device-ID")
+            or request.query_params.get("device_id")
+            or request_access_id(request)
+            or fallback
+            or "local-browser"
+        )
+        value = str(value).strip()
+        if not value or len(value) > 200:
+            return "local-browser"
+        return value
+
+    def request_resource_owners(request, fallback=None):
+        if access_manager is None:
+            return None
+        owners = [request_device_id(request, fallback)]
+        access_id = request_access_id(request)
+        if access_id and access_id not in owners:
+            owners.append(access_id)
+        return owners
+
     def owned_parser_task(task_id, request):
         task = parser_workflow.get_task(task_id)
-        access_id = request_access_id(request)
-        if task and access_id is not None and task.get("device_id") != access_id:
+        owners = request_resource_owners(request)
+        if task and owners is not None and task.get("device_id") not in owners:
             return None
         return task
 
     def owned_parser_record(record_id, request):
-        return repository.get_parser_record(record_id, request_access_id(request))
+        return repository.get_parser_record(record_id, request_resource_owners(request))
 
     def owned_note_task(task_id, request):
         task = note_workflow.get_task(task_id) if note_workflow is not None else None
-        access_id = request_access_id(request)
-        if task and access_id is not None and task.get("device_id") != access_id:
+        owners = request_resource_owners(request)
+        if task and owners is not None and task.get("device_id") not in owners:
             return None
         return task
 
@@ -154,7 +192,15 @@ def create_v3_router(
 
     @router.get("/capabilities")
     async def capabilities():
-        return {"integrity_recheck": note_document is not None}
+        return {
+            "integrity_recheck": note_document is not None,
+            "transcription_providers": parser_workflow.transcription_capabilities(),
+            "note_generation": (
+                note_workflow.generation_routes()
+                if note_workflow is not None
+                else {"enabled": False, "routes": {}}
+            ),
+        }
 
     @router.post("/parser/tasks", status_code=202)
     async def create_parser_task(request: Request):
@@ -162,8 +208,12 @@ def create_v3_router(
         source_url = _extract_http_url(body.get("source_url"))
         if not source_url:
             return _error(DomainError("INVALID_SOURCE_URL", "请输入完整的视频链接"), 422)
-        owner = request_access_id(request) or body.get("device_id") or "local-browser"
-        task = parser_workflow.start_parse(owner, source_url)
+        owner = request_device_id(request, body.get("device_id"))
+        task = parser_workflow.start_parse(
+            owner,
+            source_url,
+            include_transcript=body.get("include_transcript") is not False,
+        )
         return {"task": task}
 
     @router.get("/parser/tasks/{task_id}")
@@ -219,7 +269,7 @@ def create_v3_router(
         except DomainError as exc:
             return _error(exc, 422)
         records = repository.list_parser_records(
-            safe_limit + 1, decoded_cursor, request_access_id(request)
+            safe_limit + 1, decoded_cursor, request_resource_owners(request)
         )
         return _page([_present_parser_record(record) for record in records], safe_limit)
 
@@ -229,6 +279,42 @@ def create_v3_router(
         if not record:
             return _error(DomainError("PARSER_RECORD_NOT_FOUND", "解析记录不存在"), 404)
         return {"record": _present_parser_record(record)}
+
+    @router.post(
+        "/parser/records/{record_id}/transcription-tasks",
+        status_code=202,
+    )
+    async def create_transcription_task(
+        record_id: str,
+        request: Request,
+    ):
+        record = owned_parser_record(record_id, request)
+        if not record:
+            return _error(
+                DomainError("PARSER_RECORD_NOT_FOUND", "解析记录不存在"),
+                404,
+            )
+        body = await request.json()
+        owner = request_device_id(request, body.get("device_id"))
+        try:
+            task = parser_workflow.start_transcription(
+                owner,
+                record_id,
+                str(body.get("provider") or "local"),
+                replace_existing=body.get("replace_existing") is True,
+                quota_access_id=request_access_id(request),
+            )
+        except DomainError as exc:
+            status = (
+                404 if exc.code == "PARSER_RECORD_NOT_FOUND"
+                else 401 if exc.code == "ACCESS_REQUIRED"
+                else 429 if exc.code in {
+                    "PAID_CALLS_PAUSED", "TRANSCRIPTION_QUOTA_EXCEEDED"
+                }
+                else 409
+            )
+            return _error(exc, status)
+        return {"task": task}
 
     @router.get("/parser/records/{record_id}/thumbnail")
     async def parser_record_thumbnail(record_id: str, request: Request):
@@ -268,9 +354,15 @@ def create_v3_router(
         record = owned_parser_record(record_id, request)
         if not record:
             return _error(DomainError("PARSER_RECORD_NOT_FOUND", "解析记录不存在"), 404)
+        filename = _record_download_filename(record, "逐字稿", "txt")
         return Response(
             record["transcript_text"], media_type="text/plain; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="transcript-{record_id}.txt"'},
+            headers={
+                "Content-Disposition": _attachment_disposition(
+                    filename,
+                    "transcript.txt",
+                )
+            },
         )
 
     @router.get("/parser/records/{record_id}/transcript.md")
@@ -284,9 +376,15 @@ def create_v3_router(
             f"> 作者：{record['creator'] or '未知'} | 平台：{record['platform']}\n\n"
             f"---\n\n{record['transcript_text']}\n"
         )
+        filename = _record_download_filename(record, "逐字稿", "md")
         return Response(
             content, media_type="text/markdown; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="transcript-{record_id}.md"'},
+            headers={
+                "Content-Disposition": _attachment_disposition(
+                    filename,
+                    "transcript.md",
+                )
+            },
         )
 
     @router.get("/parser/records/{record_id}/video")
@@ -307,7 +405,9 @@ def create_v3_router(
             )
         return _signal_download(
             FileResponse(
-                path, filename=f"video-{record_id}.mp4", media_type="video/mp4",
+                path,
+                filename=_record_download_filename(record, "视频", "mp4"),
+                media_type="video/mp4",
                 background=BackgroundTask(shutil.rmtree, directory, ignore_errors=True),
             ),
             download_token,
@@ -328,7 +428,9 @@ def create_v3_router(
             return _error(exc, 502)
         return _signal_download(
             FileResponse(
-                path, filename=f"audio-{record_id}.mp3", media_type="audio/mpeg",
+                path,
+                filename=_record_download_filename(record, "音频", "mp3"),
+                media_type="audio/mpeg",
                 background=BackgroundTask(shutil.rmtree, directory, ignore_errors=True),
             ),
             download_token,
@@ -340,6 +442,7 @@ def create_v3_router(
     @router.post("/migrations/browser-history")
     async def migrate_browser_history(request: Request):
         body = await request.json()
+        owner = request_device_id(request, body.get("device_id"))
         imported = {"parser_records": 0, "notes": 0}
         for item in body.get("transcripts", []):
             source_url = item.get("url") or item.get("source_url") or ""
@@ -349,7 +452,7 @@ def create_v3_router(
             record_id = item.get("id") or uuid.uuid4().hex
             repository.create_parser_record(
                 {
-                    "id": record_id, "source_url": source_url,
+                    "id": record_id, "device_id": owner, "source_url": source_url,
                     "platform": item.get("platform", "other"),
                     "title": item.get("title", "旧解析记录"),
                     "creator": item.get("creator", ""), "description": item.get("description", ""),
@@ -415,28 +518,33 @@ def create_v3_router(
     async def create_note_task(request: Request):
         body = await request.json()
         access_id = request_access_id(request)
-        task_id = None
-        if access_id is not None:
-            source = body.get("source") or {}
-            if source.get("type") == "parser" and not owned_parser_record(
-                source.get("parser_record_id", ""), request
-            ):
-                return _error(DomainError("PARSER_RECORD_NOT_FOUND", "解析记录不存在"), 404)
-            if source.get("type") == "note" and not owned_note(
-                source.get("note_id", ""), request
-            ):
-                return _error(DomainError("NOTE_NOT_FOUND", "原笔记不存在"), 404)
-            body["device_id"] = access_id
-            task_id = str(uuid.uuid4())
+        source = body.get("source") or {}
+        if source.get("type") == "parser" and not owned_parser_record(
+            source.get("parser_record_id", ""), request
+        ):
+            return _error(DomainError("PARSER_RECORD_NOT_FOUND", "解析记录不存在"), 404)
+        if source.get("type") == "note" and not owned_note(
+            source.get("note_id", ""), request
+        ):
+            return _error(DomainError("NOTE_NOT_FOUND", "原笔记不存在"), 404)
+        body["device_id"] = request_device_id(request, body.get("device_id"))
+        task_id = str(uuid.uuid4())
         try:
-            task = note_workflow.start_analysis(body, task_id=task_id)
+            task = note_workflow.start_analysis(
+                body,
+                task_id=task_id,
+                quota_access_id=access_id,
+            )
             return {"task": task}
         except DomainError as exc:
             return _error(
                 exc,
                 404 if exc.code in {"PARSER_RECORD_NOT_FOUND", "NOTE_NOT_FOUND"}
+                else 401 if exc.code == "ACCESS_REQUIRED"
                 else 429 if exc.code in {
                     "PAID_CALLS_PAUSED", "NOTE_QUOTA_EXCEEDED"
+                } else 503 if exc.code in {
+                    "NOTE_GENERATION_PAUSED", "LLM_ROUTE_UNAVAILABLE"
                 } else 422,
             )
 
@@ -452,7 +560,9 @@ def create_v3_router(
             return _error(exc, 422)
         return _page(
             repository.list_note_tasks(
-                request_access_id(request) or device_id, safe_limit + 1, decoded_cursor
+                request_resource_owners(request, device_id) or device_id,
+                safe_limit + 1,
+                decoded_cursor,
             ), safe_limit
         )
 
@@ -516,7 +626,9 @@ def create_v3_router(
         except DomainError as exc:
             return _error(exc, 422)
         return _page(
-            repository.list_notes(safe_limit + 1, decoded_cursor, request_access_id(request)),
+            repository.list_notes(
+                safe_limit + 1, decoded_cursor, request_resource_owners(request)
+            ),
             safe_limit,
         )
 

@@ -1,6 +1,6 @@
 # Video to Notes
 
-粘贴视频链接 → 获取结构化笔记。支持小红书、B站、YouTube。
+粘贴视频链接 → 获取结构化笔记。支持抖音、小红书、B站、YouTube。
 
 ## 快速开始（macOS）
 
@@ -54,11 +54,26 @@ curl -L -o ~/.cache/whisper/tiny.pt \
 
 ### 5. 启动
 
+在 macOS 上可以双击项目根目录的 `打开 Video to Notes.command`，也可以执行：
+
 ```bash
-./start.sh
+./scripts/run-local.sh
 ```
 
-浏览器打开 http://localhost:3000
+- 产品介绍页：http://127.0.0.1:4176/video-notes
+- 应用页：http://127.0.0.1:4176/next
+
+## 公网权限与线路
+
+公网版本无需内测码即可使用。普通访客可以直接解析四个平台的视频链接、下载视频
+和音频，并使用免费转录与免费笔记线路。内测码只用于解锁高速能力：
+
+- 高速转录按音频分钟数扣除额度；
+- 高速笔记每次生成扣除一次额度；
+- 高速额度用完后，免费功能仍然可以继续使用。
+
+解析记录和笔记历史按当前浏览器区分，与内测码相互独立，因此输入内测码不会让
+此前免费使用产生的记录消失。
 
 ## 平台支持
 
@@ -67,6 +82,18 @@ curl -L -o ~/.cache/whisper/tiny.pt \
 | B站     | ✅ 官方 API | ✅ yt-dlp   |          |
 | YouTube | ✅ yt-dlp   | ✅ yt-dlp   |          |
 | 小红书  | ✅ xhs CLI  | ✅ CDN 直链 | 需要登录 |
+| 抖音    | —           | ✅ yt-dlp   | 需要最新的匿名访问 Cookie |
+
+### 抖音额外配置
+
+本地版会优先读取当前 Chrome 中的抖音访问 Cookie。首次使用前，在 Chrome 打开
+一次 `https://www.douyin.com/`，不一定需要登录，然后返回应用重试。
+
+服务器可配置 Netscape 格式的专用 Cookie 文件：
+
+```bash
+export VTN_DOUYIN_COOKIES_PATH="/var/lib/video-to-notes/douyin-cookies.txt"
+```
 
 ### 小红书额外配置
 
@@ -102,6 +129,7 @@ http://192.168.x.x:3000
 | Whisper 模型找不到 | 重新下载：`curl -L -o ~/.cache/whisper/tiny.pt [模型地址]` |
 | B站搜索无结果      | 确认网络直连（B站 API 不需要代理）                           |
 | 小红书无法使用     | 运行`xhs login` 重新扫码登录                               |
+| 抖音提示凭证失效   | 在 Chrome 打开一次抖音后重试，服务器需更新专用 Cookie 文件 |
 | 笔记生成的是纯转录 | 检查`~/.claude/settings.json` 配置是否正确                 |
 | PDF 导出失败       | `brew install weasyprint`                                  |
 | 端口被占用         | `lsof -ti:3000                                               |

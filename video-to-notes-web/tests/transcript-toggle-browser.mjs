@@ -55,7 +55,7 @@ try {
 
   const preview = page.locator(".transcript-preview");
   const toggle = page.getByRole("button", { name: "展开完整逐字稿 ↓", exact: true });
-  if ((await page.locator(".transcript-panel h3").innerText()).trim() !== `逐字稿 · ${longTranscript.length.toLocaleString()} 字`) {
+  if ((await page.locator("[data-transcript-character-count]").innerText()).trim() !== `逐字稿 · ${longTranscript.length.toLocaleString()} 字`) {
     throw new Error("逐字稿标题没有显示真实字符数");
   }
   if ((await toggle.getAttribute("aria-expanded")) !== "false") {
@@ -103,7 +103,7 @@ try {
   if ((await page.locator(".transcript-preview").innerText()).trim() !== shortTranscript) {
     throw new Error("短逐字稿没有完整显示");
   }
-  if (await page.locator("[data-toggle-transcript]").count()) {
+  if (await page.locator("[data-toggle-transcript]").isVisible()) {
     throw new Error("短逐字稿仍显示了展开按钮");
   }
   if (dialogCount) throw new Error(`逐字稿交互触发了 ${dialogCount} 次原型弹窗`);

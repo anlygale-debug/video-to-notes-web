@@ -35,6 +35,8 @@ def build_transcriber(env=None, *, provider_store=None):
                 account_id,
                 api_token,
                 initial_prompt=initial_prompt,
+                max_attempts=3,
+                direct_fallback=True,
             ),
         )
     provider = (env.get("VTN_TRANSCRIBER") or "local").strip().lower()
@@ -55,6 +57,8 @@ def build_transcriber(env=None, *, provider_store=None):
             account_id,
             api_token,
             initial_prompt=(env.get("VTN_TRANSCRIPTION_PROMPT") or "").strip(),
+            max_attempts=3,
+            direct_fallback=True,
         )
     raise DomainError(
         "TRANSCRIPTION_CONFIG_INVALID",
@@ -86,7 +90,7 @@ def mount_v3(app, base_path):
             (os.environ.get("VTN_SESSION_SECRET") or "").strip(),
             secure_cookie=os.environ.get("VTN_COOKIE_SECURE", "1") != "0",
             paid_calls_enabled=paid_calls_enabled,
-            paid_calls_status=llm_store.is_enabled,
+            paid_calls_status=llm_store.is_master_enabled,
             parser_calls_enabled=(
                 os.environ.get(
                     "VTN_PARSER_CALLS_ENABLED",

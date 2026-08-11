@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Notes"
+  short_description: "专为一至两小时长视频与长课程设计的结构化笔记生成工作流"
+  default_prompt: "使用 $to-notes 把这份逐字稿整理成结构化笔记，并先根据内容向我推荐设置。"

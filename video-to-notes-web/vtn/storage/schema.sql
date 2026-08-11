@@ -44,6 +44,7 @@ CREATE INDEX IF NOT EXISTS access_grant_adjustments_by_grant
 CREATE TABLE IF NOT EXISTS parser_tasks (
   id TEXT PRIMARY KEY,
   device_id TEXT NOT NULL,
+  quota_access_id TEXT REFERENCES access_grants(id) ON DELETE SET NULL,
   source_url TEXT NOT NULL,
   platform_hint TEXT NOT NULL DEFAULT 'other',
   state TEXT NOT NULL,
@@ -53,12 +54,15 @@ CREATE TABLE IF NOT EXISTS parser_tasks (
   error_retryable INTEGER,
   retry_count INTEGER NOT NULL DEFAULT 0,
   record_id TEXT,
+  operation TEXT NOT NULL DEFAULT 'full_parse',
+  transcription_provider TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS parser_records (
   id TEXT PRIMARY KEY,
+  device_id TEXT NOT NULL DEFAULT '',
   access_id TEXT REFERENCES access_grants(id) ON DELETE SET NULL,
   source_url TEXT NOT NULL,
   platform TEXT NOT NULL,
@@ -67,7 +71,7 @@ CREATE TABLE IF NOT EXISTS parser_records (
   description TEXT NOT NULL DEFAULT '',
   duration_seconds INTEGER NOT NULL DEFAULT 0,
   thumbnail_url TEXT NOT NULL DEFAULT '',
-  transcript_text TEXT NOT NULL,
+  transcript_text TEXT NOT NULL DEFAULT '',
   transcript_format_version INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -76,6 +80,7 @@ CREATE TABLE IF NOT EXISTS parser_records (
 CREATE TABLE IF NOT EXISTS note_tasks (
   id TEXT PRIMARY KEY,
   device_id TEXT NOT NULL,
+  quota_access_id TEXT REFERENCES access_grants(id) ON DELETE SET NULL,
   state TEXT NOT NULL,
   source_type TEXT NOT NULL,
   source_name TEXT NOT NULL DEFAULT '',
@@ -84,6 +89,7 @@ CREATE TABLE IF NOT EXISTS note_tasks (
   transcript_revision INTEGER NOT NULL DEFAULT 1,
   request_text TEXT NOT NULL DEFAULT '',
   llm_profile_id TEXT,
+  generation_route TEXT NOT NULL DEFAULT 'paid',
   proposed_title TEXT NOT NULL DEFAULT '',
   recommendation_json TEXT,
   recommendation_revision INTEGER,

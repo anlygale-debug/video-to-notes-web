@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "to-notes": {
+      "source": "anlygale-debug/to-notes",
+      "sourceType": "github",
+      "skillPath": "skills/to-notes/SKILL.md",
+      "computedHash": "e9822517acf9af98042b418c35e5b8d41d9b2a7a6ee2da37a83964d1765144a0"
+    }
+  }
+}
