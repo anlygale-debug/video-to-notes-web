@@ -97,8 +97,9 @@ class ParserWorkflowTests(unittest.TestCase):
 
     def test_faster_whisper_transcriber_returns_joined_simplified_chinese(self):
         class Segment:
-            def __init__(self, text):
+            def __init__(self, text, end):
                 self.text = text
+                self.end = end
 
         class Model:
             def __init__(self, *_args, **_options):
@@ -106,15 +107,23 @@ class ParserWorkflowTests(unittest.TestCase):
 
             def transcribe(self, _audio_path, **_options):
                 return (
-                    iter([Segment("這是一份"), Segment("本地逐字稿。")]),
-                    types.SimpleNamespace(language="zh"),
+                    iter([Segment("這是一份", 25), Segment("本地逐字稿。", 60)]),
+                    types.SimpleNamespace(language="zh", duration=60),
                 )
 
         faster_whisper = types.SimpleNamespace(WhisperModel=Model)
+        progress = []
+        FasterWhisperTranscriber._models.clear()
         with patch.dict("sys.modules", {"faster_whisper": faster_whisper}):
-            transcript = FasterWhisperTranscriber().transcribe("audio.m4a")
+            transcript = FasterWhisperTranscriber().transcribe(
+                "audio.m4a",
+                progress_callback=lambda processed, total: progress.append(
+                    (processed, total)
+                ),
+            )
 
         self.assertEqual(transcript, "这是一份本地逐字稿。")
+        self.assertEqual(progress, [(0, 60), (25, 60), (60, 60), (60, 60)])
 
     def test_cloudflare_transcriber_returns_simplified_chinese(self):
         audio_path = Path(self.tempdir.name) / "audio.wav"
@@ -499,6 +508,7 @@ class ParserWorkflowTests(unittest.TestCase):
             wav.setframerate(8000)
             wav.writeframes(b"\0\0" * 8000 * 3)
         uploads = []
+        progress = []
 
         class Response:
             def __enter__(self):
@@ -523,11 +533,18 @@ class ParserWorkflowTests(unittest.TestCase):
                 "api-token",
                 max_upload_bytes=1,
                 segment_seconds=1,
-            ).transcribe(audio_path)
+            ).transcribe(
+                audio_path,
+                progress_callback=lambda processed, total: progress.append(
+                    (round(processed), round(total))
+                ),
+            )
 
         self.assertGreaterEqual(len(uploads), 2)
         self.assertIn("第1段", transcript)
         self.assertIn(f"第{len(uploads)}段", transcript)
+        self.assertEqual(progress[0], (0, 3))
+        self.assertEqual(progress[-1], (3, 3))
 
     def test_cloudflare_default_uploads_stay_within_safe_audio_size(self):
         audio_path = Path(self.tempdir.name) / "long-source.mp3"
@@ -685,6 +702,56 @@ class ParserWorkflowTests(unittest.TestCase):
         self.assertEqual(task["transcription_provider"], "cloudflare")
         self.assertEqual(providers, ["cloudflare"])
         self.assertEqual(record["transcript_text"], expected_transcript)
+
+    def test_transcription_task_persists_real_audio_progress(self):
+        expected_transcript = "真实进度对应完整逐字稿。" * 60
+
+        class ProgressTranscriber(FakeTranscriber):
+            def transcribe_with_provider(
+                self,
+                _audio_path,
+                provider,
+                *,
+                progress_callback=None,
+            ):
+                self.assertEqual(provider, "local")
+                progress_callback(0, 600)
+                progress_callback(180, 600)
+                progress_callback(420, 600)
+                progress_callback(600, 600)
+                return expected_transcript
+
+        transcriber = ProgressTranscriber()
+        transcriber.assertEqual = self.assertEqual
+        workflow = ParserWorkflow(
+            self.repo,
+            FakePlatformMedia(),
+            transcriber,
+            run_in_background=False,
+        )
+        parsed = workflow.start_parse(
+            "browser-1",
+            "https://www.bilibili.com/video/BV1TEST",
+            include_transcript=False,
+        )
+
+        task = workflow.start_transcription(
+            "browser-1",
+            parsed["record_id"],
+            "local",
+        )
+        progress_events = [
+            event.payload
+            for event in workflow.subscribe(task["id"], 0)
+            if event.event_type == "progress"
+        ]
+
+        self.assertEqual(
+            [event["transcription_percent"] for event in progress_events],
+            [0, 30, 70, 100],
+        )
+        self.assertEqual(progress_events[1]["processed_seconds"], 180)
+        self.assertEqual(progress_events[1]["total_seconds"], 600)
 
     def test_incomplete_cloud_regeneration_keeps_existing_transcript(self):
         original_transcript = "这是原本完整的逐字稿。" * 80

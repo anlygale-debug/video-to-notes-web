@@ -960,15 +960,66 @@
     });
     const providerLabel = task?.transcription_provider === "cloudflare"
       ? "高速高质量转录" : "免费转录";
-    const label = task?.progress?.label || "正在创建逐字稿任务";
-    const percent = Number.isFinite(task?.progress?.percent) ? task.progress.percent : 5;
-    status.textContent = `${providerLabel} · ${label} · ${percent}%`;
+    const progress = task?.progress || {};
+    const label = progress.label || "正在创建逐字稿任务";
+    const stagePercent = Number.isFinite(progress.percent) ? progress.percent : 5;
+    const transcriptionPercent = Number.isFinite(progress.transcription_percent)
+      ? Math.max(0, Math.min(100, progress.transcription_percent))
+      : null;
+    const visiblePercent = transcriptionPercent ?? stagePercent;
+    status.textContent = `${providerLabel} · ${label} · ${visiblePercent}%`;
     const running = stateHost.querySelector("[data-transcription-running]");
     const runningCopy = stateHost.querySelector("[data-transcription-running-copy]");
     const errorPanel = stateHost.querySelector("[data-transcription-error]");
     const regeneratePanel = stateHost.querySelector("[data-transcript-regenerate]");
     if (running) running.hidden = false;
-    if (runningCopy) runningCopy.textContent = `${providerLabel} · ${label} · ${percent}%`;
+    const progressPercent = stateHost.querySelector("[data-transcription-progress-percent]");
+    const progressTrack = stateHost.querySelector(".transcription-progress-track");
+    const progressBar = stateHost.querySelector("[data-transcription-progress-bar]");
+    const progressPosition = stateHost.querySelector("[data-transcription-progress-position]");
+    const progressEta = stateHost.querySelector("[data-transcription-progress-eta]");
+    const formatClock = (seconds) => {
+      const rounded = Math.max(0, Math.round(Number(seconds) || 0));
+      const minutes = Math.floor(rounded / 60);
+      const remainder = rounded % 60;
+      return `${minutes}:${String(remainder).padStart(2, "0")}`;
+    };
+    const formatRemaining = (seconds) => {
+      const rounded = Math.max(0, Math.ceil((Number(seconds) || 0) / 10) * 10);
+      if (rounded < 60) return `预计还需不到 1 分钟`;
+      const minutes = Math.ceil(rounded / 60);
+      return `预计还需约 ${minutes} 分钟`;
+    };
+    if (runningCopy) {
+      runningCopy.textContent = transcriptionPercent === null
+        ? `${providerLabel} · ${label}`
+        : `正在按音频内容真实推进，完成后会自动显示逐字稿。`;
+    }
+    if (progressPercent) {
+      progressPercent.textContent = transcriptionPercent === null
+        ? "准备中"
+        : `${transcriptionPercent}%`;
+    }
+    if (progressTrack) {
+      progressTrack.setAttribute("aria-valuenow", String(transcriptionPercent ?? 0));
+    }
+    if (progressBar) progressBar.style.width = `${transcriptionPercent ?? 0}%`;
+    if (progressPosition) {
+      progressPosition.textContent = (
+        Number.isFinite(progress.processed_seconds)
+        && Number.isFinite(progress.total_seconds)
+        && progress.total_seconds > 0
+      )
+        ? `已处理 ${formatClock(progress.processed_seconds)} / ${formatClock(progress.total_seconds)}`
+        : "正在读取音频时长";
+    }
+    if (progressEta) {
+      progressEta.textContent = Number.isFinite(progress.remaining_seconds)
+        ? formatRemaining(progress.remaining_seconds)
+        : transcriptionPercent === 100
+          ? "正在保存逐字稿"
+          : "正在计算剩余时间";
+    }
     if (errorPanel) errorPanel.hidden = true;
     if (regeneratePanel) regeneratePanel.hidden = true;
   }

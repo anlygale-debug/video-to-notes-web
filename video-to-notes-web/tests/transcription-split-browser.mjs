@@ -64,8 +64,10 @@ await page.route("**/api/v3/parser/records/record-split", (route) => route.fulfi
 }));
 await page.route("**/api/v3/parser/tasks/task-transcription", async (route) => {
   transcriptionReads += 1;
-  const complete = transcriptionReads > 1;
+  const complete = transcriptionReads > 2;
   if (complete) transcriptGenerated = true;
+  const transcriptionPercent = transcriptionReads === 1 ? 30 : 70;
+  const processedSeconds = transcriptionReads === 1 ? 36 : 84;
   await route.fulfill({
     status: 200,
     contentType: "application/json",
@@ -79,6 +81,10 @@ await page.route("**/api/v3/parser/tasks/task-transcription", async (route) => {
           stage: complete ? "complete" : "transcribe",
           label: complete ? "逐字稿已生成" : "生成逐字稿",
           percent: complete ? 100 : 55,
+          transcription_percent: complete ? 100 : transcriptionPercent,
+          processed_seconds: complete ? 120 : processedSeconds,
+          total_seconds: 120,
+          remaining_seconds: complete ? 0 : (transcriptionReads === 1 ? 84 : 36),
         },
       },
     }),
@@ -131,8 +137,8 @@ try {
   if (parseRequest?.include_transcript !== false) {
     throw new Error(`首次解析仍然自动生成逐字稿：${JSON.stringify(parseRequest)}`);
   }
-  await page.getByRole("button", { name: /云端高质量转录/ }).waitFor();
-  await page.getByRole("button", { name: /本地免费转录/ }).waitFor();
+  await page.getByRole("button", { name: /高速高质量转录/ }).waitFor();
+  await page.getByRole("button", { name: /免费转录/ }).waitFor();
   if (!(await page.getByRole("button", { name: "↓ 视频 MP4" }).isVisible())) {
     throw new Error("逐字稿生成前没有保留视频下载入口");
   }
@@ -140,7 +146,10 @@ try {
     throw new Error("逐字稿生成前提前显示了复制入口");
   }
 
-  await page.getByRole("button", { name: /云端高质量转录/ }).click();
+  await page.getByRole("button", { name: /高速高质量转录/ }).click();
+  await page.locator("[data-transcription-progress-percent]", { hasText: "30%" }).waitFor();
+  await page.getByText("已处理 0:36 / 2:00", { exact: true }).waitFor();
+  await page.getByText("预计还需约 2 分钟", { exact: true }).waitFor();
   await page.getByText("这是用户主动生成的逐字稿。").waitFor();
   await page.getByRole("button", { name: "复制全文" }).waitFor();
 

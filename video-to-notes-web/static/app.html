@@ -8,7 +8,7 @@
     <title>VIDE0 / NOTES｜视频内容知识化工具</title>
     <link rel="icon" href="/static/favicon.svg?v=1" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=1" sizes="180x180" />
-    <link rel="stylesheet" href="/static/app.css?v=35" />
+    <link rel="stylesheet" href="/static/app.css?v=36" />
   </head>
   <body>
     <div class="scanlines" aria-hidden="true"></div>
@@ -388,7 +388,12 @@
                 <button class="text-action" type="button" data-cancel-transcript-regeneration>暂不重新生成</button>
               </div>
             </div>
-            <div class="transcription-running" data-transcription-running hidden aria-live="polite"><strong>正在重新获取完整逐字稿</strong><p data-transcription-running-copy>正在准备音频……</p></div>
+            <div class="transcription-running" data-transcription-running hidden aria-live="polite">
+              <div class="transcription-running__head"><strong>正在生成完整逐字稿</strong><span class="chip chip-blue" data-transcription-progress-percent>准备中</span></div>
+              <p data-transcription-running-copy>正在准备音频……</p>
+              <div class="transcription-progress-track" role="progressbar" aria-label="逐字稿生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span data-transcription-progress-bar></span></div>
+              <div class="transcription-progress-meta meta"><span data-transcription-progress-position>正在读取音频时长</span><span data-transcription-progress-eta>正在计算剩余时间</span></div>
+            </div>
             <div class="transcription-error" data-transcription-error hidden role="alert"><strong>逐字稿没有生成完成</strong><p data-transcription-error-message></p><div><button class="button button-primary" type="button" data-retry-transcription>↻ 重试当前线路</button><button class="button button-secondary" type="button" data-switch-transcription>切换转录线路</button><button class="text-action" type="button" data-dismiss-transcription-error>返回当前结果</button></div></div>
           </section>
           <section class="downloads-panel framed-panel">
@@ -1036,7 +1041,7 @@
     <script src="/static/vendor/gsap/ScrollTrigger.min.js"></script>
     <script src="/static/free-capacity.js?v=2"></script>
     <script src="/static/app-prototype.js?v=20"></script>
-    <script src="/static/real-app.js?v=42"></script>
+    <script src="/static/real-app.js?v=43"></script>
     <script src="/static/motion.js?v=5"></script>
   </body>
 </html>

@@ -29,7 +29,7 @@ def _simplify_chinese_transcript(text, detected_language=None):
 
 
 class Transcriber:
-    def transcribe(self, audio_path) -> str:
+    def transcribe(self, audio_path, *, progress_callback=None) -> str:
         raise NotImplementedError
 
 
@@ -39,7 +39,7 @@ class WhisperTranscriber(Transcriber):
     def __init__(self, model_name="tiny"):
         self.model_name = model_name
 
-    def transcribe(self, audio_path):
+    def transcribe(self, audio_path, *, progress_callback=None):
         try:
             import whisper
             if WhisperTranscriber._model is None:
@@ -51,6 +51,8 @@ class WhisperTranscriber(Transcriber):
             text = _simplify_chinese_transcript(text, result.get("language"))
             if not text:
                 raise ValueError("empty transcript")
+            if progress_callback:
+                progress_callback(1, 1)
             return text
         except DomainError:
             raise
@@ -64,7 +66,7 @@ class FasterWhisperTranscriber(Transcriber):
     def __init__(self, model_name="tiny"):
         self.model_name = model_name
 
-    def transcribe(self, audio_path):
+    def transcribe(self, audio_path, *, progress_callback=None):
         try:
             from faster_whisper import WhisperModel
 
@@ -84,10 +86,28 @@ class FasterWhisperTranscriber(Transcriber):
                 vad_filter=True,
                 condition_on_previous_text=True,
             )
-            text = "".join((segment.text or "") for segment in segments).strip()
+            total_seconds = max(0.0, float(getattr(info, "duration", 0) or 0))
+            if progress_callback and total_seconds:
+                progress_callback(0, total_seconds)
+            text_parts = []
+            last_processed_seconds = 0.0
+            for segment in segments:
+                text_parts.append(segment.text or "")
+                last_processed_seconds = max(
+                    last_processed_seconds,
+                    float(getattr(segment, "end", 0) or 0),
+                )
+                if progress_callback and total_seconds:
+                    progress_callback(
+                        min(last_processed_seconds, total_seconds),
+                        total_seconds,
+                    )
+            text = "".join(text_parts).strip()
             text = _simplify_chinese_transcript(text, info.language)
             if not text:
                 raise ValueError("empty transcript")
+            if progress_callback:
+                progress_callback(total_seconds or 1, total_seconds or 1)
             return text
         except DomainError:
             raise
@@ -138,10 +158,16 @@ class CloudflareTranscriber(Transcriber):
         except ImportError:
             return ssl.create_default_context()
 
-    def transcribe(self, audio_path):
+    def transcribe(self, audio_path, *, progress_callback=None):
         audio_path = Path(audio_path)
+        total_seconds = _probe_audio_duration(audio_path)
+        if progress_callback and total_seconds:
+            progress_callback(0, total_seconds)
         if audio_path.stat().st_size <= self.max_upload_bytes:
-            return self._transcribe_bytes(audio_path.read_bytes())
+            text = self._transcribe_bytes(audio_path.read_bytes())
+            if progress_callback:
+                progress_callback(total_seconds or 1, total_seconds or 1)
+            return text
         try:
             with tempfile.TemporaryDirectory(prefix="vtn-cloudflare-audio-") as tempdir:
                 output_pattern = str(Path(tempdir) / "segment-%05d.mp3")
@@ -159,9 +185,20 @@ class CloudflareTranscriber(Transcriber):
                 parts = sorted(Path(tempdir).glob("segment-*.mp3"))
                 if not parts:
                     raise ValueError("ffmpeg did not create audio segments")
-                return "\n".join(
-                    self._transcribe_bytes(part.read_bytes()) for part in parts
-                ).strip()
+                text_parts = []
+                for index, part in enumerate(parts, start=1):
+                    text_parts.append(self._transcribe_bytes(part.read_bytes()))
+                    if progress_callback:
+                        processed_seconds = (
+                            min(total_seconds, index * self.segment_seconds)
+                            if total_seconds
+                            else index
+                        )
+                        progress_callback(
+                            processed_seconds,
+                            total_seconds or len(parts),
+                        )
+                return "\n".join(text_parts).strip()
         except DomainError:
             raise
         except Exception as exc:
@@ -352,10 +389,11 @@ class SwitchableTranscriber(Transcriber):
         )
         self.duration_probe = duration_probe or _probe_audio_duration
 
-    def transcribe(self, audio_path):
+    def transcribe(self, audio_path, *, progress_callback=None):
         return self.transcribe_with_provider(
             audio_path,
             self.provider_store.status()["active_provider"],
+            progress_callback=progress_callback,
         )
 
     def available_providers(self):
@@ -365,7 +403,13 @@ class SwitchableTranscriber(Transcriber):
             "cloudflare": bool(status["cloudflare"]["configured"]),
         }
 
-    def transcribe_with_provider(self, audio_path, provider):
+    def transcribe_with_provider(
+        self,
+        audio_path,
+        provider,
+        *,
+        progress_callback=None,
+    ):
         if provider not in {"local", "cloudflare"}:
             raise DomainError(
                 "TRANSCRIPTION_PROVIDER_INVALID",
@@ -373,7 +417,10 @@ class SwitchableTranscriber(Transcriber):
                 retryable=False,
             )
         if provider == "local":
-            return self.local_transcriber.transcribe(audio_path)
+            return self.local_transcriber.transcribe(
+                audio_path,
+                progress_callback=progress_callback,
+            )
         credentials = self.provider_store.cloudflare_credentials()
         if not credentials:
             raise DomainError(
@@ -382,7 +429,10 @@ class SwitchableTranscriber(Transcriber):
                 retryable=False,
             )
         transcriber = self.cloudflare_factory(*credentials)
-        text = transcriber.transcribe(audio_path)
+        text = transcriber.transcribe(
+            audio_path,
+            progress_callback=progress_callback,
+        )
         self.provider_store.record_cloudflare_usage(
             self.duration_probe(audio_path)
         )
@@ -393,5 +443,7 @@ class FakeTranscriber(Transcriber):
     def __init__(self, text="这是一份固定逐字稿，用于本地验收。"):
         self.text = text
 
-    def transcribe(self, audio_path):
+    def transcribe(self, audio_path, *, progress_callback=None):
+        if progress_callback:
+            progress_callback(1, 1)
         return self.text

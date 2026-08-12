@@ -680,7 +680,7 @@ a { color: inherit; }
 @keyframes parser-track-scan { from { transform: translateX(-24px); } to { transform: translateX(24px); } }
 @keyframes parser-working-dots { 0% { width: 7px; } 100% { width: 28px; } }
 @keyframes parser-live-pulse { 50% { opacity: .28; } }
-@media (prefers-reduced-motion: reduce) { .parser-progress-orbit, .parser-progress-track > span::after, .progress-list .is-current strong::after, .parser-live-square, .chapter-meter i, .saved-content.is-updating, .analysis-orbit, .semantic-progress .is-current em { animation: none; }.parser-progress-track > span, .video-cover-image, .transcript-preview, .chapter-meter i, .button, .history-shortcut, .visual-editable { transition: none; }.is-motion-animating { will-change: auto; } }
+@media (prefers-reduced-motion: reduce) { .parser-progress-orbit, .parser-progress-track > span::after, .transcription-progress-track > span::after, .progress-list .is-current strong::after, .parser-live-square, .chapter-meter i, .saved-content.is-updating, .analysis-orbit, .semantic-progress .is-current em { animation: none; }.parser-progress-track > span, .transcription-progress-track > span, .video-cover-image, .transcript-preview, .chapter-meter i, .button, .history-shortcut, .visual-editable { transition: none; }.is-motion-animating { will-change: auto; } }
 
 .transcript-actions { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
 .transcript-button[data-copy-transcript].is-copied { background: #dbe6dc; color: var(--green); }
@@ -701,6 +701,11 @@ a { color: inherit; }
 .transcription-running { background: #d8e1fc; }
 .transcription-error { background: #f6d3c5; }
 .transcription-running p, .transcription-error p { margin: 7px 0 0; font-size: 13px; }
+.transcription-running__head, .transcription-progress-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.transcription-progress-track { height: 14px; margin-top: 13px; overflow: hidden; border: 2px solid var(--ink); background: var(--surface); }
+.transcription-progress-track > span { position: relative; display: block; width: 0; height: 100%; background: var(--blue); transition: width .45s cubic-bezier(.2,.8,.2,1); }
+.transcription-progress-track > span::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(120deg, transparent 0 10px, rgba(255,255,255,.48) 10px 15px, transparent 15px 25px); animation: parser-track-scan 1.1s linear infinite; }
+.transcription-progress-meta { margin-top: 8px; color: var(--ink-soft); font-size: 10px; }
 .transcription-error > div { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
 
 @media (max-width: 760px) {

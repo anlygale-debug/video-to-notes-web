@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 import threading
+import time
 import uuid
 from contextlib import nullcontext
 from pathlib import Path
@@ -110,6 +111,74 @@ class ParserWorkflow:
             error_retryable=None,
         )
         self._event(task_id, "state", {"state": state, **progress})
+
+    def _transcription_progress_reporter(self, task_id, duration_hint=0):
+        started_at = time.monotonic()
+        last_percent = -1
+        last_update_at = 0.0
+
+        def report(processed_seconds, total_seconds):
+            nonlocal last_percent, last_update_at
+            total = max(float(total_seconds or duration_hint or 0), 0.0)
+            processed = max(float(processed_seconds or 0), 0.0)
+            if total <= 0:
+                return
+            processed = min(processed, total)
+            transcription_percent = min(100, int((processed / total) * 100))
+            now = time.monotonic()
+            if (
+                transcription_percent == last_percent
+                and now - last_update_at < 5
+            ):
+                return
+            elapsed = max(0.0, now - started_at)
+            remaining_seconds = None
+            if processed > 0 and processed < total and elapsed >= 5:
+                processing_rate = processed / elapsed
+                if processing_rate > 0:
+                    remaining_seconds = int((total - processed) / processing_rate)
+            progress = {
+                "stage": "transcribe",
+                "label": "正在生成逐字稿",
+                "percent": min(89, 55 + int(transcription_percent * 0.34)),
+                "transcription_percent": transcription_percent,
+                "processed_seconds": int(processed),
+                "total_seconds": int(total),
+                "elapsed_seconds": int(elapsed),
+                "remaining_seconds": remaining_seconds,
+            }
+            self.repository.update_parser_task(
+                task_id,
+                state="transcribing",
+                progress=progress,
+                error_code=None,
+                error_message=None,
+                error_retryable=None,
+            )
+            self._event(task_id, "progress", progress)
+            last_percent = transcription_percent
+            last_update_at = now
+
+        return report
+
+    @staticmethod
+    def _call_transcriber(method, *args, progress_callback):
+        try:
+            import inspect
+
+            parameters = inspect.signature(method).parameters
+            supports_progress = (
+                "progress_callback" in parameters
+                or any(
+                    parameter.kind == inspect.Parameter.VAR_KEYWORD
+                    for parameter in parameters.values()
+                )
+            )
+        except (TypeError, ValueError):
+            supports_progress = False
+        if supports_progress:
+            return method(*args, progress_callback=progress_callback)
+        return method(*args)
 
     def _run(self, task_id):
         task = self.get_task(task_id)
@@ -227,13 +296,26 @@ class ParserWorkflow:
                 self._transition(
                     task_id, "transcribing", stage="transcribe", label="生成逐字稿", percent=55
                 )
+                progress_callback = self._transcription_progress_reporter(
+                    task_id,
+                    record.get("duration_seconds") or 0,
+                )
                 transcribe_selected = getattr(
                     self.transcriber, "transcribe_with_provider", None
                 )
                 transcript = (
-                    transcribe_selected(audio_path, provider)
+                    self._call_transcriber(
+                        transcribe_selected,
+                        audio_path,
+                        provider,
+                        progress_callback=progress_callback,
+                    )
                     if transcribe_selected
-                    else self.transcriber.transcribe(audio_path)
+                    else self._call_transcriber(
+                        self.transcriber.transcribe,
+                        audio_path,
+                        progress_callback=progress_callback,
+                    )
                 )
                 self._ensure_transcript_is_complete(record, transcript, provider)
             self._transition(
