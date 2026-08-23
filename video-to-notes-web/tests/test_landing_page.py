@@ -14,20 +14,23 @@ class LandingPageHttpTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.headers["content-type"])
-        self.assertIn("从视频链接，到一份可以继续使用的内容。", response.text)
+        self.assertIn("这不是概念流程，而是已经跑通的产品界面。", response.text)
+        self.assertIn("B站、小红书、抖音或 YouTube", response.text)
+        self.assertIn("To Notes Skill", response.text)
 
     def test_landing_page_links_to_app_and_serves_owned_assets(self):
         response = self.client.get("/video-notes")
 
         self.assertGreaterEqual(response.text.count('href="/next"'), 4)
         self.assertNotIn("../static/app.html", response.text)
-        self.assertIn('href="/static/landing/styles.css?v=3"', response.text)
-        self.assertIn('src="/static/landing/script.js?v=2"', response.text)
+        self.assertIn('href="/static/landing/styles.css?v=4"', response.text)
+        self.assertIn('src="/static/landing/script.js?v=3"', response.text)
 
         for asset_path in (
             "/static/landing/styles.css",
             "/static/landing/script.js",
             "/static/landing/assets/parser-result.png",
+            "/static/landing/assets/note-methods.png",
             "/static/landing/assets/note-recommendations.png",
             "/static/landing/assets/note-reading.png",
         ):

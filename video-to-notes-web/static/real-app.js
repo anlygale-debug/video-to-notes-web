@@ -898,6 +898,8 @@
       item.hidden = metadataOnly && ["download", "transcribe"].includes(itemStage);
       const index = order.indexOf(itemStage);
       if (index < 0) return;
+      const sequence = item.querySelector("span");
+      if (sequence) sequence.textContent = String(index + 1).padStart(2, "0");
       item.classList.toggle("is-complete", index < currentIndex);
       item.classList.toggle("is-current", index === currentIndex);
       const status = item.querySelector("em");

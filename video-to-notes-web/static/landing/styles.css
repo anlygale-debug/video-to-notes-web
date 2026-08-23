@@ -1146,8 +1146,8 @@ a:focus-visible {
 
 .workflow-steps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1155,7 +1155,7 @@ a:focus-visible {
 
 .workflow-step {
   position: relative;
-  min-height: 370px;
+  min-height: 390px;
   border: 3px solid var(--paper-light);
   padding: 25px;
   overflow: hidden;
@@ -1164,6 +1164,7 @@ a:focus-visible {
 .workflow-step:nth-child(1) { background: #202020; }
 .workflow-step:nth-child(2) { background: #28365d; }
 .workflow-step:nth-child(3) { background: #27453a; }
+.workflow-step:nth-child(4) { background: #543327; }
 
 .workflow-step:not(:last-child)::after {
   position: absolute;
@@ -1205,13 +1206,119 @@ a:focus-visible {
 
 .workflow-step h3 {
   margin: 10px 0 12px;
-  font: 900 30px/1 var(--display);
+  font: 900 27px/1 var(--display);
 }
 
 .workflow-step p {
   margin: 0;
   color: #cec6b9;
   font-size: 13px;
+}
+
+.methods {
+  position: relative;
+}
+
+.methods::before {
+  position: absolute;
+  z-index: -1;
+  top: 68px;
+  right: 2%;
+  width: 210px;
+  height: 210px;
+  border: 3px solid var(--ink);
+  background: var(--red);
+  content: "";
+  transform: rotate(8deg);
+}
+
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 3px solid var(--ink);
+  background: var(--ink);
+  box-shadow: 9px 9px 0 var(--ink);
+  gap: 3px;
+}
+
+.method-card {
+  position: relative;
+  display: flex;
+  min-height: 470px;
+  flex-direction: column;
+  padding: 25px;
+  background: var(--paper-light);
+  overflow: hidden;
+}
+
+.method-card--site { background: var(--blue-pale); }
+.method-card--prompt { background: var(--gold-pale); }
+.method-card--skill { background: var(--green-pale); }
+
+.method-card header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 15px;
+}
+
+.method-card header span {
+  color: var(--blue);
+  font: 900 62px/0.8 var(--display);
+}
+
+.method-card header small,
+.method-fit {
+  font: 750 9px/1.4 var(--mono);
+  letter-spacing: 0.07em;
+}
+
+.method-card h3 {
+  margin: 33px 0 15px;
+  font: 900 35px/1 var(--display);
+}
+
+.method-card > p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.method-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 27px 0 32px;
+  padding: 0;
+  list-style: none;
+}
+
+.method-card li {
+  position: relative;
+  border-top: 1px solid rgba(18, 18, 18, 0.25);
+  padding: 9px 0 0 20px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.method-card li::before {
+  position: absolute;
+  top: 13px;
+  left: 1px;
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  content: "";
+}
+
+.method-fit {
+  display: block;
+  margin-top: auto;
+  border: 2px solid var(--ink);
+  padding: 9px 10px;
+  background: var(--paper-light);
+  box-shadow: 2px 2px 0 var(--ink);
 }
 
 .proof-stage {
@@ -1625,6 +1732,18 @@ a:focus-visible {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .workflow-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .method-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .method-card {
+    min-height: 410px;
+  }
+
   .problem-grid,
   .ai-bridge-grid {
     grid-template-columns: 1fr;
@@ -1648,6 +1767,10 @@ a:focus-visible {
 }
 
 @media (max-width: 760px) {
+  .methods::before {
+    display: none;
+  }
+
   .section-shell {
     width: min(100% - 32px, 620px);
   }
@@ -1841,7 +1964,7 @@ a:focus-visible {
   }
 
   .proof-nav {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .proof-tab {

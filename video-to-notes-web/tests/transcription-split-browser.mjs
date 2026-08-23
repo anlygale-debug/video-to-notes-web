@@ -11,6 +11,7 @@ let transcriptGenerated = false;
 let parseRequest = null;
 let transcriptionPosts = 0;
 let transcriptionReads = 0;
+let metadataTaskReads = 0;
 
 await page.route("**/api/v3/capabilities", (route) => route.fulfill({
   status: 200,
@@ -90,20 +91,26 @@ await page.route("**/api/v3/parser/tasks/task-transcription", async (route) => {
     }),
   });
 });
-await page.route("**/api/v3/parser/tasks/task-metadata", (route) => route.fulfill({
-  status: 200,
-  contentType: "application/json",
-  body: JSON.stringify({
-    task: {
-      id: "task-metadata",
-      operation: "metadata",
-      state: "completed",
-      source_url: sourceURL,
-      record_id: "record-split",
-      progress: { stage: "complete", label: "视频信息已解析", percent: 100 },
-    },
-  }),
-}));
+await page.route("**/api/v3/parser/tasks/task-metadata", (route) => {
+  metadataTaskReads += 1;
+  const complete = metadataTaskReads > 1;
+  return route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      task: {
+        id: "task-metadata",
+        operation: "metadata",
+        state: complete ? "completed" : "resolving",
+        source_url: sourceURL,
+        record_id: complete ? "record-split" : null,
+        progress: complete
+          ? { stage: "complete", label: "视频信息已解析", percent: 100 }
+          : { stage: "resolve", label: "识别视频来源", percent: 10 },
+      },
+    }),
+  });
+});
 await page.route("**/api/v3/parser/tasks", async (route) => {
   parseRequest = route.request().postDataJSON();
   await route.fulfill({
@@ -132,6 +139,13 @@ try {
       submitter,
     }));
   });
+  await page.locator(".progress-panel").waitFor();
+  const visibleStepNumbers = await page.locator(
+    "[data-parser-stage-item]:visible > span"
+  ).allTextContents();
+  if (JSON.stringify(visibleStepNumbers) !== JSON.stringify(["01", "02"])) {
+    throw new Error(`视频信息解析步骤序号不连续：${JSON.stringify(visibleStepNumbers)}`);
+  }
   await page.getByRole("heading", { name: "分阶段转录测试", exact: true }).waitFor();
 
   if (parseRequest?.include_transcript !== false) {
